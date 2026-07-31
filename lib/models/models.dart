@@ -43,6 +43,44 @@ class VaccinationRecord {
   }
 }
 
+class MedicationRecord {
+  const MedicationRecord({
+    required this.id,
+    required this.childId,
+    required this.medicationId,
+    required this.medicationName,
+    required this.dosage,
+    required this.administeredBy,
+    required this.administeredAt,
+    required this.syncStatus,
+    this.notes,
+  });
+
+  final String id;
+  final String childId;
+  final String medicationId;
+  final String medicationName;
+  final String dosage;
+  final String administeredBy;
+  final DateTime administeredAt;
+  final VaccinationSyncStatus syncStatus;
+  final String? notes;
+
+  MedicationRecord copyWith({VaccinationSyncStatus? syncStatus}) {
+    return MedicationRecord(
+      id: id,
+      childId: childId,
+      medicationId: medicationId,
+      medicationName: medicationName,
+      dosage: dosage,
+      administeredBy: administeredBy,
+      administeredAt: administeredAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      notes: notes,
+    );
+  }
+}
+
 class ChildProfile {
   const ChildProfile({
     required this.id,
@@ -60,6 +98,7 @@ class ChildProfile {
     required this.nextDue,
     required this.lateDays,
     required this.vaccinations,
+    this.medications = const [],
   });
 
   final String id;
@@ -77,24 +116,42 @@ class ChildProfile {
   final DateTime nextDue;
   final int lateDays;
   final List<VaccinationRecord> vaccinations;
+  final List<MedicationRecord> medications;
 
-  ChildProfile copyWith({List<VaccinationRecord>? vaccinations}) {
+  ChildProfile copyWith({
+    String? qrCode,
+    String? fullName,
+    DateTime? dateOfBirth,
+    String? gender,
+    String? motherName,
+    String? motherPhone,
+    String? village,
+    String? commune,
+    String? district,
+    ChildVaccinationStatus? status,
+    String? nextVaccine,
+    DateTime? nextDue,
+    int? lateDays,
+    List<VaccinationRecord>? vaccinations,
+    List<MedicationRecord>? medications,
+  }) {
     return ChildProfile(
       id: id,
-      qrCode: qrCode,
-      fullName: fullName,
-      dateOfBirth: dateOfBirth,
-      gender: gender,
-      motherName: motherName,
-      motherPhone: motherPhone,
-      village: village,
-      commune: commune,
-      district: district,
-      status: status,
-      nextVaccine: nextVaccine,
-      nextDue: nextDue,
-      lateDays: lateDays,
+      qrCode: qrCode ?? this.qrCode,
+      fullName: fullName ?? this.fullName,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      motherName: motherName ?? this.motherName,
+      motherPhone: motherPhone ?? this.motherPhone,
+      village: village ?? this.village,
+      commune: commune ?? this.commune,
+      district: district ?? this.district,
+      status: status ?? this.status,
+      nextVaccine: nextVaccine ?? this.nextVaccine,
+      nextDue: nextDue ?? this.nextDue,
+      lateDays: lateDays ?? this.lateDays,
       vaccinations: vaccinations ?? this.vaccinations,
+      medications: medications ?? this.medications,
     );
   }
 }
@@ -117,6 +174,24 @@ class VaccineSchedule {
   final String description;
 
   String get displayName => '$vaccineName - Mũi $doseNumber';
+}
+
+class MedicationSchedule {
+  const MedicationSchedule({
+    required this.id,
+    required this.medicationName,
+    required this.recommendedAge,
+    required this.defaultDosage,
+    required this.description,
+  });
+
+  final String id;
+  final String medicationName;
+  final String recommendedAge;
+  final String defaultDosage;
+  final String description;
+
+  String get displayName => '$medicationName ($defaultDosage)';
 }
 
 class CommuneCoverage {
@@ -142,3 +217,4 @@ class CommuneCoverage {
 
   int get missing => total - fully;
 }
+

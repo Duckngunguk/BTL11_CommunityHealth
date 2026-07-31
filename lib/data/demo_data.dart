@@ -73,6 +73,44 @@ List<VaccinationRecord> _records(
   }).toList();
 }
 
+final demoMedicationSchedules = <MedicationSchedule>[
+  const MedicationSchedule(
+    id: 'VIT-A-1',
+    medicationName: 'Vitamin A liều cao (Đợt 1)',
+    recommendedAge: '6 - 12 tháng',
+    defaultDosage: '100.000 IU (1 viên)',
+    description: 'Bổ sung Vitamin A phòng chống khô mắt và tăng sức đề kháng.',
+  ),
+  const MedicationSchedule(
+    id: 'VIT-A-2',
+    medicationName: 'Vitamin A liều cao (Đợt 2)',
+    recommendedAge: '12 - 36 tháng',
+    defaultDosage: '200.000 IU (1 viên)',
+    description: 'Bổ sung định kỳ Vitamin A đợt 2 cho trẻ trên 1 tuổi.',
+  ),
+  const MedicationSchedule(
+    id: 'TAY-GIUN-1',
+    medicationName: 'Thuốc tẩy giun Mebendazole',
+    recommendedAge: 'Từ 24 tháng',
+    defaultDosage: '500 mg (1 viên)',
+    description: 'Tẩy giun định kỳ 6 tháng/lần cho trẻ nhỏ.',
+  ),
+  const MedicationSchedule(
+    id: 'OPV-ORAL-1',
+    medicationName: 'Vaccine uống Bại liệt (OPV)',
+    recommendedAge: '2 - 4 tháng',
+    defaultDosage: '2 giọt',
+    description: 'Vaccine phòng bệnh bại liệt đường uống.',
+  ),
+  const MedicationSchedule(
+    id: 'VIT-K1',
+    medicationName: 'Vitamin K1 dạng uống',
+    recommendedAge: 'Sơ sinh',
+    defaultDosage: '2 mg',
+    description: 'Phòng xuất huyết xuất hiện sớm ở trẻ sơ sinh.',
+  ),
+];
+
 final demoChildren = <ChildProfile>[
   ChildProfile(
     id: 'CH001',
@@ -94,6 +132,19 @@ final demoChildren = <ChildProfile>[
       ('DPT-1', 'DPT', 1, 'DPT2402', 'Y sĩ Lê Thu', '2024-03-18'),
       ('DPT-2', 'DPT', 2, 'DPT2403', 'Y sĩ Trần Nam', '2024-04-19'),
     ]),
+    medications: [
+      MedicationRecord(
+        id: 'MR-CH001-1',
+        childId: 'CH001',
+        medicationId: 'VIT-A-1',
+        medicationName: 'Vitamin A liều cao (Đợt 1)',
+        dosage: '100.000 IU',
+        administeredBy: 'Y sĩ Lê Thu',
+        administeredAt: DateTime(2024, 6, 1),
+        syncStatus: VaccinationSyncStatus.synced,
+        notes: 'Trẻ dung nạp tốt, không dị ứng',
+      ),
+    ],
   ),
   ChildProfile(
     id: 'CH002',
@@ -116,6 +167,28 @@ final demoChildren = <ChildProfile>[
       ('DPT-2', 'DPT', 2, 'DPT2402', 'Y sĩ Trần Nam', '2024-02-11'),
       ('DPT-3', 'DPT', 3, 'DPT2403', 'Y sĩ Lê Thu', '2024-03-12'),
     ]),
+    medications: [
+      MedicationRecord(
+        id: 'MR-CH002-1',
+        childId: 'CH002',
+        medicationId: 'VIT-A-1',
+        medicationName: 'Vitamin A liều cao (Đợt 1)',
+        dosage: '100.000 IU',
+        administeredBy: 'Y sĩ Lê Thu',
+        administeredAt: DateTime(2024, 6, 1),
+        syncStatus: VaccinationSyncStatus.synced,
+      ),
+      MedicationRecord(
+        id: 'MR-CH002-2',
+        childId: 'CH002',
+        medicationId: 'VIT-A-2',
+        medicationName: 'Vitamin A liều cao (Đợt 2)',
+        dosage: '200.000 IU',
+        administeredBy: 'Y sĩ Trần Nam',
+        administeredAt: DateTime(2024, 12, 5),
+        syncStatus: VaccinationSyncStatus.synced,
+      ),
+    ],
   ),
   ChildProfile(
     id: 'CH003',
@@ -139,6 +212,18 @@ final demoChildren = <ChildProfile>[
       ('DPT-3', 'DPT', 3, 'DPT2212', 'Y sĩ Hà Linh', '2022-12-22'),
       ('Sởi-1', 'Sởi', 1, 'SOI2305', 'Y sĩ Trần Nam', '2023-05-22'),
     ]),
+    medications: [
+      MedicationRecord(
+        id: 'MR-CH003-1',
+        childId: 'CH003',
+        medicationId: 'TAY-GIUN-1',
+        medicationName: 'Thuốc tẩy giun Mebendazole',
+        dosage: '500 mg',
+        administeredBy: 'Y sĩ Hà Linh',
+        administeredAt: DateTime(2024, 9, 10),
+        syncStatus: VaccinationSyncStatus.synced,
+      ),
+    ],
   ),
   ChildProfile(
     id: 'CH004',
