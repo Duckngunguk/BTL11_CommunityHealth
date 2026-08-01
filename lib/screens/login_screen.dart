@@ -92,23 +92,62 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 22),
                               FilledButton.icon(
-                                onPressed: () => widget.onLogin(AppMode.mobile),
-                                icon: const Icon(Icons.phone_android_rounded),
-                                label: const Text('Vào Mobile App'),
+                                onPressed: _handleLogin,
+                                icon: const Icon(Icons.login_rounded),
+                                label: const Text('Đăng nhập', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                               ),
-                              const SizedBox(height: 10),
-                              OutlinedButton.icon(
-                                onPressed: () => widget.onLogin(AppMode.admin),
-                                icon: const Icon(Icons.dashboard_outlined),
-                                label: const Text('Mở Web Admin'),
+                              const SizedBox(height: 20),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F4F8),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFD0DCE5)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Gợi ý tài khoản demo:',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black54),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        ActionChip(
+                                          avatar: const Icon(Icons.person_outline_rounded, size: 16),
+                                          label: const Text('Cán bộ y tế (Mobile)', style: TextStyle(fontSize: 12)),
+                                          onPressed: () {
+                                            setState(() {
+                                              _usernameController.text = 'healthworker.demo';
+                                              _passwordController.text = '123456';
+                                            });
+                                          },
+                                        ),
+                                        ActionChip(
+                                          avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
+                                          label: const Text('Quản trị viên (Admin)', style: TextStyle(fontSize: 12)),
+                                          onPressed: () {
+                                            setState(() {
+                                              _usernameController.text = 'admin.demo';
+                                              _passwordController.text = '123456';
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: 18),
+                              const SizedBox(height: 16),
                               const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.cloud_off_rounded, size: 17, color: Colors.black45),
                                   SizedBox(width: 6),
-                                  Text('Có thể đăng nhập bằng dữ liệu đã cache', style: TextStyle(color: Colors.black54)),
+                                  Text('Hỗ trợ đăng nhập với dữ liệu đã lưu ngoại tuyến', style: TextStyle(color: Colors.black54, fontSize: 13)),
                                 ],
                               ),
                             ],
@@ -124,6 +163,22 @@ class _LoginScreenState extends State<LoginScreen> {
         },
       ),
     );
+  }
+
+  void _handleLogin() {
+    final username = _usernameController.text.trim().toLowerCase();
+    if (username.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập tên đăng nhập')),
+      );
+      return;
+    }
+
+    if (username.contains('admin')) {
+      widget.onLogin(AppMode.admin);
+    } else {
+      widget.onLogin(AppMode.mobile);
+    }
   }
 }
 
