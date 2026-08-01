@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../widgets/common_widgets.dart';
 
-enum AppMode { mobile, admin }
+enum AppMode { mobile, admin, parent }
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.onLogin});
@@ -14,8 +14,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController(text: 'healthworker.demo');
-  final _passwordController = TextEditingController(text: '123456');
+  final _usernameController = TextEditingController(text: '');
+  final _passwordController = TextEditingController(text: '');
   bool _obscure = true;
 
   @override
@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 8),
                               const Text(
-                                'Dữ liệu demo được lưu cục bộ để mô phỏng khả năng hoạt động ngoại tuyến.',
+                                'Nhập tài khoản bên dưới để đăng nhập. Mỗi tài khoản có vai trò riêng trong hệ thống.',
                                 style: TextStyle(color: Colors.black54),
                               ),
                               const SizedBox(height: 24),
@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       children: [
                                         ActionChip(
                                           avatar: const Icon(Icons.person_outline_rounded, size: 16),
-                                          label: const Text('Cán bộ y tế (Mobile)', style: TextStyle(fontSize: 12)),
+                                          label: const Text('Cán bộ y tế', style: TextStyle(fontSize: 12)),
                                           onPressed: () {
                                             setState(() {
                                               _usernameController.text = 'healthworker.demo';
@@ -127,8 +127,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                           },
                                         ),
                                         ActionChip(
+                                          avatar: const Icon(Icons.family_restroom_rounded, size: 16),
+                                          label: const Text('Phụ huynh', style: TextStyle(fontSize: 12)),
+                                          onPressed: () {
+                                            setState(() {
+                                              _usernameController.text = 'parent.demo';
+                                              _passwordController.text = '123456';
+                                            });
+                                          },
+                                        ),
+                                        ActionChip(
                                           avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
-                                          label: const Text('Quản trị viên (Admin)', style: TextStyle(fontSize: 12)),
+                                          label: const Text('Quản trị viên', style: TextStyle(fontSize: 12)),
                                           onPressed: () {
                                             setState(() {
                                               _usernameController.text = 'admin.demo';
@@ -176,6 +186,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (username.contains('admin')) {
       widget.onLogin(AppMode.admin);
+    } else if (username.contains('parent') || username.contains('phuHuynh') || username.contains('phuhuynh')) {
+      widget.onLogin(AppMode.parent);
     } else {
       widget.onLogin(AppMode.mobile);
     }

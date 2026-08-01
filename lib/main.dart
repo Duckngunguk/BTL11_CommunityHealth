@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'screens/admin/admin_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/mobile/mobile_shell.dart';
+import 'screens/parent/parent_shell.dart';
 import 'state/app_store.dart';
 import 'widgets/common_widgets.dart';
 
@@ -74,6 +75,10 @@ class _AppRouterState extends State<_AppRouter> {
     if (_mode == AppMode.admin) {
       return AdminShell(onLogout: () => setState(() => _mode = null));
     }
+    if (_mode == AppMode.parent) {
+      return ParentShell(onLogout: () => setState(() => _mode = null));
+    }
     return MobileShell(onLogout: () => setState(() => _mode = null));
   }
 }
+
