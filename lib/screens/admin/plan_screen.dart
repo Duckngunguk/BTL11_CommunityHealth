@@ -79,7 +79,7 @@ class _PlanForm extends StatelessWidget {
             Text('Thông tin buổi tiêm', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 20),
             DropdownButtonFormField<CommuneCoverage>(
-              value: commune,
+              initialValue: commune,
               decoration: const InputDecoration(labelText: 'Xã mục tiêu', prefixIcon: Icon(Icons.location_on_outlined)),
               items: demoCoverage.map((item) => DropdownMenuItem(value: item, child: Text(item.name))).toList(),
               onChanged: (value) {

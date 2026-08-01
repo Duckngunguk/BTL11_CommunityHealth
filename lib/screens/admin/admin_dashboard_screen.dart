@@ -33,7 +33,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 StatCard(label: 'Trẻ 0–5 tuổi', value: '$total', icon: Icons.groups_2_outlined, background: const Color(0xFFE7F0FF), caption: '6 xã đang theo dõi'),
                 StatCard(label: 'Đã tiêm đầy đủ', value: '$fully', icon: Icons.verified_outlined, background: softGreen, caption: '${coverage.toStringAsFixed(1)}% toàn huyện'),
                 StatCard(label: 'Trẻ trễ lịch', value: '${store.lateCount}', icon: Icons.warning_amber_rounded, background: const Color(0xFFFFE9E7), caption: 'Cần ưu tiên liên hệ'),
-                const StatCard(label: 'Kế hoạch sắp tới', value: '03', icon: Icons.event_available_outlined, background: Color(0xFFFFF3CD), caption: 'Trong 30 ngày tới'),
+                StatCard(label: 'Ca nghi nhiễm', value: '${store.diseaseReportCount}', icon: Icons.coronavirus_outlined, background: store.emergencyDiseaseCount > 0 ? const Color(0xFFFFE9E7) : const Color(0xFFF0F8FF), caption: store.emergencyDiseaseCount > 0 ? '${store.emergencyDiseaseCount} ca khẩn cấp' : 'Chưa có ca khẩn cấp'),
               ],
             ),
             const SizedBox(height: 22),

@@ -18,13 +18,12 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
   late final TextEditingController _fullNameController;
   late final TextEditingController _motherNameController;
   late final TextEditingController _motherPhoneController;
-  late final TextEditingController _villageController;
-  late final TextEditingController _communeController;
-  late final TextEditingController _districtController;
-  late final TextEditingController _qrCodeController;
 
   late DateTime _dob;
   late String _gender;
+  String? _selectedCommune;
+  String? _selectedVillage;
+  late String _district;
 
   bool get _isEditing => widget.childToEdit != null;
 
@@ -33,14 +32,27 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     super.initState();
     final child = widget.childToEdit;
     _fullNameController = TextEditingController(text: child?.fullName ?? '');
-    _motherNameController = TextEditingController(text: child?.motherName ?? '');
-    _motherPhoneController = TextEditingController(text: child?.motherPhone ?? '');
-    _villageController = TextEditingController(text: child?.village ?? 'Bản Nậm Lùng');
-    _communeController = TextEditingController(text: child?.commune ?? 'Tả Phìn');
-    _districtController = TextEditingController(text: child?.district ?? 'Sa Pa');
-    _qrCodeController = TextEditingController(text: child?.qrCode ?? '');
+    _motherNameController =
+        TextEditingController(text: child?.motherName ?? '');
+    _motherPhoneController =
+        TextEditingController(text: child?.motherPhone ?? '');
+    _district = child?.district ?? 'Sa Pa';
 
-    _dob = child?.dateOfBirth ?? DateTime.now().subtract(const Duration(days: 90));
+    // Đặt giá trị xã và thôn/bản từ dữ liệu cũ (nếu đang sửa)
+    if (child != null) {
+      _selectedCommune = kCommuneList.contains(child.commune) ? child.commune : null;
+      if (_selectedCommune != null) {
+        final villages = kVillagesByCommune[_selectedCommune] ?? <String>[];
+        _selectedVillage = villages.contains(child.village) ? child.village : null;
+      }
+    } else {
+      // Mặc định xã phụ trách của y sĩ đăng nhập
+      _selectedCommune = null;
+      _selectedVillage = null;
+    }
+
+    _dob =
+        child?.dateOfBirth ?? DateTime.now().subtract(const Duration(days: 90));
     _gender = child?.gender ?? 'Nam';
   }
 
@@ -49,24 +61,32 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     _fullNameController.dispose();
     _motherNameController.dispose();
     _motherPhoneController.dispose();
-    _villageController.dispose();
-    _communeController.dispose();
-    _districtController.dispose();
-    _qrCodeController.dispose();
     super.dispose();
+  }
+
+  void _onCommuneChanged(String? value) {
+    setState(() {
+      _selectedCommune = value;
+      _selectedVillage = null; // Reset thôn/bản khi đổi xã
+    });
   }
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedCommune == null || _selectedVillage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn xã và thôn/bản.'), backgroundColor: Color(0xFFB42318)),
+      );
+      return;
+    }
 
     final store = AppScope.of(context);
     final fullName = _fullNameController.text.trim();
     final motherName = _motherNameController.text.trim();
     final motherPhone = _motherPhoneController.text.trim();
-    final village = _villageController.text.trim();
-    final commune = _communeController.text.trim();
-    final district = _districtController.text.trim();
-    String qrCode = _qrCodeController.text.trim();
+    final village = _selectedVillage!;
+    final commune = _selectedCommune!;
+    final district = _district;
 
     if (_isEditing) {
       final updated = widget.childToEdit!.copyWith(
@@ -78,21 +98,24 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         village: village,
         commune: commune,
         district: district,
-        qrCode: qrCode.isEmpty ? widget.childToEdit!.qrCode : qrCode,
       );
       store.updateChild(updated);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã cập nhật thông tin trẻ thành công.')),
       );
     } else {
-      final newIndex = (store.children.length + 1).toString().padLeft(3, '0');
-      final newId = 'CH$newIndex';
-      if (qrCode.isEmpty) {
-        qrCode = 'CH-QR-$newIndex';
-      }
+      final newIndex = (store.children.length + 1);
+
+      // Sinh mã QR có cấu trúc chuẩn y tế (B2)
+      final qrCode = generateStructuredQrCode(
+        district: district,
+        commune: commune,
+        dateOfBirth: _dob,
+        counter: newIndex,
+      );
 
       final newChild = ChildProfile(
-        id: newId,
+        id: 'CH${newIndex.toString().padLeft(3, '0')}',
         qrCode: qrCode,
         fullName: fullName,
         dateOfBirth: _dob,
@@ -112,7 +135,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
 
       store.addChild(newChild);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã thêm trẻ mới vào sổ theo dõi.')),
+        SnackBar(content: Text('Đã thêm trẻ mới. Mã QR: $qrCode')),
       );
     }
 
@@ -121,6 +144,10 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final villages = _selectedCommune != null
+        ? (kVillagesByCommune[_selectedCommune] ?? <String>[])
+        : <String>[];
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Sửa thông tin trẻ' : 'Thêm trẻ mới'),
@@ -138,7 +165,11 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Thông tin cá nhân của trẻ', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Thông tin cá nhân của trẻ',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             TextFormField(
               controller: _fullNameController,
@@ -146,7 +177,8 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 labelText: 'Họ và tên trẻ *',
                 prefixIcon: Icon(Icons.child_care_rounded),
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập họ tên trẻ' : null,
+              validator: (v) =>
+                  (v ?? '').trim().isEmpty ? 'Vui lòng nhập họ tên trẻ' : null,
             ),
             const SizedBox(height: 12),
             Row(
@@ -190,17 +222,34 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _qrCodeController,
-              decoration: const InputDecoration(
-                labelText: 'Mã QR / Mã định danh',
-                hintText: 'Tự động tạo nếu để trống',
-                prefixIcon: Icon(Icons.qr_code_rounded),
+            if (!_isEditing) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: softGreen,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.qr_code_rounded, color: primaryGreen, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Mã QR sẽ được tự động tạo theo cấu trúc chuẩn: Huyện-Xã-NămSinh-SốTT',
+                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 24),
-            Text('Thông tin người nuôi dưỡng / Phụ huynh', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Thông tin người nuôi dưỡng / Phụ huynh',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             TextFormField(
               controller: _motherNameController,
@@ -208,7 +257,9 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 labelText: 'Họ tên mẹ / Người giám hộ *',
                 prefixIcon: Icon(Icons.person_outline),
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập tên mẹ / giám hộ' : null,
+              validator: (v) => (v ?? '').trim().isEmpty
+                  ? 'Vui lòng nhập tên mẹ / giám hộ'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -220,41 +271,47 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text('Địa chỉ cư trú', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Địa chỉ cư trú',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _villageController,
+
+            // ── B1: Xã → Dropdown cố định thay vì nhập tay ──
+            DropdownButtonFormField<String>(
+              initialValue: _selectedCommune,
+              decoration: const InputDecoration(
+                labelText: 'Xã *',
+                prefixIcon: Icon(Icons.location_city_outlined),
+              ),
+              items: kCommuneList.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+              onChanged: _onCommuneChanged,
+              validator: (v) => v == null ? 'Vui lòng chọn xã' : null,
+            ),
+            const SizedBox(height: 12),
+
+            // ── B1: Thôn/Bản → Dropdown theo xã đã chọn ──
+            DropdownButtonFormField<String>(
+              key: ValueKey('village-$_selectedCommune'),
+              initialValue: _selectedVillage,
               decoration: const InputDecoration(
                 labelText: 'Thôn / Bản *',
                 prefixIcon: Icon(Icons.home_outlined),
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập thôn/bản' : null,
+              items: villages.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              onChanged: (v) => setState(() => _selectedVillage = v),
+              validator: (v) => v == null ? 'Vui lòng chọn thôn/bản' : null,
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _communeController,
-                    decoration: const InputDecoration(
-                      labelText: 'Xã *',
-                      prefixIcon: Icon(Icons.location_city_outlined),
-                    ),
-                    validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập xã' : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _districtController,
-                    decoration: const InputDecoration(
-                      labelText: 'Huyện / Thị xã *',
-                      prefixIcon: Icon(Icons.map_outlined),
-                    ),
-                    validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập huyện' : null,
-                  ),
-                ),
-              ],
+
+            // Huyện – readonly vì chỉ quản lý 1 huyện
+            InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'Huyện / Thị xã',
+                prefixIcon: Icon(Icons.map_outlined),
+              ),
+              child: Text(_district, style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
         ),

@@ -17,7 +17,6 @@ class RecordMedicationScreen extends StatefulWidget {
 class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _dosageController = TextEditingController();
-  final _staffController = TextEditingController(text: 'Y sĩ Lê Thu');
   final _notesController = TextEditingController();
   MedicationSchedule? _medicationSchedule;
   DateTime _administeredAt = DateTime.now();
@@ -25,7 +24,6 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
   @override
   void dispose() {
     _dosageController.dispose();
-    _staffController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -51,9 +49,9 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
       medicationId: _medicationSchedule!.id,
       medicationName: _medicationSchedule!.medicationName,
       dosage: _dosageController.text.trim(),
-      administeredBy: _staffController.text.trim(),
+      administeredBy: store.currentUser.fullName,
       administeredAt: _administeredAt,
-      syncStatus: VaccinationSyncStatus.pending,
+      syncStatus: SyncStatus.pending,
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
     );
 
@@ -131,13 +129,21 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
               validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập liều dùng' : null,
             ),
             const SizedBox(height: 14),
-            TextFormField(
-              controller: _staffController,
+            InputDecorator(
               decoration: const InputDecoration(
-                labelText: 'Cán bộ thực hiện *',
+                labelText: 'Cán bộ thực hiện',
                 prefixIcon: Icon(Icons.badge_outlined),
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập tên cán bộ' : null,
+              child: Row(
+                children: [
+                  Expanded(child: Text(store.currentUser.fullName, style: const TextStyle(fontWeight: FontWeight.w600))),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: softGreen, borderRadius: BorderRadius.circular(8)),
+                    child: const Text('Tự động', style: TextStyle(fontSize: 11, color: primaryGreen, fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 14),
             InkWell(

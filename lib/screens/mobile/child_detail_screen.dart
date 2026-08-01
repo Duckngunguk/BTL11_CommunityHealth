@@ -240,6 +240,20 @@ class _VaccinationCard extends StatelessWidget {
 
   final VaccinationRecord record;
 
+  String get _reactionLabel => switch (record.reactionSeverity) {
+    ReactionSeverity.none => 'Không phản ứng',
+    ReactionSeverity.mild => 'Phản ứng nhẹ',
+    ReactionSeverity.moderate => 'Phản ứng trung bình',
+    ReactionSeverity.severe => 'Phản ứng NẶNG',
+  };
+
+  Color get _reactionColor => switch (record.reactionSeverity) {
+    ReactionSeverity.none => const Color(0xFF18794E),
+    ReactionSeverity.mild => const Color(0xFF8A5D00),
+    ReactionSeverity.moderate => const Color(0xFFE67E22),
+    ReactionSeverity.severe => const Color(0xFFB42318),
+  };
+
   @override
   Widget build(BuildContext context) {
     final pending = record.syncStatus == VaccinationSyncStatus.pending;
@@ -290,7 +304,27 @@ class _VaccinationCard extends StatelessWidget {
                   Text('Ngày tiêm: ${formatDate(record.administeredAt)}'),
                   Text('Số lô: ${record.lotNumber}'),
                   Text('Cán bộ tiêm: ${record.administeredBy}'),
-                  if ((record.reactions ?? '').isNotEmpty) Text('Phản ứng: ${record.reactions}'),
+                  if (record.storageTemperature != null)
+                    Row(
+                      children: [
+                        Text('Nhiệt độ: ${record.storageTemperature!.toStringAsFixed(1)}°C'),
+                        const SizedBox(width: 6),
+                        if (record.isColdChainValid)
+                          const Icon(Icons.check_circle, size: 14, color: Color(0xFF18794E))
+                        else
+                          const Icon(Icons.warning_rounded, size: 14, color: Color(0xFFB42318)),
+                      ],
+                    ),
+                  Container(
+                    margin: const EdgeInsets.only(top: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _reactionColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(_reactionLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _reactionColor)),
+                  ),
+                  if ((record.reactions ?? '').isNotEmpty) Text('Ghi chú: ${record.reactions}'),
                 ],
               ),
             ),

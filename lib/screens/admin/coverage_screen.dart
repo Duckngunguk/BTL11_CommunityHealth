@@ -19,7 +19,7 @@ class CoverageScreen extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: Text('Chi tiết xã ${item.name}'),
         content: SizedBox(
-          width: 460,
+          width: MediaQuery.sizeOf(context).width < 500 ? MediaQuery.sizeOf(context).width * 0.8 : 460,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

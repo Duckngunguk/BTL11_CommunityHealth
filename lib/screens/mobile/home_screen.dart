@@ -45,10 +45,10 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           GridView.count(
-            crossAxisCount: 2,
+            crossAxisCount: 3,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.35,
+            childAspectRatio: 0.95,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
@@ -56,6 +56,14 @@ class HomeScreen extends StatelessWidget {
               StatCard(label: 'Trễ lịch', value: '${store.lateCount}', icon: Icons.warning_amber_rounded, background: const Color(0xFFFFE9E7)),
               StatCard(label: 'Sắp đến lịch', value: '${store.dueSoonCount}', icon: Icons.event_available_outlined, background: const Color(0xFFFFF3CD)),
               StatCard(label: 'Chờ đồng bộ', value: '${store.pendingCount}', icon: Icons.cloud_upload_outlined, background: softGreen),
+              StatCard(
+                label: 'Ca nghi nhiễm',
+                value: '${store.diseaseReportCount}',
+                icon: Icons.coronavirus_outlined,
+                background: store.emergencyDiseaseCount > 0 ? const Color(0xFFFFE9E7) : const Color(0xFFF0F8FF),
+                caption: store.emergencyDiseaseCount > 0 ? '${store.emergencyDiseaseCount} ca khẩn cấp' : null,
+              ),
+              StatCard(label: 'Y sĩ phụ trách', value: store.currentUser.fullName.replaceFirst('Y sĩ ', ''), icon: Icons.badge_outlined, background: const Color(0xFFF0F0FF)),
             ],
           ),
           const SizedBox(height: 24),

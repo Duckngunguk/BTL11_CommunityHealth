@@ -108,7 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 children: [
                                   Icon(Icons.cloud_off_rounded, size: 17, color: Colors.black45),
                                   SizedBox(width: 6),
-                                  Text('Có thể đăng nhập bằng dữ liệu đã cache', style: TextStyle(color: Colors.black54)),
+                                  Flexible(
+                                    child: Text('Có thể đăng nhập bằng dữ liệu đã cache', style: TextStyle(color: Colors.black54)),
+                                  ),
                                 ],
                               ),
                             ],
