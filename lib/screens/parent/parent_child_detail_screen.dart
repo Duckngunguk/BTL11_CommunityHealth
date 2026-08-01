@@ -361,7 +361,7 @@ class _ReadOnlyVaccinationCard extends StatelessWidget {
                   Text('Ngày tiêm: ${formatDate(record.administeredAt)}', style: const TextStyle(fontSize: 13)),
                   Text('Số lô: ${record.lotNumber}', style: const TextStyle(fontSize: 13)),
                   Text('Cán bộ tiêm: ${record.administeredBy}', style: const TextStyle(fontSize: 13)),
-                  if (record.reactions.isNotEmpty)
+                  if ((record.reactions ?? '').isNotEmpty)
                     Text('Phản ứng: ${record.reactions}', style: const TextStyle(fontSize: 13)),
                 ],
               ),

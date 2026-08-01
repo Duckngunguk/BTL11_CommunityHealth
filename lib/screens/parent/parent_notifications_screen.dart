@@ -60,8 +60,10 @@ class ParentNotificationsScreen extends StatelessWidget {
             ),
           ),
 
+        const SizedBox(height: 16),
+
         // Hướng dẫn phụ huynh
-        _GuideCard(),
+        const _GuideCard(),
       ],
     );
   }
@@ -70,7 +72,7 @@ class ParentNotificationsScreen extends StatelessWidget {
 enum _NotifType { late, dueSoon }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.child, required this.type});
+  const _NotificationTile({super.key, required this.child, required this.type});
   final ChildProfile child;
   final _NotifType type;
 
@@ -131,7 +133,7 @@ class _NotificationTile extends StatelessWidget {
 }
 
 class _AccountCard extends StatelessWidget {
-  const _AccountCard({required this.onLogout});
+  const _AccountCard({super.key, required this.onLogout});
   final VoidCallback onLogout;
 
   @override
@@ -176,8 +178,17 @@ class _AccountCard extends StatelessWidget {
 }
 
 class _GuideCard extends StatelessWidget {
+  const _GuideCard({super.key});
+
   @override
   Widget build(BuildContext context) {
+    const guideItems = [
+      '• Kiểm tra hồ sơ con thường xuyên để không bỏ lỡ lịch tiêm.',
+      '• Liên hệ trạm y tế xã/phường nếu con bị trễ lịch tiêm.',
+      '• Thông tin trên đây do cán bộ y tế cập nhật và xác minh.',
+      '• Mã QR của con được dùng để cán bộ tra cứu nhanh hồ sơ.',
+    ];
+
     return Card(
       color: const Color(0xFFE8F5E9),
       child: Padding(
@@ -196,15 +207,13 @@ class _GuideCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ...[
-              '• Kiểm tra hồ sơ con thường xuyên để không bỏ lỡ lịch tiêm.',
-              '• Liên hệ trạm y tế xã/phường nếu con bị trễ lịch tiêm.',
-              '• Thông tin trên đây do cán bộ y tế cập nhật và xác minh.',
-              '• Mã QR của con được dùng để cán bộ tra cứu nhanh hồ sơ.',
-            ].map(
+            ...guideItems.map(
               (text) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text(text, style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF1B5E20))),
+                child: Text(
+                  text,
+                  style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF1B5E20)),
+                ),
               ),
             ),
           ],
