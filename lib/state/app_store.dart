@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 
+import '../data/database_helper.dart';
 import '../data/demo_data.dart';
 import '../models/models.dart';
 
@@ -7,7 +9,9 @@ class AppStore extends ChangeNotifier {
   AppStore()
       : children = List<ChildProfile>.from(demoChildren),
         diseaseReports = List<DiseaseReport>.from(demoDiseaseReports),
-        lastSyncAt = DateTime(2026, 7, 23, 16, 40);
+        lastSyncAt = DateTime(2026, 7, 23, 16, 40) {
+    _initLocalDatabase();
+  }
 
   /// Người dùng đang đăng nhập – tự động gán khi login.
   UserProfile currentUser = const UserProfile(
@@ -17,8 +21,8 @@ class AppStore extends ChangeNotifier {
     assignedCommune: 'Tả Phìn',
   );
 
-  final List<ChildProfile> children;
-  final List<DiseaseReport> diseaseReports;
+  List<ChildProfile> children;
+  List<DiseaseReport> diseaseReports;
   bool isOnline = false;
   bool isSyncing = false;
   DateTime lastSyncAt;
@@ -29,6 +33,51 @@ class AppStore extends ChangeNotifier {
 
   /// Phiên bản dữ liệu trên server – giả lập.
   int _serverVersion = 1;
+
+  // ────────────────────────────
+  // Khởi tạo Database SQLite & Seeding
+  // ────────────────────────────
+
+  Future<void> _initLocalDatabase() async {
+    if (kIsWeb) return; // Bỏ qua nếu chạy trên Web
+
+    try {
+      final db = DatabaseHelper.instance;
+      var dbChildren = await db.getAllChildren();
+      var dbReports = await db.getAllDiseaseReports();
+
+      if (dbChildren.isEmpty && dbReports.isEmpty) {
+        // Database rỗng → Thực hiện Seeding dữ liệu mẫu vào SQLite
+        debugPrint("SQLite rỗng. Đang seeding dữ liệu mẫu...");
+        
+        for (final child in demoChildren) {
+          await db.insertChild(child);
+          for (final vac in child.vaccinations) {
+            await db.insertVaccination(vac);
+          }
+          for (final med in child.medications) {
+            await db.insertMedication(med);
+          }
+        }
+        
+        for (final rep in demoDiseaseReports) {
+          await db.insertDiseaseReport(rep);
+        }
+
+        // Tải lại sau khi seed
+        dbChildren = await db.getAllChildren();
+        dbReports = await db.getAllDiseaseReports();
+      }
+
+      children = dbChildren;
+      diseaseReports = dbReports;
+      _localVersion = children.length + diseaseReports.length;
+      notifyListeners();
+      debugPrint("Đã tải dữ liệu thành công từ SQLite.");
+    } catch (e) {
+      debugPrint("Lỗi khởi tạo SQLite local database: $e");
+    }
+  }
 
   // ────────────────────────────
   // Computed properties
@@ -97,43 +146,63 @@ class AppStore extends ChangeNotifier {
   // Quản lý trẻ em
   // ────────────────────────────
 
-  void addChild(ChildProfile child) {
+  Future<void> addChild(ChildProfile child) async {
     children.insert(0, child);
     _localVersion++;
+    
+    if (!kIsWeb) {
+      await DatabaseHelper.instance.insertChild(child);
+    }
     notifyListeners();
   }
 
-  void updateChild(ChildProfile child) {
+  Future<void> updateChild(ChildProfile child) async {
     final index = children.indexWhere((item) => item.id == child.id);
     if (index == -1) return;
     children[index] = child;
     _localVersion++;
+
+    if (!kIsWeb) {
+      await DatabaseHelper.instance.updateChild(child);
+    }
     notifyListeners();
   }
 
-  void deleteChild(String childId) {
+  Future<void> deleteChild(String childId) async {
     children.removeWhere((item) => item.id == childId);
     _localVersion++;
+
+    if (!kIsWeb) {
+      await DatabaseHelper.instance.deleteChild(childId);
+    }
     notifyListeners();
   }
 
-  void addVaccination(String childId, VaccinationRecord record) {
+  Future<void> addVaccination(String childId, VaccinationRecord record) async {
     final index = children.indexWhere((child) => child.id == childId);
     if (index == -1) return;
     children[index] = children[index].copyWith(
       vaccinations: [...children[index].vaccinations, record],
     );
     _localVersion++;
+
+    if (!kIsWeb) {
+      await DatabaseHelper.instance.insertVaccination(record);
+    }
     notifyListeners();
   }
 
-  void addMedication(String childId, MedicationRecord record) {
+  Future<void> addMedication(String childId, MedicationRecord record) async {
     final index = children.indexWhere((child) => child.id == childId);
     if (index == -1) return;
     children[index] = children[index].copyWith(
       medications: [...children[index].medications, record],
     );
     _localVersion++;
+
+    if (!kIsWeb) {
+      await DatabaseHelper.instance.insertMedication(record);
+    }
     notifyListeners();
   }
 
@@ -141,9 +210,13 @@ class AppStore extends ChangeNotifier {
   // Quản lý báo cáo dịch tễ
   // ────────────────────────────
 
-  void addDiseaseReport(DiseaseReport report) {
+  Future<void> addDiseaseReport(DiseaseReport report) async {
     diseaseReports.insert(0, report);
     _localVersion++;
+
+    if (!kIsWeb) {
+      await DatabaseHelper.instance.insertDiseaseReport(report);
+    }
     notifyListeners();
   }
 
@@ -163,25 +236,33 @@ class AppStore extends ChangeNotifier {
     await Future<void>.delayed(const Duration(milliseconds: 300));
 
     if (hasConflict) {
-      // Chiến lược giải quyết xung đột: Last-Write-Wins kèm ghi log
-      // Trong thực tế, cần implement merge strategy phức tạp hơn.
       _serverVersion = _localVersion;
     }
 
     await Future<void>.delayed(const Duration(milliseconds: 800));
 
+    final db = DatabaseHelper.instance;
+
     // Đồng bộ bản ghi tiêm chủng
     for (var i = 0; i < children.length; i++) {
       final updatedVaccinations = children[i].vaccinations.map((record) {
-        return record.syncStatus == SyncStatus.pending
-            ? record.copyWith(syncStatus: SyncStatus.synced)
-            : record;
+        if (record.syncStatus == SyncStatus.pending) {
+          if (!kIsWeb) {
+            db.updateVaccinationSyncStatus(record.id, SyncStatus.synced.name);
+          }
+          return record.copyWith(syncStatus: SyncStatus.synced);
+        }
+        return record;
       }).toList();
 
       final updatedMedications = children[i].medications.map((record) {
-        return record.syncStatus == SyncStatus.pending
-            ? record.copyWith(syncStatus: SyncStatus.synced)
-            : record;
+        if (record.syncStatus == SyncStatus.pending) {
+          if (!kIsWeb) {
+            db.updateMedicationSyncStatus(record.id, SyncStatus.synced.name);
+          }
+          return record.copyWith(syncStatus: SyncStatus.synced);
+        }
+        return record;
       }).toList();
 
       children[i] = children[i].copyWith(
@@ -193,6 +274,9 @@ class AppStore extends ChangeNotifier {
     // Đồng bộ báo cáo dịch tễ
     for (var i = 0; i < diseaseReports.length; i++) {
       if (diseaseReports[i].syncStatus == SyncStatus.pending) {
+        if (!kIsWeb) {
+          await db.updateDiseaseReportSyncStatus(diseaseReports[i].id, SyncStatus.synced.name);
+        }
         diseaseReports[i] = diseaseReports[i].copyWith(syncStatus: SyncStatus.synced);
       }
     }
