@@ -100,7 +100,7 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
             ),
             const SizedBox(height: 18),
             DropdownButtonFormField<VaccineSchedule>(
-              value: _schedule,
+              initialValue: _schedule,
               decoration: const InputDecoration(labelText: 'Vaccine đang tiêm *', prefixIcon: Icon(Icons.vaccines_outlined)),
               items: demoSchedules.map((schedule) => DropdownMenuItem(value: schedule, child: Text(schedule.displayName))).toList(),
               onChanged: (value) => setState(() => _schedule = value),

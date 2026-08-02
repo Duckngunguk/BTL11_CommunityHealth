@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/common_widgets.dart';
 import 'admin_dashboard_screen.dart';
 import 'coverage_screen.dart';
+import 'epidemic_map_screen.dart';
 import 'plan_screen.dart';
 import 'vaccine_catalog_screen.dart';
 
@@ -18,11 +19,23 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   int _index = 0;
 
-  static const titles = ['Tổng quan', 'Tỷ lệ phủ vaccine', 'Kế hoạch tiêm lưu động', 'Danh mục vaccine'];
+  static const titles = [
+    'Tổng quan',
+    'Bản đồ cảnh báo dịch tễ',
+    'Tỷ lệ phủ vaccine',
+    'Kế hoạch tiêm lưu động',
+    'Danh mục vaccine'
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final pages = const [AdminDashboardScreen(), CoverageScreen(), PlanScreen(), VaccineCatalogScreen()];
+    const pages = [
+      AdminDashboardScreen(),
+      EpidemicMapScreen(),
+      CoverageScreen(),
+      PlanScreen(),
+      VaccineCatalogScreen()
+    ];
 
     return Scaffold(
       body: Row(
@@ -46,6 +59,7 @@ class _AdminShellState extends State<AdminShell> {
             ),
             destinations: const [
               NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: Text('Tổng quan')),
+              NavigationRailDestination(icon: Icon(Icons.crisis_alert_outlined), selectedIcon: Icon(Icons.crisis_alert_rounded), label: Text('Bản đồ dịch tễ')),
               NavigationRailDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart_rounded), label: Text('Tỷ lệ phủ')),
               NavigationRailDestination(icon: Icon(Icons.event_note_outlined), selectedIcon: Icon(Icons.event_note_rounded), label: Text('Kế hoạch tiêm')),
               NavigationRailDestination(icon: Icon(Icons.vaccines_outlined), selectedIcon: Icon(Icons.vaccines_rounded), label: Text('Danh mục vaccine')),

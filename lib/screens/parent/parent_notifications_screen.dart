@@ -72,7 +72,7 @@ class ParentNotificationsScreen extends StatelessWidget {
 enum _NotifType { late, dueSoon }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({super.key, required this.child, required this.type});
+  const _NotificationTile({required this.child, required this.type});
   final ChildProfile child;
   final _NotifType type;
 
@@ -133,7 +133,7 @@ class _NotificationTile extends StatelessWidget {
 }
 
 class _AccountCard extends StatelessWidget {
-  const _AccountCard({super.key, required this.onLogout});
+  const _AccountCard({required this.onLogout});
   final VoidCallback onLogout;
 
   @override
@@ -178,7 +178,7 @@ class _AccountCard extends StatelessWidget {
 }
 
 class _GuideCard extends StatelessWidget {
-  const _GuideCard({super.key});
+  const _GuideCard();
 
   @override
   Widget build(BuildContext context) {

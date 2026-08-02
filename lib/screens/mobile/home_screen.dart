@@ -53,8 +53,8 @@ class HomeScreen extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             children: [
               StatCard(label: 'Tổng số trẻ', value: '${store.children.length}', icon: Icons.groups_2_outlined, background: const Color(0xFFE7F0FF)),
-              StatCard(label: 'Trễ lịch', value: '${store.lateCount}', icon: Icons.warning_amber_rounded, background: const Color(0xFFFFE9E7)),
-              StatCard(label: 'Sắp đến lịch', value: '${store.dueSoonCount}', icon: Icons.event_available_outlined, background: const Color(0xFFFFF3CD)),
+              StatCard(label: 'Ca bệnh nghi ngờ', value: '${store.suspectedDiseaseCount}', icon: Icons.coronavirus_rounded, background: const Color(0xFFFFE9E7)),
+              StatCard(label: 'Trễ lịch tiêm', value: '${store.lateCount}', icon: Icons.warning_amber_rounded, background: const Color(0xFFFFF3CD)),
               StatCard(label: 'Chờ đồng bộ', value: '${store.pendingCount}', icon: Icons.cloud_upload_outlined, background: softGreen),
             ],
           ),

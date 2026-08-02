@@ -6,9 +6,11 @@ import '../models/models.dart';
 class AppStore extends ChangeNotifier {
   AppStore()
       : children = List<ChildProfile>.from(demoChildren),
+        diseaseReports = List<DiseaseReport>.from(demoDiseaseReports),
         lastSyncAt = DateTime(2026, 7, 23, 16, 40);
 
   final List<ChildProfile> children;
+  final List<DiseaseReport> diseaseReports;
   bool isOnline = false;
   bool isSyncing = false;
   DateTime lastSyncAt;
@@ -22,7 +24,10 @@ class AppStore extends ChangeNotifier {
         .expand((child) => child.medications)
         .where((record) => record.syncStatus == VaccinationSyncStatus.pending)
         .length;
-    return pendingVaccines + pendingMedications;
+    final pendingDiseaseReports = diseaseReports
+        .where((report) => report.syncStatus == VaccinationSyncStatus.pending)
+        .length;
+    return pendingVaccines + pendingMedications + pendingDiseaseReports;
   }
 
   int get lateCount => children
@@ -31,6 +36,10 @@ class AppStore extends ChangeNotifier {
 
   int get dueSoonCount => children
       .where((child) => child.status == ChildVaccinationStatus.dueSoon)
+      .length;
+
+  int get suspectedDiseaseCount => diseaseReports
+      .where((r) => r.status == 'Nghi ngờ' || r.status == 'Đã xác minh')
       .length;
 
   void setOnline(bool value) {
@@ -73,6 +82,18 @@ class AppStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addDiseaseReport(DiseaseReport report) {
+    diseaseReports.insert(0, report);
+    notifyListeners();
+  }
+
+  void updateDiseaseReportStatus(String reportId, String newStatus) {
+    final index = diseaseReports.indexWhere((r) => r.id == reportId);
+    if (index == -1) return;
+    diseaseReports[index] = diseaseReports[index].copyWith(status: newStatus);
+    notifyListeners();
+  }
+
   Future<void> syncPending() async {
     if (!isOnline || pendingCount == 0) return;
     isSyncing = true;
@@ -96,6 +117,12 @@ class AppStore extends ChangeNotifier {
         vaccinations: updatedVaccinations,
         medications: updatedMedications,
       );
+    }
+
+    for (var i = 0; i < diseaseReports.length; i++) {
+      if (diseaseReports[i].syncStatus == VaccinationSyncStatus.pending) {
+        diseaseReports[i] = diseaseReports[i].copyWith(syncStatus: VaccinationSyncStatus.synced);
+      }
     }
 
     lastSyncAt = DateTime.now();

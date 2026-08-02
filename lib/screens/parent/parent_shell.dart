@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../widgets/common_widgets.dart';
 import 'parent_home_screen.dart';
 import 'parent_notifications_screen.dart';
 

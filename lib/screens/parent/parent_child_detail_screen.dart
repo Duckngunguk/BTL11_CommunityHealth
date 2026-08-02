@@ -33,13 +33,13 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Hồ sơ sức khỏe'),
-        actions: [
+        actions: const [
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: EdgeInsets.only(right: 12),
             child: Chip(
-              avatar: const Icon(Icons.visibility_outlined, size: 16),
-              label: const Text('Chỉ xem', style: TextStyle(fontSize: 12)),
-              backgroundColor: const Color(0xFFF0F4F8),
+              avatar: Icon(Icons.visibility_outlined, size: 16),
+              label: Text('Chỉ xem', style: TextStyle(fontSize: 12)),
+              backgroundColor: Color(0xFFF0F4F8),
               side: BorderSide.none,
             ),
           ),

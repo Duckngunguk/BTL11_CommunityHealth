@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 import 'children_screen.dart';
+import 'disease_report_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 import 'sync_screen.dart';
@@ -25,6 +26,7 @@ class _MobileShellState extends State<MobileShell> {
     final pages = [
       HomeScreen(onOpenChildren: () => setState(() => _index = 1)),
       const ChildrenScreen(),
+      const DiseaseReportScreen(),
       const SyncScreen(),
       SettingsScreen(onLogout: widget.onLogout),
     ];
@@ -35,7 +37,7 @@ class _MobileShellState extends State<MobileShell> {
           children: [
             const Icon(Icons.health_and_safety_rounded, color: primaryGreen),
             const SizedBox(width: 8),
-            Text(['Tổng quan', 'Trẻ em', 'Đồng bộ', 'Cài đặt'][_index]),
+            Text(['Tổng quan', 'Trẻ em', 'Giám sát dịch', 'Đồng bộ', 'Cài đặt'][_index]),
           ],
         ),
         actions: [
@@ -61,6 +63,7 @@ class _MobileShellState extends State<MobileShell> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Trang chủ'),
           NavigationDestination(icon: Icon(Icons.child_care_outlined), selectedIcon: Icon(Icons.child_care_rounded), label: 'Trẻ em'),
+          NavigationDestination(icon: Icon(Icons.coronavirus_outlined), selectedIcon: Icon(Icons.coronavirus_rounded), label: 'Báo dịch'),
           NavigationDestination(icon: Icon(Icons.sync_outlined), selectedIcon: Icon(Icons.sync_rounded), label: 'Đồng bộ'),
           NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings_rounded), label: 'Cài đặt'),
         ],

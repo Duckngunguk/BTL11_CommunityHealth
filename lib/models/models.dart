@@ -218,3 +218,62 @@ class CommuneCoverage {
   int get missing => total - fully;
 }
 
+enum DiseaseSeverity { mild, moderate, severe }
+
+class DiseaseReport {
+  const DiseaseReport({
+    required this.id,
+    required this.patientName,
+    required this.diseaseType,
+    required this.village,
+    required this.commune,
+    required this.district,
+    required this.reportedAt,
+    required this.reportedBy,
+    required this.symptoms,
+    required this.syncStatus,
+    this.childId,
+    this.status = 'Nghi ngờ',
+    this.severity = DiseaseSeverity.moderate,
+    this.notes,
+  });
+
+  final String id;
+  final String? childId;
+  final String patientName;
+  final String diseaseType;
+  final String village;
+  final String commune;
+  final String district;
+  final DateTime reportedAt;
+  final String reportedBy;
+  final String symptoms;
+  final VaccinationSyncStatus syncStatus;
+  final String status;
+  final DiseaseSeverity severity;
+  final String? notes;
+
+  DiseaseReport copyWith({
+    VaccinationSyncStatus? syncStatus,
+    String? status,
+  }) {
+    return DiseaseReport(
+      id: id,
+      childId: childId,
+      patientName: patientName,
+      diseaseType: diseaseType,
+      village: village,
+      commune: commune,
+      district: district,
+      reportedAt: reportedAt,
+      reportedBy: reportedBy,
+      symptoms: symptoms,
+      syncStatus: syncStatus ?? this.syncStatus,
+      status: status ?? this.status,
+      severity: severity,
+      notes: notes,
+    );
+  }
+}
+
+
