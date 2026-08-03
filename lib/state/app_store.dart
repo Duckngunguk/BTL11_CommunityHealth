@@ -10,12 +10,16 @@ class AppStore extends ChangeNotifier {
         diseaseReports = List<DiseaseReport>.from(demoDiseaseReports),
         users = List<UserModel>.from(demoUsers),
         auditLogs = List<SystemAuditLog>.from(demoAuditLogs),
+        vaccineSchedules = List<VaccineSchedule>.from(demoSchedules),
+        medicationSchedules = List<MedicationSchedule>.from(demoMedicationSchedules),
         lastSyncAt = DateTime(2026, 7, 23, 16, 40);
 
   final List<ChildProfile> children;
   final List<DiseaseReport> diseaseReports;
   final List<UserModel> users;
   final List<SystemAuditLog> auditLogs;
+  final List<VaccineSchedule> vaccineSchedules;
+  final List<MedicationSchedule> medicationSchedules;
   
   UserModel? currentUser;
   bool isOnline = false;
@@ -179,6 +183,18 @@ class AppStore extends ChangeNotifier {
       medications: [...children[index].medications, record],
     );
     addAuditLog('Ghi nhận thuốc uống', 'Cho trẻ uống bổ sung ${record.medicationName}');
+    notifyListeners();
+  }
+
+  void addVaccineSchedule(VaccineSchedule schedule) {
+    vaccineSchedules.add(schedule);
+    addAuditLog('Thêm lịch vaccine', 'Thêm vaccine "${schedule.vaccineName}" Mũi ${schedule.doseNumber} vào danh mục chuẩn');
+    notifyListeners();
+  }
+
+  void addMedicationSchedule(MedicationSchedule schedule) {
+    medicationSchedules.add(schedule);
+    addAuditLog('Thêm danh mục thuốc uống', 'Thêm "${schedule.medicationName}" vào danh mục thuốc uống & bổ sung');
     notifyListeners();
   }
 

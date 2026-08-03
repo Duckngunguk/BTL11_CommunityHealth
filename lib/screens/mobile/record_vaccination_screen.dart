@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../data/demo_data.dart';
 import '../../models/models.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
@@ -102,7 +101,7 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
             DropdownButtonFormField<VaccineSchedule>(
               initialValue: _schedule,
               decoration: const InputDecoration(labelText: 'Vaccine đang tiêm *', prefixIcon: Icon(Icons.vaccines_outlined)),
-              items: demoSchedules.map((schedule) => DropdownMenuItem(value: schedule, child: Text(schedule.displayName))).toList(),
+              items: store.vaccineSchedules.map((schedule) => DropdownMenuItem(value: schedule, child: Text(schedule.displayName))).toList(),
               onChanged: (value) => setState(() => _schedule = value),
               validator: (value) => value == null ? 'Vui lòng chọn vaccine' : null,
             ),
