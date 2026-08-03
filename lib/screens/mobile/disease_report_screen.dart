@@ -586,7 +586,7 @@ class _AddDiseaseReportSheetState extends State<_AddDiseaseReportSheet> {
                       commune: _selectedCommune,
                       district: 'Sa Pa',
                       reportedAt: DateTime.now(),
-                      reportedBy: 'Y sĩ Lê Thu',
+                      reportedBy: store.currentUser?.fullName ?? 'Y sĩ Lê Thu',
                       symptoms: _symptomsController.text.trim(),
                       syncStatus: isOnline ? VaccinationSyncStatus.synced : VaccinationSyncStatus.pending,
                       status: 'Nghi ngờ',

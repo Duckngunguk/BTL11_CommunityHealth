@@ -28,7 +28,7 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Xin chào, Y sĩ Lê Thu', style: TextStyle(color: Colors.white70)),
+                Text('Xin chào, ${store.currentUser?.fullName ?? 'Y sĩ Lê Thu'}', style: const TextStyle(color: Colors.white70)),
                 const SizedBox(height: 8),
                 const Text(
                   'Hôm nay có 2 trẻ cần được ưu tiên tiêm.',

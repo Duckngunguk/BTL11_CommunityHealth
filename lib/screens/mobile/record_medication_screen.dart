@@ -16,10 +16,16 @@ class RecordMedicationScreen extends StatefulWidget {
 class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _dosageController = TextEditingController();
-  final _staffController = TextEditingController(text: 'Y sĩ Lê Thu');
+  late final TextEditingController _staffController;
   final _notesController = TextEditingController();
   MedicationSchedule? _medicationSchedule;
   DateTime _administeredAt = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _staffController = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -67,6 +73,9 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final child = store.children.firstWhere((item) => item.id == widget.childId);
+    if (_staffController.text.isEmpty && store.currentUser != null) {
+      _staffController.text = store.currentUser!.fullName;
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ghi nhận uống thuốc')),
