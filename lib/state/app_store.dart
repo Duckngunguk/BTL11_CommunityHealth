@@ -3,28 +3,49 @@ import 'package:flutter/widgets.dart';
 import '../data/api/api_client.dart';
 import '../data/demo_data.dart';
 import '../models/models.dart';
+import '../data/sqlite_helper.dart';
+import '../services/firebase_sync_service.dart';
 
 class AppStore extends ChangeNotifier {
-  AppStore()
-      : children = List<ChildProfile>.from(demoChildren),
-        diseaseReports = List<DiseaseReport>.from(demoDiseaseReports),
-        users = List<UserModel>.from(demoUsers),
-        auditLogs = List<SystemAuditLog>.from(demoAuditLogs),
-        vaccineSchedules = List<VaccineSchedule>.from(demoSchedules),
-        medicationSchedules = List<MedicationSchedule>.from(demoMedicationSchedules),
-        lastSyncAt = DateTime(2026, 7, 23, 16, 40);
+  AppStore() {
+    _initData();
+  }
 
-  final List<ChildProfile> children;
-  final List<DiseaseReport> diseaseReports;
-  final List<UserModel> users;
-  final List<SystemAuditLog> auditLogs;
-  final List<VaccineSchedule> vaccineSchedules;
-  final List<MedicationSchedule> medicationSchedules;
-  
+  List<ChildProfile> children = [];
+  List<DiseaseReport> diseaseReports = [];
+  List<UserModel> users = [];
+  List<SystemAuditLog> auditLogs = [];
+  List<VaccineSchedule> vaccineSchedules = List<VaccineSchedule>.from(demoSchedules);
+  List<MedicationSchedule> medicationSchedules = List<MedicationSchedule>.from(demoMedicationSchedules);
   UserModel? currentUser;
   bool isOnline = false;
   bool isSyncing = false;
-  DateTime lastSyncAt;
+  DateTime lastSyncAt = DateTime(2026, 7, 23, 16, 40);
+
+  // Initialize data from SQLite, fallback to demo data if it fails
+  Future<void> _initData() async {
+    try {
+      final dbUsers = await SqliteHelper.instance.getUsers();
+      final dbChildren = await SqliteHelper.instance.getChildren();
+      final dbReports = await SqliteHelper.instance.getDiseaseReports();
+      final dbLogs = await SqliteHelper.instance.getAuditLogs();
+
+      users = dbUsers;
+      children = dbChildren;
+      diseaseReports = dbReports;
+      auditLogs = dbLogs;
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading data from SQLite: $e');
+      // Fallback
+      children = List<ChildProfile>.from(demoChildren);
+      diseaseReports = List<DiseaseReport>.from(demoDiseaseReports);
+      users = List<UserModel>.from(demoUsers);
+      auditLogs = List<SystemAuditLog>.from(demoAuditLogs);
+      notifyListeners();
+    }
+  }
 
   int get pendingCount {
     final pendingVaccines = children
@@ -53,16 +74,15 @@ class AppStore extends ChangeNotifier {
       .where((r) => r.status == 'Nghi ngờ' || r.status == 'Đã xác minh')
       .length;
 
-  int get pendingUserApprovals => users
-      .where((u) => u.status == UserAccountStatus.pendingApproval)
-      .length;
+  int get pendingUserApprovals =>
+      users.where((u) => u.status == UserAccountStatus.pendingApproval).length;
 
   void setOnline(bool value) {
     isOnline = value;
     notifyListeners();
   }
 
-  void addAuditLog(String action, String details) {
+  Future<void> addAuditLog(String action, String details) async {
     final newLog = SystemAuditLog(
       id: 'LOG-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
       action: action,
@@ -77,6 +97,12 @@ class AppStore extends ChangeNotifier {
     );
     auditLogs.insert(0, newLog);
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.insertAuditLog(newLog);
+    } catch (e) {
+      debugPrint('Error inserting audit log: $e');
+    }
   }
 
   Future<ApiResponse<UserModel>> registerUser({
@@ -91,9 +117,12 @@ class AppStore extends ChangeNotifier {
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
     // Check if username or email exists
-    final exists = users.any((u) => u.username.toLowerCase() == username.toLowerCase() || u.email.toLowerCase() == email.toLowerCase());
+    final exists = users.any((u) =>
+        u.username.toLowerCase() == username.toLowerCase() ||
+        u.email.toLowerCase() == email.toLowerCase());
     if (exists) {
-      return ApiResponse.error(400, 'Tên đăng nhập hoặc email đã tồn tại trên hệ thống!');
+      return ApiResponse.error(
+          400, 'Tên đăng nhập hoặc email đã tồn tại trên hệ thống!');
     }
 
     final newUser = UserModel(
@@ -111,79 +140,159 @@ class AppStore extends ChangeNotifier {
     );
 
     users.insert(0, newUser);
-    addAuditLog('Đăng ký tài khoản', 'Đăng ký tài khoản mới "${newUser.username}" với vai trò ${role.name}');
     notifyListeners();
 
-    return ApiResponse.created(newUser, message: 'Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.');
+    try {
+      await SqliteHelper.instance.insertUser(newUser);
+    } catch (e) {
+      debugPrint('Error saving registered user: $e');
+    }
+
+    await addAuditLog('Đăng ký tài khoản',
+        'Đăng ký tài khoản mới "${newUser.username}" với vai trò ${role.name}');
+
+    return ApiResponse.created(newUser,
+        message:
+            'Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.');
   }
 
-  void approveUser(String userId) {
+  Future<void> approveUser(String userId) async {
     final index = users.indexWhere((u) => u.id == userId);
     if (index == -1) return;
     final u = users[index];
     users[index] = u.copyWith(status: UserAccountStatus.active);
-    addAuditLog('Phê duyệt tài khoản', 'Admin đã phê duyệt tài khoản Cán bộ Y tế "${u.fullName}" (${u.username})');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance
+          .updateUserStatus(userId, UserAccountStatus.active.name);
+    } catch (e) {
+      debugPrint('Error approving user: $e');
+    }
+
+    await addAuditLog('Phê duyệt tài khoản',
+        'Admin đã phê duyệt tài khoản Cán bộ Y tế "${u.fullName}" (${u.username})');
   }
 
-  void rejectUser(String userId) {
+  Future<void> rejectUser(String userId) async {
     final index = users.indexWhere((u) => u.id == userId);
     if (index == -1) return;
     final u = users[index];
     users.removeAt(index);
-    addAuditLog('Từ chối tài khoản', 'Admin đã từ chối đơn đăng ký tài khoản "${u.fullName}" (${u.username})');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.deleteUser(userId);
+    } catch (e) {
+      debugPrint('Error rejecting user: $e');
+    }
+
+    await addAuditLog('Từ chối tài khoản',
+        'Admin đã từ chối đơn đăng ký tài khoản "${u.fullName}" (${u.username})');
   }
 
-  void toggleUserStatus(String userId) {
+  Future<void> toggleUserStatus(String userId) async {
     final index = users.indexWhere((u) => u.id == userId);
     if (index == -1) return;
     final u = users[index];
-    final newStatus = u.status == UserAccountStatus.active ? UserAccountStatus.locked : UserAccountStatus.active;
+    final newStatus = u.status == UserAccountStatus.active
+        ? UserAccountStatus.locked
+        : UserAccountStatus.active;
     users[index] = u.copyWith(status: newStatus);
-    addAuditLog('Thay đổi trạng thái tài khoản', 'Chuyển tài khoản "${u.username}" sang trạng thái ${newStatus.name}');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.updateUserStatus(userId, newStatus.name);
+    } catch (e) {
+      debugPrint('Error toggling user status: $e');
+    }
+
+    await addAuditLog('Thay đổi trạng thái tài khoản',
+        'Chuyển tài khoản "${u.username}" sang trạng thái ${newStatus.name}');
   }
 
-  void addChild(ChildProfile child) {
+  Future<void> addChild(ChildProfile child) async {
     children.insert(0, child);
-    addAuditLog('Thêm hồ sơ trẻ', 'Tạo hồ sơ mới cho trẻ "${child.fullName}" tại ${child.village}');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.insertChild(child);
+    } catch (e) {
+      debugPrint('Error adding child to SQLite: $e');
+    }
+
+    await addAuditLog('Thêm hồ sơ trẻ',
+        'Tạo hồ sơ mới cho trẻ "${child.fullName}" tại ${child.village}');
   }
 
-  void updateChild(ChildProfile child) {
+  Future<void> updateChild(ChildProfile child) async {
     final index = children.indexWhere((item) => item.id == child.id);
     if (index == -1) return;
     children[index] = child;
-    addAuditLog('Chỉnh sửa hồ sơ trẻ', 'Cập nhật thông tin trẻ "${child.fullName}"');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.updateChild(child);
+    } catch (e) {
+      debugPrint('Error updating child in SQLite: $e');
+    }
+
+    await addAuditLog(
+        'Chỉnh sửa hồ sơ trẻ', 'Cập nhật thông tin trẻ "${child.fullName}"');
   }
 
-  void deleteChild(String childId) {
-    final child = children.firstWhere((item) => item.id == childId);
-    children.removeWhere((item) => item.id == childId);
-    addAuditLog('Xóa hồ sơ trẻ', 'Đã xóa hồ sơ trẻ "${child.fullName}"');
+  Future<void> deleteChild(String childId) async {
+    final childIndex = children.indexWhere((item) => item.id == childId);
+    if (childIndex == -1) return;
+    final child = children[childIndex];
+    children.removeAt(childIndex);
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.deleteChild(childId);
+    } catch (e) {
+      debugPrint('Error deleting child in SQLite: $e');
+    }
+
+    await addAuditLog('Xóa hồ sơ trẻ', 'Đã xóa hồ sơ trẻ "${child.fullName}"');
   }
 
-  void addVaccination(String childId, VaccinationRecord record) {
+  Future<void> addVaccination(String childId, VaccinationRecord record) async {
     final index = children.indexWhere((child) => child.id == childId);
     if (index == -1) return;
     children[index] = children[index].copyWith(
       vaccinations: [...children[index].vaccinations, record],
     );
-    addAuditLog('Ghi nhận tiêm chủng', 'Thêm mũi tiêm ${record.vaccineName} cho trẻ');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.insertVaccination(record);
+      await SqliteHelper.instance.updateChild(children[index]);
+    } catch (e) {
+      debugPrint('Error adding vaccination: $e');
+    }
+
+    await addAuditLog(
+        'Ghi nhận tiêm chủng', 'Thêm mũi tiêm ${record.vaccineName} cho trẻ');
   }
 
-  void addMedication(String childId, MedicationRecord record) {
+  Future<void> addMedication(String childId, MedicationRecord record) async {
     final index = children.indexWhere((child) => child.id == childId);
     if (index == -1) return;
     children[index] = children[index].copyWith(
       medications: [...children[index].medications, record],
     );
-    addAuditLog('Ghi nhận thuốc uống', 'Cho trẻ uống bổ sung ${record.medicationName}');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.insertMedication(record);
+      await SqliteHelper.instance.updateChild(children[index]);
+    } catch (e) {
+      debugPrint('Error adding medication: $e');
+    }
+
+    await addAuditLog(
+        'Ghi nhận thuốc uống', 'Cho trẻ uống bổ sung ${record.medicationName}');
   }
 
   void addVaccineSchedule(VaccineSchedule schedule) {
@@ -198,55 +307,93 @@ class AppStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addDiseaseReport(DiseaseReport report) {
+  Future<void> addDiseaseReport(DiseaseReport report) async {
     diseaseReports.insert(0, report);
-    addAuditLog('Khai báo dịch bệnh', 'Báo cáo ca bệnh nghi ngờ ${report.diseaseType} tại ${report.village}');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance.insertDiseaseReport(report);
+    } catch (e) {
+      debugPrint('Error adding disease report: $e');
+    }
+
+    await addAuditLog('Khai báo dịch bệnh',
+        'Báo cáo ca bệnh nghi ngờ ${report.diseaseType} tại ${report.village}');
   }
 
-  void updateDiseaseReportStatus(String reportId, String newStatus) {
+  Future<void> updateDiseaseReportStatus(
+      String reportId, String newStatus) async {
     final index = diseaseReports.indexWhere((r) => r.id == reportId);
     if (index == -1) return;
     diseaseReports[index] = diseaseReports[index].copyWith(status: newStatus);
-    addAuditLog('Cập nhật khoanh vùng dịch', 'Chuyển trạng thái ca bệnh ${diseaseReports[index].diseaseType} sang "$newStatus"');
     notifyListeners();
+
+    try {
+      await SqliteHelper.instance
+          .updateDiseaseReportStatus(reportId, newStatus);
+    } catch (e) {
+      debugPrint('Error updating disease report status: $e');
+    }
+
+    await addAuditLog('Cập nhật khoanh vùng dịch',
+        'Chuyển trạng thái ca bệnh ${diseaseReports[index].diseaseType} sang "$newStatus"');
   }
 
   Future<void> syncPending() async {
     if (!isOnline || pendingCount == 0) return;
     isSyncing = true;
     notifyListeners();
-    await Future<void>.delayed(const Duration(milliseconds: 1100));
 
-    for (var i = 0; i < children.length; i++) {
-      final updatedVaccinations = children[i].vaccinations.map((record) {
-        return record.syncStatus == VaccinationSyncStatus.pending
-            ? record.copyWith(syncStatus: VaccinationSyncStatus.synced)
-            : record;
-      }).toList();
-
-      final updatedMedications = children[i].medications.map((record) {
-        return record.syncStatus == VaccinationSyncStatus.pending
-            ? record.copyWith(syncStatus: VaccinationSyncStatus.synced)
-            : record;
-      }).toList();
-
-      children[i] = children[i].copyWith(
-        vaccinations: updatedVaccinations,
-        medications: updatedMedications,
-      );
-    }
-
-    for (var i = 0; i < diseaseReports.length; i++) {
-      if (diseaseReports[i].syncStatus == VaccinationSyncStatus.pending) {
-        diseaseReports[i] = diseaseReports[i].copyWith(syncStatus: VaccinationSyncStatus.synced);
+    try {
+      // Find and sync pending vaccinations
+      for (var child in children) {
+        for (var record in child.vaccinations) {
+          if (record.syncStatus == VaccinationSyncStatus.pending) {
+            final success = await FirebaseSyncService.instance
+                .syncVaccinationRecord(record);
+            if (success) {
+              await SqliteHelper.instance.updateVaccinationSyncStatus(
+                  record.id, VaccinationSyncStatus.synced.name);
+            }
+          }
+        }
+        for (var record in child.medications) {
+          if (record.syncStatus == VaccinationSyncStatus.pending) {
+            // Simulated local sync update for medication records
+            await SqliteHelper.instance.updateMedicationSyncStatus(
+                record.id, VaccinationSyncStatus.synced.name);
+          }
+        }
       }
-    }
 
-    lastSyncAt = DateTime.now();
-    isSyncing = false;
-    addAuditLog('Đồng bộ dữ liệu', 'Đồng bộ thành công dữ liệu ngoại tuyến lên Firestore Server');
-    notifyListeners();
+      // Find and sync pending disease reports
+      for (var report in diseaseReports) {
+        if (report.syncStatus == VaccinationSyncStatus.pending) {
+          final success =
+              await FirebaseSyncService.instance.syncDiseaseReport(report);
+          if (success) {
+            await SqliteHelper.instance.updateDiseaseReportSyncStatus(
+                report.id, VaccinationSyncStatus.synced.name);
+          }
+        }
+      }
+
+      // Reload lists from SQLite database to pick up updated sync statuses
+      final dbChildren = await SqliteHelper.instance.getChildren();
+      final dbReports = await SqliteHelper.instance.getDiseaseReports();
+
+      children = dbChildren;
+      diseaseReports = dbReports;
+
+      lastSyncAt = DateTime.now();
+      await addAuditLog('Đồng bộ dữ liệu',
+          'Đồng bộ thành công dữ liệu ngoại tuyến lên Firestore Server');
+    } catch (e) {
+      debugPrint('Error syncing data: $e');
+    } finally {
+      isSyncing = false;
+      notifyListeners();
+    }
   }
 }
 
@@ -263,4 +410,3 @@ class AppScope extends InheritedNotifier<AppStore> {
     return scope!.notifier!;
   }
 }
-

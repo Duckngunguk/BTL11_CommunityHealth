@@ -129,20 +129,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                               ),
                               const SizedBox(height: 20),
-                              const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              const Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   Icon(Icons.cloud_off_rounded, size: 17, color: Colors.black45),
                                   SizedBox(width: 6),
-                                  Text('Hỗ trợ đăng nhập với dữ liệu đã lưu ngoại tuyến', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                                  Text('Hỗ trợ đăng nhập với dữ liệu đã lưu ngoại tuyến', style: TextStyle(color: Colors.black54, fontSize: 13), textAlign: TextAlign.center),
                                 ],
                               ),
                               const SizedBox(height: 20),
                               const Divider(height: 1),
                               const SizedBox(height: 16),
                               // Nút Đăng ký tài khoản mới
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   const Text('Chưa có tài khoản? ', style: TextStyle(color: Colors.black54)),
                                   GestureDetector(
