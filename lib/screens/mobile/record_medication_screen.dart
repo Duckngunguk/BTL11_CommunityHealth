@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../data/demo_data.dart';
 import '../../models/models.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
@@ -102,7 +101,7 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
                 labelText: 'Thuốc / Bổ sung đường uống *',
                 prefixIcon: Icon(Icons.medication_liquid_outlined),
               ),
-              items: demoMedicationSchedules
+              items: store.medicationSchedules
                   .map((item) => DropdownMenuItem(
                         value: item,
                         child: Text('${item.medicationName} (${item.recommendedAge})'),

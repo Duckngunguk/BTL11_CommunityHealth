@@ -15,7 +15,8 @@ class AppStore extends ChangeNotifier {
   List<DiseaseReport> diseaseReports = [];
   List<UserModel> users = [];
   List<SystemAuditLog> auditLogs = [];
-
+  List<VaccineSchedule> vaccineSchedules = List<VaccineSchedule>.from(demoSchedules);
+  List<MedicationSchedule> medicationSchedules = List<MedicationSchedule>.from(demoMedicationSchedules);
   UserModel? currentUser;
   bool isOnline = false;
   bool isSyncing = false;
@@ -292,6 +293,18 @@ class AppStore extends ChangeNotifier {
 
     await addAuditLog(
         'Ghi nhận thuốc uống', 'Cho trẻ uống bổ sung ${record.medicationName}');
+  }
+
+  void addVaccineSchedule(VaccineSchedule schedule) {
+    vaccineSchedules.add(schedule);
+    addAuditLog('Thêm lịch vaccine', 'Thêm vaccine "${schedule.vaccineName}" Mũi ${schedule.doseNumber} vào danh mục chuẩn');
+    notifyListeners();
+  }
+
+  void addMedicationSchedule(MedicationSchedule schedule) {
+    medicationSchedules.add(schedule);
+    addAuditLog('Thêm danh mục thuốc uống', 'Thêm "${schedule.medicationName}" vào danh mục thuốc uống & bổ sung');
+    notifyListeners();
   }
 
   Future<void> addDiseaseReport(DiseaseReport report) async {
