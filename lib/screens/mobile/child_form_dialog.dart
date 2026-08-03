@@ -18,13 +18,13 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
   late final TextEditingController _fullNameController;
   late final TextEditingController _motherNameController;
   late final TextEditingController _motherPhoneController;
-  late final TextEditingController _villageController;
-  late final TextEditingController _communeController;
   late final TextEditingController _districtController;
   late final TextEditingController _qrCodeController;
 
   late DateTime _dob;
   late String _gender;
+  late String _selectedCommune;
+  late String _selectedVillage;
 
   bool get _isEditing => widget.childToEdit != null;
 
@@ -35,13 +35,21 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     _fullNameController = TextEditingController(text: child?.fullName ?? '');
     _motherNameController = TextEditingController(text: child?.motherName ?? '');
     _motherPhoneController = TextEditingController(text: child?.motherPhone ?? '');
-    _villageController = TextEditingController(text: child?.village ?? 'Bản Nậm Lùng');
-    _communeController = TextEditingController(text: child?.commune ?? 'Tả Phìn');
     _districtController = TextEditingController(text: child?.district ?? 'Sa Pa');
     _qrCodeController = TextEditingController(text: child?.qrCode ?? '');
 
     _dob = child?.dateOfBirth ?? DateTime.now().subtract(const Duration(days: 90));
     _gender = child?.gender ?? 'Nam';
+
+    // Cascade dropdown values initialization
+    _selectedCommune = child?.commune ?? 'Tả Phìn';
+    _selectedVillage = child?.village ?? 'Bản Nậm Lùng';
+    if (!kVillagesByCommune.containsKey(_selectedCommune)) {
+      _selectedCommune = 'Tả Phìn';
+    }
+    if (!kVillagesByCommune[_selectedCommune]!.contains(_selectedVillage)) {
+      _selectedVillage = kVillagesByCommune[_selectedCommune]!.first;
+    }
   }
 
   @override
@@ -49,8 +57,6 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     _fullNameController.dispose();
     _motherNameController.dispose();
     _motherPhoneController.dispose();
-    _villageController.dispose();
-    _communeController.dispose();
     _districtController.dispose();
     _qrCodeController.dispose();
     super.dispose();
@@ -63,8 +69,8 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     final fullName = _fullNameController.text.trim();
     final motherName = _motherNameController.text.trim();
     final motherPhone = _motherPhoneController.text.trim();
-    final village = _villageController.text.trim();
-    final commune = _communeController.text.trim();
+    final village = _selectedVillage;
+    final commune = _selectedCommune;
     final district = _districtController.text.trim();
     String qrCode = _qrCodeController.text.trim();
 
@@ -222,39 +228,62 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
             const SizedBox(height: 24),
             Text('Địa chỉ cư trú', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _villageController,
-              decoration: const InputDecoration(
-                labelText: 'Thôn / Bản *',
-                prefixIcon: Icon(Icons.home_outlined),
-              ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập thôn/bản' : null,
-            ),
-            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: _communeController,
+                  child: DropdownButtonFormField<String>(
+                    key: ValueKey('commune-$_selectedCommune'),
+                    initialValue: _selectedCommune,
                     decoration: const InputDecoration(
                       labelText: 'Xã *',
                       prefixIcon: Icon(Icons.location_city_outlined),
                     ),
-                    validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập xã' : null,
+                    items: kVillagesByCommune.keys.map((commune) => DropdownMenuItem(
+                      value: commune,
+                      child: Text(commune),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedCommune = val;
+                          _selectedVillage = kVillagesByCommune[val]!.first;
+                        });
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextFormField(
-                    controller: _districtController,
+                  child: DropdownButtonFormField<String>(
+                    key: ValueKey('village-$_selectedCommune-$_selectedVillage'),
+                    initialValue: _selectedVillage,
                     decoration: const InputDecoration(
-                      labelText: 'Huyện / Thị xã *',
-                      prefixIcon: Icon(Icons.map_outlined),
+                      labelText: 'Thôn / Bản *',
+                      prefixIcon: Icon(Icons.home_outlined),
                     ),
-                    validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập huyện' : null,
+                    items: kVillagesByCommune[_selectedCommune]!.map((village) => DropdownMenuItem(
+                      value: village,
+                      child: Text(village),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedVillage = val;
+                        });
+                      }
+                    },
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _districtController,
+              decoration: const InputDecoration(
+                labelText: 'Huyện / Thị xã *',
+                prefixIcon: Icon(Icons.map_outlined),
+              ),
+              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập huyện' : null,
             ),
           ],
         ),

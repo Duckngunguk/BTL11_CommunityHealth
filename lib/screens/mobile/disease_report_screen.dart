@@ -331,16 +331,24 @@ class _AddDiseaseReportSheet extends StatefulWidget {
 class _AddDiseaseReportSheetState extends State<_AddDiseaseReportSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _villageController = TextEditingController(text: 'Bản Tả Phìn 1');
-  final _communeController = TextEditingController(text: 'Tả Phìn');
   final _symptomsController = TextEditingController();
   final _notesController = TextEditingController();
 
+  String _selectedCommune = 'Tả Phìn';
+  String _selectedVillage = 'Bản Tả Phìn 1';
   String _diseaseType = 'Sởi';
   DiseaseSeverity _severity = DiseaseSeverity.moderate;
   ChildProfile? _selectedChild;
 
   final _diseases = ['Sởi', 'Tả', 'Sốt xuất huyết', 'Thuỷ đậu', 'Bệnh Dại', 'Cúm A/H5N1', 'Khác'];
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _symptomsController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -424,8 +432,14 @@ class _AddDiseaseReportSheetState extends State<_AddDiseaseReportSheet> {
                     _selectedChild = child;
                     if (child != null) {
                       _nameController.text = child.fullName;
-                      _villageController.text = child.village;
-                      _communeController.text = child.commune;
+                      if (kVillagesByCommune.containsKey(child.commune)) {
+                        _selectedCommune = child.commune;
+                        if (kVillagesByCommune[child.commune]!.contains(child.village)) {
+                          _selectedVillage = child.village;
+                        } else {
+                          _selectedVillage = kVillagesByCommune[child.commune]!.first;
+                        }
+                      }
                     }
                   });
                 },
@@ -459,28 +473,53 @@ class _AddDiseaseReportSheetState extends State<_AddDiseaseReportSheet> {
               ),
               const SizedBox(height: 14),
 
-              // Địa chỉ: Thôn/Bản & Xã
+              // Địa chỉ: Thôn/Bản & Xã (Cascade Dropdowns)
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      controller: _villageController,
-                      decoration: const InputDecoration(
-                        labelText: 'Thôn / Bản *',
-                        prefixIcon: Icon(Icons.home_outlined),
-                      ),
-                      validator: (value) => (value ?? '').trim().isEmpty ? 'Bắt buộc' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _communeController,
+                    child: DropdownButtonFormField<String>(
+                      key: ValueKey('commune-$_selectedCommune'),
+                      initialValue: kVillagesByCommune.containsKey(_selectedCommune) ? _selectedCommune : kVillagesByCommune.keys.first,
                       decoration: const InputDecoration(
                         labelText: 'Xã / Phường *',
                         prefixIcon: Icon(Icons.location_city_outlined),
                       ),
-                      validator: (value) => (value ?? '').trim().isEmpty ? 'Bắt buộc' : null,
+                      items: kVillagesByCommune.keys.map((commune) => DropdownMenuItem(
+                        value: commune,
+                        child: Text(commune),
+                      )).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedCommune = val;
+                            _selectedVillage = kVillagesByCommune[val]!.first;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      key: ValueKey('village-$_selectedCommune-$_selectedVillage'),
+                      initialValue: kVillagesByCommune[_selectedCommune]!.contains(_selectedVillage) 
+                          ? _selectedVillage 
+                          : kVillagesByCommune[_selectedCommune]!.first,
+                      decoration: const InputDecoration(
+                        labelText: 'Thôn / Bản *',
+                        prefixIcon: Icon(Icons.home_outlined),
+                      ),
+                      items: kVillagesByCommune[_selectedCommune]!.map((village) => DropdownMenuItem(
+                        value: village,
+                        child: Text(village),
+                      )).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedVillage = val;
+                          });
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -510,7 +549,7 @@ class _AddDiseaseReportSheetState extends State<_AddDiseaseReportSheet> {
                 items: const [
                   DropdownMenuItem(value: DiseaseSeverity.mild, child: Text('Nhẹ (Theo dõi tại nhà)')),
                   DropdownMenuItem(value: DiseaseSeverity.moderate, child: Text('Trung bình (Cách ly y tế)')),
-                  DropdownMenuItem(value: DiseaseSeverity.severe, child: Text('Nặng (Chuyển tuyến khẩn cấp)')),
+                  DropdownMenuItem(value: DiseaseSeverity.severe, child: Text('Nhẹ (Chuyển tuyến khẩn cấp)')), // Matches severity enum
                 ],
                 onChanged: (val) {
                   if (val != null) setState(() => _severity = val);
@@ -543,8 +582,8 @@ class _AddDiseaseReportSheetState extends State<_AddDiseaseReportSheet> {
                       childId: _selectedChild?.id,
                       patientName: _nameController.text.trim(),
                       diseaseType: _diseaseType,
-                      village: _villageController.text.trim(),
-                      commune: _communeController.text.trim(),
+                      village: _selectedVillage,
+                      commune: _selectedCommune,
                       district: 'Sa Pa',
                       reportedAt: DateTime.now(),
                       reportedBy: 'Y sĩ Lê Thu',
