@@ -9,25 +9,93 @@
 
 \---
 
-\#\# 📌 THÔNG TIN ĐỊNH DANH DỰ ÁN
+# BÀI TẬP LỚN CUỐI KỲ - BÁO CÁO MẪU HOÀN CHỈNH (QUY TRÌNH OOAD)  
+# BTL11 - **COMMUNITY HEALTH: SỔ TAY TIÊM CHỦNG NGOẠI TUYẾN VÀ GIÁM SÁT DỊCH BỆNH**
 
-\* \*\*Tên đề tài:\*\* **COMMUNITY HEALTH: SỔ TAY TIÊM CHỦNG NGOẠI TUYẾN VÀ GIÁM SÁT DỊCH BỆNH**  
-\* \*\*Mã đề tài:\*\* BTL11  
-\* \*\*Link GitHub Repository:\*\* \[**https://github.com/Duckngunguk/BTL11\_CommunityHealth\]**  
-\* \*\*Link Video Báo cáo OBS Studio (YouTube Unlisted):\*\* \[https://youtu.be/example\_towerhub\_demo\](https://youtu.be/example\_towerhub\_demo)  
-\* \*\*Link File Release APK:\*\* \[https://github.com/tlu-cse441-2026/towerhub\_app/releases/tag/v1.0.0\](https://github.com/tlu-cse441-2026/towerhub\_app/releases/tag/v1.0.0)
+**Học phần:** CSE441 - Phát triển ứng dụng di động (Flutter)    
+**Học kỳ / Năm học:** Học kỳ Hè - Năm học 2025-2026    
+**Giảng viên hướng dẫn:** TS. Kiều Tuấn Dũng  
+**Phương pháp tiếp cận:** Phân tích & Thiết kế Hướng đối tượng (Object-Oriented Analysis & Design - OOAD)    
+**Nhóm thực hiện:** Nhóm 11 (Lớp CSE441_01)  
 
-\---
+---
 
-\#\# 👨‍💻 BẢNG PHÂN CÔNG NHIỆM VỤ & ĐÓNG GÓP THÀNH VIÊN (OOAD ROLES)
+## 📌 THÔNG TIN ĐỊNH DANH DỰ ÁN
 
-| 1 | 2351170595 | Đặng Huy Hoán | Trưởng nhóm  | (System Architect)	Phân tích yêu cầu, thiết kế kiến trúc hệ thống, xây dựng cơ sở dữ liệu, tích hợp Firebase và chức năng đồng bộ dữ liệu, hoàn thành mô hình dữ liệu, chức năng đăng nhập, đồng bộ dữ liệu trực tuyến và ngoại tuyến |	50%  
-| 2 | 2351160511 | Nguyễn Mạnh Đức | Thành viên | (Mobile Developer)  – Tester, Xây dựng giao diện Flutter, phát triển chức năng tìm kiếm trẻ em, quản lý hồ sơ tiêm chủng, kiểm thử ứng dụng, hoàn thiện giao diện, cơ sở dữ liệu SQLite, chức năng tra cứu và quản lý lịch sử tiêm chủng | 50%   
-\---
+* **Tên đề tài:** **COMMUNITY HEALTH: SỔ TAY TIÊM CHỦNG NGOẠI TUYẾN VÀ GIÁM SÁT DỊCH BỆNH**  
+* **Mã đề tài:** BTL11  
+* **Link GitHub Repository:** [**https://github.com/Duckngunguk/BTL11_CommunityHealth]**  
+* **Link Video Báo cáo OBS Studio (YouTube Unlisted):** [https://youtu.be/example_towerhub_demo](https://youtu.be/example_towerhub_demo)  
+* **Link File Release APK:** [https://github.com/tlu-cse441-2026/towerhub_app/releases/tag/v1.0.0](https://github.com/tlu-cse441-2026/towerhub_app/releases/tag/v1.0.0)
 
-**\#\# 🎯 PHẦN 1: TỔNG QUAN & XÁC ĐỊNH YÊU CẦU (REQUIREMENT ENGINEERING \- OOA)**
+---
 
-\#\#\# 1.1 Khảo sát Hiện trạng & Phát biểu Bài toán
+## 👨‍💻 BẢNG PHÂN CÔNG NHIỆM VỤ & ĐÓNG GÓP THÀNH VIÊN (OOAD ROLES)
+
+| STT | Mã sinh viên | Họ và tên | Vai trò | Nội dung công việc đảm nhận (Responsibilities) | Tỷ lệ đóng góp |
+| :---: | :---: | :--- | :--- | :--- | :---: |
+| 1 | 2351170595 | Đặng Huy Hoán | Trưởng nhóm | **System Architect & Data/Backend Lead:**<br>Thiết kế kiến trúc hệ thống, xây dựng tầng dữ liệu (Data Models, Repositories), quản lý trạng thái (AppStore), tích hợp SQLite lưu trữ ngoại tuyến (`sqlite_helper.dart`) và cơ chế đồng bộ trực tuyến Firebase (`firebase_sync_service.dart`). | 50% |
+| 2 | 2351160511 | Nguyễn Mạnh Đức | Thành viên | **Mobile Developer & Tester:**<br>Xây dựng giao diện các chức năng Flutter, phát triển chức năng tìm kiếm trẻ em, quản lý hồ sơ tiêm chủng, kiểm thử ứng dụng, hoàn thiện giao diện, liên kết dữ liệu SQLite, chức năng tra cứu và quản lý lịch sử tiêm chủng. | 50% |
+
+---
+
+### 👨‍💻 CHI TIẾT NHIỆM VỤ THÀNH VIÊN: ĐẶNG HUY HOÁN (Trưởng nhóm)
+* **Mục tiêu:** Thiết kế kiến trúc hệ thống, xây dựng tầng dữ liệu (Data Models, Repositories), quản lý trạng thái (AppStore), tích hợp SQLite lưu trữ ngoại tuyến và cơ chế đồng bộ trực tuyến Firebase.
+* **Responsibilities cụ thể:**
+  * `lib/models/` — Tất cả Data Models của hệ thống: `ChildProfile`, `VaccinationRecord`, `MedicationRecord`, `DiseaseReport`, `VaccineSchedule`, `CommuneCoverage`.
+  * `lib/state/` — State Management & Business Logic (`app_store.dart`): Quản lý danh sách hồ sơ trẻ em, bản ghi tiêm chủng, thuốc uống & báo cáo dịch bệnh; Quản lý trạng thái kết nối Mạng (`isOnline`), Trạng thái đồng bộ (`isSyncing`, `pendingCount`).
+  * `lib/services/` & `lib/data/` — Persistence & Remote Sync Services: SQLite Local Database Service (`sqlite_helper.dart`); Firebase Firestore Synchronization Engine (`firebase_sync_service.dart`); Quản lý dữ liệu mẫu (`demo_data.dart`).
+  * Cấu hình Firebase & Firestore Rules: Cài đặt và tích hợp SDK, tối ưu hóa các quy tắc đồng bộ dữ liệu y tế ngoại tuyến/trực tuyến an toàn.
+* **Quy Luật Code (Ví dụ):**
+```dart
+// ✅ Data Model Immutability & CopyWith Pattern
+@immutable
+class DiseaseReport {
+  final String id;
+  final String patientName;
+  final String diseaseType;
+  final VaccinationSyncStatus syncStatus;
+  const DiseaseReport({
+    required this.id,
+    required this.patientName,
+    required this.diseaseType,
+    required this.syncStatus,
+  });
+  DiseaseReport copyWith({VaccinationSyncStatus? syncStatus, String? status}) {
+    return DiseaseReport(
+      id: id,
+      patientName: patientName,
+      diseaseType: diseaseType,
+      syncStatus: syncStatus ?? this.syncStatus,
+    );
+  }
+}
+
+// ✅ Error Handling tầng Data & Sync
+Future<void> syncPendingRecords() async {
+  try {
+    // Tải dữ liệu chờ đồng bộ từ SQLite lên Firestore
+    await _firebaseSyncService.uploadPendingData();
+  } on FirebaseException catch (e) {
+    debugPrint('❌ Sync Error [Firebase]: ${e.message}');
+    throw SyncException('Không thể kết nối máy chủ: ${e.message}');
+  } catch (e) {
+    debugPrint('❌ Unexpected Error: $e');
+    throw UnknownException('Lỗi không xác định khi đồng bộ');
+  }
+}
+```
+* **Branch Strategy:**
+  - `feature/hoan/data-models-setup`
+  - `feature/hoan/sqlite-local-persistence`
+  - `feature/hoan/firebase-sync-engine`
+  - `fix/hoan/sync-conflict-resolution`
+
+---
+
+**# 🎯 PHẦN 1: TỔNG QUAN & XÁC ĐỊNH YÊU CẦU (REQUIREMENT ENGINEERING - OOA)**
+
+### 1.1 Khảo sát Hiện trạng & Phát biểu Bài toán
 
 ### **Bối cảnh thực tế**
 
@@ -432,23 +500,24 @@ required this.doseNumber,
 required this.syncStatus,   
 }); 
 
-bool get isSynced \=\> syncStatus \== "success"; } 
+bool get isSynced => syncStatus == "success"; } 
+```
 
-\#\#\# 5.2 Quản lý Trạng thái Bất đồng bộ Đối tượng (\`VaccinationNotifier \`)
+### 5.2 Quản lý Trạng thái Bất đồng bộ Đối tượng (`VaccinationNotifier `)
 
-\`\`\`dart  
+```dart  
 // lib/state/VaccinationNotifier.dart  
 class VaccinationNotifier   
 extends ChangeNotifier {   
-List\<VaccinationRecord\> records \= \[\];   
-Future\<void\> loadData() async {   
-records \=   
+List<VaccinationRecord> records = [];   
+Future<void> loadData() async {   
+records =   
 await VaccinationRepository()   
 .getVaccinations();   
 notifyListeners();   
 } 
 
-Future\<void\> addRecord(   
+Future<void> addRecord(   
 VaccinationRecord record,   
 ) async {   
 await VaccinationRepository()   
@@ -501,14 +570,14 @@ No issues found\!
 
 \#\# 📜 PHẦN 7: MINH CHỨNG PHÁT TRIỂN & TRUNG THỰC HỌC THUẬT (GIT LOG)
 
-\#\#\# 7.1 Thống kê Lịch sử Commits (\`git log \--oneline\`)  
-\`\`\`text  
-\* 7f8a9b0 (HEAD \-\> main, origin/main) feat(sos): implement geospatial floor SOS dispatcher  
-\* 3e2d1c0 feat(market): add hyperlocal group-buying realtime progress bar  
-\* 5b6c7d8 fix(ui): fix RenderFlex overflow on financial dashboard small screen  
-\* 1a2b3c4 feat(auth): integrate Zalo SDK 1-Click Login flow  
-\* 9f8e7d6 test(unit): add unit tests for SLA timer and profile entity  
-\`\`\`
+### 7.1 Thống kê Lịch sử Commits (`git log --oneline`)  
+```text  
+* 6002175 (HEAD -> main, origin/main) feat: update UI/UX & fix auth flow
+* db2817a thêm chức năng báo cáo ca bệnh nghi ngờ offline trên mobile và bản đồ dịch tễ theo xã trên web
+* 679cbe4 fix: sửa lỗi null-safety cho record.reactions trong giao diện phụ huynh
+* c6f35c3 thêm actor phụ huynh: giao diện xem hồ sơ và lịch tiêm chủng
+* 89829a2 cập nhật giao diện 1 nút đăng nhập tự động phân quyền tài khoản
+```
 
 \---
 
