@@ -16,10 +16,16 @@ class RecordVaccinationScreen extends StatefulWidget {
 class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _lotController = TextEditingController(text: 'DPT2607-A12');
-  final _staffController = TextEditingController(text: 'Y sĩ Lê Thu');
+  late final TextEditingController _staffController;
   final _reactionController = TextEditingController();
   VaccineSchedule? _schedule;
   DateTime _administeredAt = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _staffController = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -77,6 +83,9 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final child = store.children.firstWhere((item) => item.id == widget.childId);
+    if (_staffController.text.isEmpty && store.currentUser != null) {
+      _staffController.text = store.currentUser!.fullName;
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ghi nhận mũi tiêm')),

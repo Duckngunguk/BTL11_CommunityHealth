@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../state/app_store.dart';
+import '../../models/models.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.onLogout});
@@ -7,15 +9,29 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final store = AppScope.of(context);
+    final user = store.currentUser;
+
+    String roleLabel = 'Cán bộ y tế';
+    if (user?.role == UserRole.admin) {
+      roleLabel = 'Quản trị viên';
+    } else if (user?.role == UserRole.parent) {
+      roleLabel = 'Phụ huynh';
+    }
+
+    final detailText = user?.assignedCommune != null
+        ? 'Phụ trách xã ${user!.assignedCommune} • Thiết bị CH-DEV-001'
+        : 'Vai trò: $roleLabel • Thiết bị CH-DEV-001';
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Card(
+        Card(
           child: ListTile(
-            contentPadding: EdgeInsets.all(16),
-            leading: CircleAvatar(child: Icon(Icons.person_rounded)),
-            title: Text('Y sĩ Lê Thu', style: TextStyle(fontWeight: FontWeight.w800)),
-            subtitle: Text('Phụ trách xã Tả Phìn • Thiết bị CH-DEV-001'),
+            contentPadding: const EdgeInsets.all(16),
+            leading: const CircleAvatar(child: Icon(Icons.person_rounded)),
+            title: Text(user?.fullName ?? 'Y sĩ Lê Thu', style: const TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text(detailText),
           ),
         ),
         const SizedBox(height: 12),
