@@ -1,0 +1,323 @@
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
+import '../models/models.dart';
+import 'demo_data.dart';
+
+class SqliteHelper {
+  SqliteHelper._internal();
+  static final SqliteHelper instance = SqliteHelper._internal();
+
+  Database? _database;
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
+  }
+
+  Future<Database> _initDatabase() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'community_health.db');
+
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: _onCreate,
+    );
+  }
+
+  Future<void> _onCreate(Database db, int version) async {
+    debugPrint('Creating SQLite tables...');
+    
+    // 1. Table users
+    await db.execute('''
+      CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        username TEXT,
+        fullName TEXT,
+        email TEXT,
+        phone TEXT,
+        role TEXT,
+        status TEXT,
+        createdAt TEXT,
+        token TEXT,
+        assignedCommune TEXT,
+        password TEXT
+      )
+    ''');
+
+    // 2. Table children
+    await db.execute('''
+      CREATE TABLE children (
+        id TEXT PRIMARY KEY,
+        qrCode TEXT,
+        fullName TEXT,
+        dateOfBirth TEXT,
+        gender TEXT,
+        motherName TEXT,
+        motherPhone TEXT,
+        village TEXT,
+        commune TEXT,
+        district TEXT,
+        status TEXT,
+        nextVaccine TEXT,
+        nextDue TEXT,
+        lateDays INTEGER
+      )
+    ''');
+
+    // 3. Table vaccinations
+    await db.execute('''
+      CREATE TABLE vaccinations (
+        id TEXT PRIMARY KEY,
+        childId TEXT,
+        vaccineId TEXT,
+        vaccineName TEXT,
+        doseNumber INTEGER,
+        lotNumber TEXT,
+        administeredBy TEXT,
+        reactions TEXT,
+        administeredAt TEXT,
+        syncStatus TEXT
+      )
+    ''');
+
+    // 4. Table medications
+    await db.execute('''
+      CREATE TABLE medications (
+        id TEXT PRIMARY KEY,
+        childId TEXT,
+        medicationId TEXT,
+        medicationName TEXT,
+        dosage TEXT,
+        administeredBy TEXT,
+        administeredAt TEXT,
+        syncStatus TEXT,
+        notes TEXT
+      )
+    ''');
+
+    // 5. Table disease_reports
+    await db.execute('''
+      CREATE TABLE disease_reports (
+        id TEXT PRIMARY KEY,
+        childId TEXT,
+        patientName TEXT,
+        diseaseType TEXT,
+        village TEXT,
+        commune TEXT,
+        district TEXT,
+        reportedAt TEXT,
+        reportedBy TEXT,
+        symptoms TEXT,
+        syncStatus TEXT,
+        status TEXT,
+        severity TEXT,
+        notes TEXT
+      )
+    ''');
+
+    // 6. Table audit_logs
+    await db.execute('''
+      CREATE TABLE audit_logs (
+        id TEXT PRIMARY KEY,
+        action TEXT,
+        performedBy TEXT,
+        userRole TEXT,
+        timestamp TEXT,
+        details TEXT
+      )
+    ''');
+
+    // Seed Initial Demo Data
+    await _seedDemoData(db);
+  }
+
+  Future<void> _seedDemoData(Database db) async {
+    debugPrint('Seeding initial demo data to SQLite...');
+    
+    // Seed Users
+    for (var u in demoUsers) {
+      await db.insert('users', u.toMap());
+    }
+
+    // Seed Children, Vaccinations, and Medications
+    for (var child in demoChildren) {
+      await db.insert('children', child.toMap());
+
+      for (var v in child.vaccinations) {
+        await db.insert('vaccinations', v.toMap());
+      }
+
+      for (var m in child.medications) {
+        await db.insert('medications', m.toMap());
+      }
+    }
+
+    // Seed Disease Reports
+    for (var r in demoDiseaseReports) {
+      await db.insert('disease_reports', r.toMap());
+    }
+
+    // Seed Audit Logs
+    for (var log in demoAuditLogs) {
+      await db.insert('audit_logs', log.toMap());
+    }
+  }
+
+  // --- Child Methods ---
+  Future<List<ChildProfile>> getChildren() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('children');
+    
+    List<ChildProfile> list = [];
+    for (var map in maps) {
+      final childId = map['id'] as String;
+      
+      // Get vaccinations
+      final List<Map<String, dynamic>> vMaps = await db.query(
+        'vaccinations',
+        where: 'childId = ?',
+        whereArgs: [childId],
+      );
+      final vaccinations = vMaps.map((v) => VaccinationRecord.fromMap(v)).toList();
+
+      // Get medications
+      final List<Map<String, dynamic>> mMaps = await db.query(
+        'medications',
+        where: 'childId = ?',
+        whereArgs: [childId],
+      );
+      final medications = mMaps.map((m) => MedicationRecord.fromMap(m)).toList();
+
+      list.add(ChildProfile.fromMap(map, vaccinations: vaccinations, medications: medications));
+    }
+    return list;
+  }
+
+  Future<void> insertChild(ChildProfile child) async {
+    final db = await database;
+    await db.insert('children', child.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateChild(ChildProfile child) async {
+    final db = await database;
+    await db.update(
+      'children',
+      child.toMap(),
+      where: 'id = ?',
+      whereArgs: [child.id],
+    );
+  }
+
+  Future<void> deleteChild(String childId) async {
+    final db = await database;
+    await db.delete('children', where: 'id = ?', whereArgs: [childId]);
+    await db.delete('vaccinations', where: 'childId = ?', whereArgs: [childId]);
+    await db.delete('medications', where: 'childId = ?', whereArgs: [childId]);
+  }
+
+  // --- Vaccination Record Methods ---
+  Future<void> insertVaccination(VaccinationRecord record) async {
+    final db = await database;
+    await db.insert('vaccinations', record.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateVaccinationSyncStatus(String id, String syncStatus) async {
+    final db = await database;
+    await db.update(
+      'vaccinations',
+      {'syncStatus': syncStatus},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // --- Medication Record Methods ---
+  Future<void> insertMedication(MedicationRecord record) async {
+    final db = await database;
+    await db.insert('medications', record.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateMedicationSyncStatus(String id, String syncStatus) async {
+    final db = await database;
+    await db.update(
+      'medications',
+      {'syncStatus': syncStatus},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // --- Disease Report Methods ---
+  Future<List<DiseaseReport>> getDiseaseReports() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('disease_reports');
+    return maps.map((r) => DiseaseReport.fromMap(r)).toList();
+  }
+
+  Future<void> insertDiseaseReport(DiseaseReport report) async {
+    final db = await database;
+    await db.insert('disease_reports', report.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateDiseaseReportStatus(String id, String status) async {
+    final db = await database;
+    await db.update(
+      'disease_reports',
+      {'status': status},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> updateDiseaseReportSyncStatus(String id, String syncStatus) async {
+    final db = await database;
+    await db.update(
+      'disease_reports',
+      {'syncStatus': syncStatus},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // --- User Methods ---
+  Future<List<UserModel>> getUsers() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('users');
+    return maps.map((u) => UserModel.fromMap(u)).toList();
+  }
+
+  Future<void> insertUser(UserModel user) async {
+    final db = await database;
+    await db.insert('users', user.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateUserStatus(String id, String status) async {
+    final db = await database;
+    await db.update(
+      'users',
+      {'status': status},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> deleteUser(String id) async {
+    final db = await database;
+    await db.delete('users', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Audit Log Methods ---
+  Future<List<SystemAuditLog>> getAuditLogs() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('audit_logs', orderBy: 'timestamp DESC');
+    return maps.map((log) => SystemAuditLog.fromMap(log)).toList();
+  }
+
+  Future<void> insertAuditLog(SystemAuditLog log) async {
+    final db = await database;
+    await db.insert('audit_logs', log.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+}

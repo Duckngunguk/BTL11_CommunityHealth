@@ -1,3 +1,4 @@
+
 enum VaccinationSyncStatus { pending, synced }
 
 enum ChildVaccinationStatus { complete, dueSoon, late }
@@ -56,6 +57,38 @@ class UserModel {
       password: password ?? this.password,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'username': username,
+      'fullName': fullName,
+      'email': email,
+      'phone': phone,
+      'role': role.name,
+      'status': status.name,
+      'createdAt': createdAt.toIso8601String(),
+      'token': token,
+      'assignedCommune': assignedCommune,
+      'password': password,
+    };
+  }
+
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'] as String,
+      username: map['username'] as String,
+      fullName: map['fullName'] as String,
+      email: map['email'] as String,
+      phone: map['phone'] as String,
+      role: UserRole.values.firstWhere((e) => e.name == map['role']),
+      status: UserAccountStatus.values.firstWhere((e) => e.name == map['status']),
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      token: map['token'] as String?,
+      assignedCommune: map['assignedCommune'] as String?,
+      password: map['password'] as String?,
+    );
+  }
 }
 
 class SystemAuditLog {
@@ -74,6 +107,28 @@ class SystemAuditLog {
   final String userRole;
   final DateTime timestamp;
   final String details;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'action': action,
+      'performedBy': performedBy,
+      'userRole': userRole,
+      'timestamp': timestamp.toIso8601String(),
+      'details': details,
+    };
+  }
+
+  factory SystemAuditLog.fromMap(Map<String, dynamic> map) {
+    return SystemAuditLog(
+      id: map['id'] as String,
+      action: map['action'] as String,
+      performedBy: map['performedBy'] as String,
+      userRole: map['userRole'] as String,
+      timestamp: DateTime.parse(map['timestamp'] as String),
+      details: map['details'] as String,
+    );
+  }
 }
 
 class VaccinationRecord {
@@ -115,6 +170,36 @@ class VaccinationRecord {
       syncStatus: syncStatus ?? this.syncStatus,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'childId': childId,
+      'vaccineId': vaccineId,
+      'vaccineName': vaccineName,
+      'doseNumber': doseNumber,
+      'lotNumber': lotNumber,
+      'administeredBy': administeredBy,
+      'reactions': reactions,
+      'administeredAt': administeredAt.toIso8601String(),
+      'syncStatus': syncStatus.name,
+    };
+  }
+
+  factory VaccinationRecord.fromMap(Map<String, dynamic> map) {
+    return VaccinationRecord(
+      id: map['id'] as String,
+      childId: map['childId'] as String,
+      vaccineId: map['vaccineId'] as String,
+      vaccineName: map['vaccineName'] as String,
+      doseNumber: map['doseNumber'] as int,
+      lotNumber: map['lotNumber'] as String,
+      administeredBy: map['administeredBy'] as String,
+      reactions: map['reactions'] as String?,
+      administeredAt: DateTime.parse(map['administeredAt'] as String),
+      syncStatus: VaccinationSyncStatus.values.firstWhere((e) => e.name == map['syncStatus']),
+    );
+  }
 }
 
 class MedicationRecord {
@@ -151,6 +236,34 @@ class MedicationRecord {
       administeredAt: administeredAt,
       syncStatus: syncStatus ?? this.syncStatus,
       notes: notes,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'childId': childId,
+      'medicationId': medicationId,
+      'medicationName': medicationName,
+      'dosage': dosage,
+      'administeredBy': administeredBy,
+      'administeredAt': administeredAt.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'notes': notes,
+    };
+  }
+
+  factory MedicationRecord.fromMap(Map<String, dynamic> map) {
+    return MedicationRecord(
+      id: map['id'] as String,
+      childId: map['childId'] as String,
+      medicationId: map['medicationId'] as String,
+      medicationName: map['medicationName'] as String,
+      dosage: map['dosage'] as String,
+      administeredBy: map['administeredBy'] as String,
+      administeredAt: DateTime.parse(map['administeredAt'] as String),
+      syncStatus: VaccinationSyncStatus.values.firstWhere((e) => e.name == map['syncStatus']),
+      notes: map['notes'] as String?,
     );
   }
 }
@@ -226,6 +339,50 @@ class ChildProfile {
       lateDays: lateDays ?? this.lateDays,
       vaccinations: vaccinations ?? this.vaccinations,
       medications: medications ?? this.medications,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'qrCode': qrCode,
+      'fullName': fullName,
+      'dateOfBirth': dateOfBirth.toIso8601String(),
+      'gender': gender,
+      'motherName': motherName,
+      'motherPhone': motherPhone,
+      'village': village,
+      'commune': commune,
+      'district': district,
+      'status': status.name,
+      'nextVaccine': nextVaccine,
+      'nextDue': nextDue.toIso8601String(),
+      'lateDays': lateDays,
+    };
+  }
+
+  factory ChildProfile.fromMap(
+    Map<String, dynamic> map, {
+    List<VaccinationRecord> vaccinations = const [],
+    List<MedicationRecord> medications = const [],
+  }) {
+    return ChildProfile(
+      id: map['id'] as String,
+      qrCode: map['qrCode'] as String,
+      fullName: map['fullName'] as String,
+      dateOfBirth: DateTime.parse(map['dateOfBirth'] as String),
+      gender: map['gender'] as String,
+      motherName: map['motherName'] as String,
+      motherPhone: map['motherPhone'] as String,
+      village: map['village'] as String,
+      commune: map['commune'] as String,
+      district: map['district'] as String,
+      status: ChildVaccinationStatus.values.firstWhere((e) => e.name == map['status']),
+      nextVaccine: map['nextVaccine'] as String,
+      nextDue: DateTime.parse(map['nextDue'] as String),
+      lateDays: map['lateDays'] as int,
+      vaccinations: vaccinations,
+      medications: medications,
     );
   }
 }
@@ -348,6 +505,51 @@ class DiseaseReport {
       notes: notes,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'childId': childId,
+      'patientName': patientName,
+      'diseaseType': diseaseType,
+      'village': village,
+      'commune': commune,
+      'district': district,
+      'reportedAt': reportedAt.toIso8601String(),
+      'reportedBy': reportedBy,
+      'symptoms': symptoms,
+      'syncStatus': syncStatus.name,
+      'status': status,
+      'severity': severity.name,
+      'notes': notes,
+    };
+  }
+
+  factory DiseaseReport.fromMap(Map<String, dynamic> map) {
+    return DiseaseReport(
+      id: map['id'] as String,
+      childId: map['childId'] as String?,
+      patientName: map['patientName'] as String,
+      diseaseType: map['diseaseType'] as String,
+      village: map['village'] as String,
+      commune: map['commune'] as String,
+      district: map['district'] as String,
+      reportedAt: DateTime.parse(map['reportedAt'] as String),
+      reportedBy: map['reportedBy'] as String,
+      symptoms: map['symptoms'] as String,
+      syncStatus: VaccinationSyncStatus.values.firstWhere((e) => e.name == map['syncStatus']),
+      status: map['status'] as String,
+      severity: DiseaseSeverity.values.firstWhere((e) => e.name == map['severity']),
+      notes: map['notes'] as String?,
+    );
+  }
 }
 
-
+const Map<String, List<String>> kVillagesByCommune = {
+  'Tả Phìn': ['Bản Nậm Lùng', 'Bản Tả Phìn 1', 'Bản Tả Phìn 2', 'Bản Sả Séng', 'Bản Lếch'],
+  'Hầu Thào': ['Bản Hầu Thào', 'Bản Hang Đá', 'Bản Lý Lao Chải'],
+  'San Sả Hồ': ['Bản Sín Chải', 'Bản Cát Cát', 'Bản Ý Lình Hồ'],
+  'Tả Van': ['Bản Séo Mý Tỷ', 'Bản Tả Van Giáy', 'Bản Tả Van Mông'],
+  'Lao Chải': ['Bản Lao Chải', 'Bản Cát Cát Mông', 'Bản Ý Lình Hồ 2'],
+  'Bản Hồ': ['Bản Bản Hồ', 'Bản Hồ', 'Bản Séo Trung Hồ', 'Bản La Ve'],
+};
