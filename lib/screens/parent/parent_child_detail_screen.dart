@@ -10,7 +10,8 @@ class ParentChildDetailScreen extends StatefulWidget {
   final String childId;
 
   @override
-  State<ParentChildDetailScreen> createState() => _ParentChildDetailScreenState();
+  State<ParentChildDetailScreen> createState() =>
+      _ParentChildDetailScreenState();
 }
 
 class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
@@ -28,7 +29,8 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
       );
     }
 
-    final child = store.children.firstWhere((item) => item.id == widget.childId);
+    final child =
+        store.children.firstWhere((item) => item.id == widget.childId);
 
     return Scaffold(
       appBar: AppBar(
@@ -55,7 +57,8 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
           // Cảnh báo nếu trễ lịch
           if (child.status == ChildVaccinationStatus.late)
             _LateWarningBanner(child: child),
-          if (child.status == ChildVaccinationStatus.late) const SizedBox(height: 16),
+          if (child.status == ChildVaccinationStatus.late)
+            const SizedBox(height: 16),
 
           // Lịch tiêm tiếp theo
           _NextVaccineCard(child: child),
@@ -74,7 +77,8 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
               ),
             ],
             selected: {_selectedTab},
-            onSelectionChanged: (set) => setState(() => _selectedTab = set.first),
+            onSelectionChanged: (set) =>
+                setState(() => _selectedTab = set.first),
           ),
           const SizedBox(height: 16),
 
@@ -87,10 +91,12 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
             if (child.vaccinations.isEmpty)
               const EmptyState(
                 title: 'Chưa có bản ghi tiêm chủng',
-                description: 'Trẻ chưa có thông tin tiêm chủng nào được ghi nhận.',
+                description:
+                    'Trẻ chưa có thông tin tiêm chủng nào được ghi nhận.',
               )
             else
-              ...child.vaccinations.reversed.map((r) => _ReadOnlyVaccinationCard(record: r)),
+              ...child.vaccinations.reversed
+                  .map((r) => _ReadOnlyVaccinationCard(record: r)),
           ] else ...[
             const SectionHeader(
               title: 'Lịch sử uống thuốc',
@@ -103,7 +109,8 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
                 description: 'Trẻ chưa có thông tin uống thuốc bổ sung nào.',
               )
             else
-              ...child.medications.reversed.map((r) => _ReadOnlyMedicationCard(record: r)),
+              ...child.medications.reversed
+                  .map((r) => _ReadOnlyMedicationCard(record: r)),
           ],
           const SizedBox(height: 80),
         ],
@@ -154,7 +161,8 @@ class _ChildInfoCard extends StatelessWidget {
                     children: [
                       Text(
                         child.fullName,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 4),
                       StatusPill(status: child.status),
@@ -166,12 +174,30 @@ class _ChildInfoCard extends StatelessWidget {
             const SizedBox(height: 16),
             const Divider(height: 1),
             const SizedBox(height: 16),
-            _InfoRow(icon: Icons.cake_outlined, label: 'Ngày sinh', value: formatDate(child.dateOfBirth)),
-            _InfoRow(icon: Icons.wc_rounded, label: 'Giới tính', value: child.gender),
-            _InfoRow(icon: Icons.location_on_outlined, label: 'Địa chỉ', value: '${child.village}, ${child.commune}, ${child.district}'),
-            _InfoRow(icon: Icons.person_outline_rounded, label: 'Tên mẹ', value: child.motherName),
-            _InfoRow(icon: Icons.phone_outlined, label: 'SĐT mẹ', value: child.motherPhone),
-            _InfoRow(icon: Icons.qr_code_rounded, label: 'Mã QR', value: child.qrCode),
+            _InfoRow(
+                icon: Icons.cake_outlined,
+                label: 'Ngày sinh',
+                value: formatDate(child.dateOfBirth)),
+            _InfoRow(
+                icon: Icons.wc_rounded,
+                label: 'Giới tính',
+                value: child.gender),
+            _InfoRow(
+                icon: Icons.location_on_outlined,
+                label: 'Địa chỉ',
+                value: '${child.village}, ${child.commune}, ${child.district}'),
+            _InfoRow(
+                icon: Icons.person_outline_rounded,
+                label: 'Tên mẹ',
+                value: child.motherName),
+            _InfoRow(
+                icon: Icons.phone_outlined,
+                label: 'SĐT mẹ',
+                value: child.motherPhone),
+            _InfoRow(
+                icon: Icons.qr_code_rounded,
+                label: 'Mã QR',
+                value: child.qrCode),
           ],
         ),
       ),
@@ -180,7 +206,8 @@ class _ChildInfoCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
   final IconData icon;
   final String label;
   final String value;
@@ -195,10 +222,13 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 10),
           SizedBox(
             width: 90,
-            child: Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+            child: Text(label,
+                style: const TextStyle(color: Colors.black54, fontSize: 13)),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            child: Text(value,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           ),
         ],
       ),
@@ -221,7 +251,8 @@ class _LateWarningBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Color(0xFFB42318), size: 28),
+          const Icon(Icons.warning_amber_rounded,
+              color: Color(0xFFB42318), size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -229,12 +260,16 @@ class _LateWarningBanner extends StatelessWidget {
               children: [
                 const Text(
                   'Con bạn đang trễ lịch tiêm!',
-                  style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFB42318), fontSize: 14),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFB42318),
+                      fontSize: 14),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   'Trễ ${child.lateDays} ngày. Vui lòng đưa con đến trạm y tế sớm để được tiêm bổ sung.',
-                  style: const TextStyle(color: Color(0xFFB42318), fontSize: 13, height: 1.4),
+                  style: const TextStyle(
+                      color: Color(0xFFB42318), fontSize: 13, height: 1.4),
                 ),
               ],
             ),
@@ -261,12 +296,16 @@ class _NextVaccineCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isLate ? const Color(0xFFFFE9E7) : const Color(0xFFE5F5EC),
+                color:
+                    isLate ? const Color(0xFFFFE9E7) : const Color(0xFFE5F5EC),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
-                isLate ? Icons.warning_amber_rounded : Icons.event_available_rounded,
-                color: isLate ? const Color(0xFFB42318) : const Color(0xFF18794E),
+                isLate
+                    ? Icons.warning_amber_rounded
+                    : Icons.event_available_rounded,
+                color:
+                    isLate ? const Color(0xFFB42318) : const Color(0xFF18794E),
               ),
             ),
             const SizedBox(width: 14),
@@ -285,12 +324,15 @@ class _NextVaccineCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     child.nextVaccine,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 15),
                   ),
                   Text(
                     'Ngày: ${formatDate(child.nextDue)}',
                     style: TextStyle(
-                      color: isLate ? const Color(0xFFB42318) : const Color(0xFF18794E),
+                      color: isLate
+                          ? const Color(0xFFB42318)
+                          : const Color(0xFF18794E),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -325,7 +367,8 @@ class _ReadOnlyVaccinationCard extends StatelessWidget {
                 color: const Color(0xFFE5F5EC),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: const Icon(Icons.vaccines_rounded, color: Color(0xFF18794E), size: 22),
+              child: const Icon(Icons.vaccines_rounded,
+                  color: Color(0xFF18794E), size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -341,9 +384,12 @@ class _ReadOnlyVaccinationCard extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: pending ? const Color(0xFFFFF3CD) : const Color(0xFFE5F5EC),
+                          color: pending
+                              ? const Color(0xFFFFF3CD)
+                              : const Color(0xFFE5F5EC),
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Text(
@@ -351,18 +397,24 @@ class _ReadOnlyVaccinationCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: pending ? const Color(0xFF8A5D00) : const Color(0xFF18794E),
+                            color: pending
+                                ? const Color(0xFF8A5D00)
+                                : const Color(0xFF18794E),
                           ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 5),
-                  Text('Ngày tiêm: ${formatDate(record.administeredAt)}', style: const TextStyle(fontSize: 13)),
-                  Text('Số lô: ${record.lotNumber}', style: const TextStyle(fontSize: 13)),
-                  Text('Cán bộ tiêm: ${record.administeredBy}', style: const TextStyle(fontSize: 13)),
+                  Text('Ngày tiêm: ${formatDate(record.administeredAt)}',
+                      style: const TextStyle(fontSize: 13)),
+                  Text('Số lô: ${record.lotNumber}',
+                      style: const TextStyle(fontSize: 13)),
+                  Text('Cán bộ tiêm: ${record.administeredBy}',
+                      style: const TextStyle(fontSize: 13)),
                   if ((record.reactions ?? '').isNotEmpty)
-                    Text('Phản ứng: ${record.reactions}', style: const TextStyle(fontSize: 13)),
+                    Text('Phản ứng: ${record.reactions}',
+                        style: const TextStyle(fontSize: 13)),
                 ],
               ),
             ),
@@ -394,7 +446,8 @@ class _ReadOnlyMedicationCard extends StatelessWidget {
                 color: const Color(0xFFFFF3CD),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: const Icon(Icons.medication_rounded, color: Color(0xFF8A5D00), size: 22),
+              child: const Icon(Icons.medication_rounded,
+                  color: Color(0xFF8A5D00), size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -410,9 +463,12 @@ class _ReadOnlyMedicationCard extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: pending ? const Color(0xFFFFF3CD) : const Color(0xFFE5F5EC),
+                          color: pending
+                              ? const Color(0xFFFFF3CD)
+                              : const Color(0xFFE5F5EC),
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Text(
@@ -420,18 +476,24 @@ class _ReadOnlyMedicationCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: pending ? const Color(0xFF8A5D00) : const Color(0xFF18794E),
+                            color: pending
+                                ? const Color(0xFF8A5D00)
+                                : const Color(0xFF18794E),
                           ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 5),
-                  Text('Liều dùng: ${record.dosage}', style: const TextStyle(fontSize: 13)),
-                  Text('Ngày uống: ${formatDate(record.administeredAt)}', style: const TextStyle(fontSize: 13)),
-                  Text('Cán bộ cho uống: ${record.administeredBy}', style: const TextStyle(fontSize: 13)),
+                  Text('Liều dùng: ${record.dosage}',
+                      style: const TextStyle(fontSize: 13)),
+                  Text('Ngày uống: ${formatDate(record.administeredAt)}',
+                      style: const TextStyle(fontSize: 13)),
+                  Text('Cán bộ cho uống: ${record.administeredBy}',
+                      style: const TextStyle(fontSize: 13)),
                   if ((record.notes ?? '').isNotEmpty)
-                    Text('Ghi chú: ${record.notes}', style: const TextStyle(fontSize: 13)),
+                    Text('Ghi chú: ${record.notes}',
+                        style: const TextStyle(fontSize: 13)),
                 ],
               ),
             ),

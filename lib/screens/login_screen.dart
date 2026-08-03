@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../models/models.dart';
+import '../state/app_store.dart';
 import '../widgets/common_widgets.dart';
+import 'register_screen.dart';
 
 enum AppMode { mobile, admin, parent }
 
@@ -17,6 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController(text: '');
   final _passwordController = TextEditingController(text: '');
   bool _obscure = true;
+  bool _isLoading = false;
+  bool _showRegister = false;
 
   @override
   void dispose() {
@@ -27,6 +32,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Hiển thị màn hình đăng ký nếu user click "Đăng ký"
+    if (_showRegister) {
+      return RegisterScreen(
+        onBackToLogin: ([registeredUsername]) {
+          setState(() {
+            _showRegister = false;
+            if (registeredUsername != null && registeredUsername.isNotEmpty) {
+              _usernameController.text = registeredUsername;
+              _passwordController.clear();
+            }
+          });
+        },
+      );
+    }
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -66,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 8),
                               const Text(
-                                'Nhập tài khoản bên dưới để đăng nhập. Mỗi tài khoản có vai trò riêng trong hệ thống.',
+                                'Nhập tài khoản bên dưới để đăng nhập.',
                                 style: TextStyle(color: Colors.black54),
                               ),
                               const SizedBox(height: 24),
@@ -91,73 +111,47 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(height: 22),
-                              FilledButton.icon(
-                                onPressed: _handleLogin,
-                                icon: const Icon(Icons.login_rounded),
-                                label: const Text('Đăng nhập', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                              FilledButton(
+                                onPressed: _isLoading ? null : _handleLogin,
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 22,
+                                        width: 22,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      )
+                                    : const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.login_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Đăng nhập', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                        ],
+                                      ),
                               ),
                               const SizedBox(height: 20),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF0F4F8),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFD0DCE5)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Gợi ý tài khoản demo:',
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black54),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        ActionChip(
-                                          avatar: const Icon(Icons.person_outline_rounded, size: 16),
-                                          label: const Text('Cán bộ y tế', style: TextStyle(fontSize: 12)),
-                                          onPressed: () {
-                                            setState(() {
-                                              _usernameController.text = 'healthworker.demo';
-                                              _passwordController.text = '123456';
-                                            });
-                                          },
-                                        ),
-                                        ActionChip(
-                                          avatar: const Icon(Icons.family_restroom_rounded, size: 16),
-                                          label: const Text('Phụ huynh', style: TextStyle(fontSize: 12)),
-                                          onPressed: () {
-                                            setState(() {
-                                              _usernameController.text = 'parent.demo';
-                                              _passwordController.text = '123456';
-                                            });
-                                          },
-                                        ),
-                                        ActionChip(
-                                          avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
-                                          label: const Text('Quản trị viên', style: TextStyle(fontSize: 12)),
-                                          onPressed: () {
-                                            setState(() {
-                                              _usernameController.text = 'admin.demo';
-                                              _passwordController.text = '123456';
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
                               const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.cloud_off_rounded, size: 17, color: Colors.black45),
                                   SizedBox(width: 6),
                                   Text('Hỗ trợ đăng nhập với dữ liệu đã lưu ngoại tuyến', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              const Divider(height: 1),
+                              const SizedBox(height: 16),
+                              // Nút Đăng ký tài khoản mới
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text('Chưa có tài khoản? ', style: TextStyle(color: Colors.black54)),
+                                  GestureDetector(
+                                    onTap: () => setState(() => _showRegister = true),
+                                    child: const Text(
+                                      'Đăng ký ngay',
+                                      style: TextStyle(color: primaryGreen, fontWeight: FontWeight.w800, fontSize: 14),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -175,8 +169,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final username = _usernameController.text.trim().toLowerCase();
+    final password = _passwordController.text;
+
     if (username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập tên đăng nhập')),
@@ -184,9 +180,74 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (username.contains('admin')) {
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập mật khẩu')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    // Giả lập độ trễ xác thực REST API (400ms)
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+
+    if (!mounted) return;
+
+    final store = AppScope.of(context);
+
+    // Kiểm tra tài khoản trong hệ thống
+    final user = store.users.where((u) => u.username.toLowerCase() == username).firstOrNull;
+
+    setState(() => _isLoading = false);
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tài khoản chưa được đăng ký trong hệ thống. Vui lòng bấm "Đăng ký ngay"!'),
+          backgroundColor: Color(0xFFB42318),
+        ),
+      );
+      return;
+    }
+
+    if (user.password != null && user.password!.isNotEmpty && user.password != password) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mật khẩu không chính xác. Vui lòng thử lại!'),
+          backgroundColor: Color(0xFFB42318),
+        ),
+      );
+      return;
+    }
+
+    if (user.status == UserAccountStatus.pendingApproval) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tài khoản đang chờ Admin phê duyệt. Vui lòng thử lại sau.'),
+          backgroundColor: Color(0xFF8A5D00),
+        ),
+      );
+      return;
+    }
+
+    if (user.status == UserAccountStatus.locked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tài khoản đã bị khóa. Vui lòng liên hệ Quản trị viên.'),
+          backgroundColor: Color(0xFFB42318),
+        ),
+      );
+      return;
+    }
+
+    // Lưu currentUser vào AppStore
+    store.currentUser = user;
+    store.addAuditLog('Đăng nhập hệ thống', 'Đăng nhập thành công từ ứng dụng');
+
+    // Route theo vai trò
+    if (user.role == UserRole.admin) {
       widget.onLogin(AppMode.admin);
-    } else if (username.contains('parent') || username.contains('phuHuynh') || username.contains('phuhuynh')) {
+    } else if (user.role == UserRole.parent) {
       widget.onLogin(AppMode.parent);
     } else {
       widget.onLogin(AppMode.mobile);

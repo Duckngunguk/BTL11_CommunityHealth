@@ -2,6 +2,80 @@ enum VaccinationSyncStatus { pending, synced }
 
 enum ChildVaccinationStatus { complete, dueSoon, late }
 
+enum UserRole { healthWorker, parent, admin }
+
+enum UserAccountStatus { active, pendingApproval, locked }
+
+class UserModel {
+  const UserModel({
+    required this.id,
+    required this.username,
+    required this.fullName,
+    required this.email,
+    required this.phone,
+    required this.role,
+    required this.status,
+    required this.createdAt,
+    this.token,
+    this.assignedCommune,
+    this.password,
+  });
+
+  final String id;
+  final String username;
+  final String fullName;
+  final String email;
+  final String phone;
+  final UserRole role;
+  final UserAccountStatus status;
+  final DateTime createdAt;
+  final String? token;
+  final String? assignedCommune;
+  final String? password;
+
+  bool get isActive => status == UserAccountStatus.active;
+  bool get isPending => status == UserAccountStatus.pendingApproval;
+
+  UserModel copyWith({
+    UserAccountStatus? status,
+    String? token,
+    String? assignedCommune,
+    String? password,
+  }) {
+    return UserModel(
+      id: id,
+      username: username,
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      role: role,
+      status: status ?? this.status,
+      createdAt: createdAt,
+      token: token ?? this.token,
+      assignedCommune: assignedCommune ?? this.assignedCommune,
+      password: password ?? this.password,
+    );
+  }
+}
+
+class SystemAuditLog {
+  const SystemAuditLog({
+    required this.id,
+    required this.action,
+    required this.performedBy,
+    required this.userRole,
+    required this.timestamp,
+    required this.details,
+  });
+
+  final String id;
+  final String action;
+  final String performedBy;
+  final String userRole;
+  final DateTime timestamp;
+  final String details;
+}
+
 class VaccinationRecord {
   const VaccinationRecord({
     required this.id,
