@@ -18,6 +18,8 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
   String _query = '';
   ChildVaccinationStatus? _status;
   String? _commune;
+  String? _village;
+  String? _ageGroup;
 
   @override
   void dispose() {
@@ -70,6 +72,12 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final communes = store.children.map((child) => child.commune).toSet().toList()..sort();
+    final villages = store.children
+        .where((child) => _commune == null || child.commune == _commune)
+        .map((child) => child.village)
+        .toSet()
+        .toList()
+      ..sort();
     final filtered = store.children.where((child) {
       final q = _query.toLowerCase().trim();
       final matchesQuery = q.isEmpty ||
@@ -78,7 +86,20 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
           child.motherName.toLowerCase().contains(q);
       final matchesStatus = _status == null || child.status == _status;
       final matchesCommune = _commune == null || child.commune == _commune;
-      return matchesQuery && matchesStatus && matchesCommune;
+      final matchesVillage = _village == null || child.village == _village;
+      
+      bool matchesAge = true;
+      if (_ageGroup != null) {
+        final ageMonths = (DateTime.now().year - child.dateOfBirth.year) * 12 + DateTime.now().month - child.dateOfBirth.month;
+        if (_ageGroup == 'under_1') {
+          matchesAge = ageMonths < 12;
+        } else if (_ageGroup == '1_to_3') {
+          matchesAge = ageMonths >= 12 && ageMonths <= 36;
+        } else if (_ageGroup == 'over_3') {
+          matchesAge = ageMonths > 36;
+        }
+      }
+      return matchesQuery && matchesStatus && matchesCommune && matchesVillage && matchesAge;
     }).toList();
 
     return Scaffold(
@@ -131,7 +152,34 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                           const DropdownMenuEntry(value: null, label: 'Tất cả xã'),
                           ...communes.map((commune) => DropdownMenuEntry(value: commune, label: commune)),
                         ],
-                        onSelected: (value) => setState(() => _commune = value),
+                        onSelected: (value) => setState(() {
+                          _commune = value;
+                          _village = null;
+                        }),
+                      ),
+                      const SizedBox(width: 10),
+                      DropdownMenu<String?>(
+                        width: 185,
+                        label: const Text('Thôn/bản'),
+                        initialSelection: _village,
+                        dropdownMenuEntries: [
+                          const DropdownMenuEntry(value: null, label: 'Tất cả thôn/bản'),
+                          ...villages.map((v) => DropdownMenuEntry(value: v, label: v)),
+                        ],
+                        onSelected: (value) => setState(() => _village = value),
+                      ),
+                      const SizedBox(width: 10),
+                      DropdownMenu<String?>(
+                        width: 160,
+                        label: const Text('Độ tuổi'),
+                        initialSelection: _ageGroup,
+                        dropdownMenuEntries: const [
+                          DropdownMenuEntry(value: null, label: 'Tất cả độ tuổi'),
+                          DropdownMenuEntry(value: 'under_1', label: 'Dưới 1 tuổi'),
+                          DropdownMenuEntry(value: '1_to_3', label: '1 - 3 tuổi'),
+                          DropdownMenuEntry(value: 'over_3', label: 'Trên 3 tuổi'),
+                        ],
+                        onSelected: (value) => setState(() => _ageGroup = value),
                       ),
                       const SizedBox(width: 10),
                       DropdownMenu<ChildVaccinationStatus?>(
@@ -204,9 +252,21 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                                         style: const TextStyle(color: Colors.black54),
                                       ),
                                       const SizedBox(height: 6),
-                                      Text(
-                                        'Tiếp theo: ${child.nextVaccine}',
-                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      Wrap(
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Tiếp theo: ${child.nextVaccine}',
+                                            style: const TextStyle(fontWeight: FontWeight.w600),
+                                          ),
+                                          if (child.status == ChildVaccinationStatus.late && child.lateDays > 0) ...[
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '(Trễ ${child.lateDays} ngày)',
+                                              style: const TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w800, fontSize: 13),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ],
                                   ),
