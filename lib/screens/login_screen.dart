@@ -86,8 +86,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 8),
                               const Text(
-                                'Nhập tài khoản bên dưới để đăng nhập.',
-                                style: TextStyle(color: Colors.black54),
+                                'App Mobile (Cán bộ y tế & Phụ huynh) | Web Admin (Quản trị viên)',
+                                style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500),
                               ),
                               const SizedBox(height: 24),
                               TextField(
@@ -286,9 +286,10 @@ class _BrandPanel extends StatelessWidget {
           style: TextStyle(color: Colors.white70, fontSize: 19, height: 1.5),
         ),
         const SizedBox(height: 34),
+        const _FeatureLine(icon: Icons.smartphone_rounded, text: 'App Mobile: Dành cho Cán bộ Y tế & Phụ huynh'),
+        const _FeatureLine(icon: Icons.admin_panel_settings_rounded, text: 'Web Admin: Dành cho Quản trị viên quản lý'),
         const _FeatureLine(icon: Icons.cloud_off_rounded, text: 'Tra cứu và ghi nhận tiêm khi không có mạng'),
         const _FeatureLine(icon: Icons.sync_rounded, text: 'Đồng bộ an toàn khi kết nối trở lại'),
-        const _FeatureLine(icon: Icons.analytics_outlined, text: 'Theo dõi tỷ lệ phủ vaccine theo từng xã'),
       ],
     );
   }

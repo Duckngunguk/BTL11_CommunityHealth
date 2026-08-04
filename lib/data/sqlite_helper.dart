@@ -10,10 +10,16 @@ class SqliteHelper {
 
   Database? _database;
 
-  Future<Database> get database async {
+  Future<Database?> get database async {
+    if (kIsWeb) return null;
     if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+    try {
+      _database = await _initDatabase();
+      return _database;
+    } catch (e) {
+      debugPrint('⚠️ SQLite database not available on this platform ($e). Falling back to memory/demo data.');
+      return null;
+    }
   }
 
   Future<Database> _initDatabase() async {
@@ -243,6 +249,7 @@ class SqliteHelper {
   // --- Child Methods ---
   Future<List<ChildProfile>> getChildren() async {
     final db = await database;
+    if (db == null) return demoChildren;
     final List<Map<String, dynamic>> maps = await db.query('children');
     
     List<ChildProfile> list = [];
@@ -273,6 +280,7 @@ class SqliteHelper {
   // FTS Search offline method
   Future<List<ChildProfile>> searchChildrenOffline(String query) async {
     final db = await database;
+    if (db == null) return demoChildren;
     if (query.trim().isEmpty) {
       return getChildren();
     }
@@ -312,6 +320,7 @@ class SqliteHelper {
 
   Future<void> insertChild(ChildProfile child) async {
     final db = await database;
+    if (db == null) return;
     await db.insert('children', child.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     await db.insert('children_fts', {
       'id': child.id,
@@ -323,6 +332,7 @@ class SqliteHelper {
 
   Future<void> updateChild(ChildProfile child) async {
     final db = await database;
+    if (db == null) return;
     await db.update(
       'children',
       child.toMap(),
@@ -339,6 +349,7 @@ class SqliteHelper {
 
   Future<void> deleteChild(String childId) async {
     final db = await database;
+    if (db == null) return;
     await db.delete('children', where: 'id = ?', whereArgs: [childId]);
     await db.delete('children_fts', where: 'id = ?', whereArgs: [childId]);
     await db.delete('vaccinations', where: 'childId = ?', whereArgs: [childId]);
@@ -348,11 +359,13 @@ class SqliteHelper {
   // --- Vaccination Record Methods ---
   Future<void> insertVaccination(VaccinationRecord record) async {
     final db = await database;
+    if (db == null) return;
     await db.insert('vaccinations', record.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateVaccinationSyncStatus(String id, String syncStatus) async {
     final db = await database;
+    if (db == null) return;
     await db.update(
       'vaccinations',
       {'syncStatus': syncStatus},
@@ -364,11 +377,13 @@ class SqliteHelper {
   // --- Medication Record Methods ---
   Future<void> insertMedication(MedicationRecord record) async {
     final db = await database;
+    if (db == null) return;
     await db.insert('medications', record.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateMedicationSyncStatus(String id, String syncStatus) async {
     final db = await database;
+    if (db == null) return;
     await db.update(
       'medications',
       {'syncStatus': syncStatus},
@@ -380,17 +395,20 @@ class SqliteHelper {
   // --- Disease Report Methods ---
   Future<List<DiseaseReport>> getDiseaseReports() async {
     final db = await database;
+    if (db == null) return demoDiseaseReports;
     final List<Map<String, dynamic>> maps = await db.query('disease_reports');
     return maps.map((r) => DiseaseReport.fromMap(r)).toList();
   }
 
   Future<void> insertDiseaseReport(DiseaseReport report) async {
     final db = await database;
+    if (db == null) return;
     await db.insert('disease_reports', report.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateDiseaseReportStatus(String id, String status) async {
     final db = await database;
+    if (db == null) return;
     await db.update(
       'disease_reports',
       {'status': status},
@@ -401,6 +419,7 @@ class SqliteHelper {
 
   Future<void> updateDiseaseReportSyncStatus(String id, String syncStatus) async {
     final db = await database;
+    if (db == null) return;
     await db.update(
       'disease_reports',
       {'syncStatus': syncStatus},
@@ -412,17 +431,20 @@ class SqliteHelper {
   // --- User Methods ---
   Future<List<UserModel>> getUsers() async {
     final db = await database;
+    if (db == null) return demoUsers;
     final List<Map<String, dynamic>> maps = await db.query('users');
     return maps.map((u) => UserModel.fromMap(u)).toList();
   }
 
   Future<void> insertUser(UserModel user) async {
     final db = await database;
+    if (db == null) return;
     await db.insert('users', user.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateUserStatus(String id, String status) async {
     final db = await database;
+    if (db == null) return;
     await db.update(
       'users',
       {'status': status},
@@ -433,35 +455,41 @@ class SqliteHelper {
 
   Future<void> deleteUser(String id) async {
     final db = await database;
+    if (db == null) return;
     await db.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
   // --- Audit Log Methods ---
   Future<List<SystemAuditLog>> getAuditLogs() async {
     final db = await database;
+    if (db == null) return demoAuditLogs;
     final List<Map<String, dynamic>> maps = await db.query('audit_logs', orderBy: 'timestamp DESC');
     return maps.map((log) => SystemAuditLog.fromMap(log)).toList();
   }
 
   Future<void> insertAuditLog(SystemAuditLog log) async {
     final db = await database;
+    if (db == null) return;
     await db.insert('audit_logs', log.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   // --- Sync Batch Methods ---
   Future<List<SyncBatch>> getSyncBatches() async {
     final db = await database;
+    if (db == null) return [];
     final List<Map<String, dynamic>> maps = await db.query('sync_batches', orderBy: 'uploadedAt DESC');
     return maps.map((b) => SyncBatch.fromMap(b)).toList();
   }
 
   Future<void> insertSyncBatch(SyncBatch batch) async {
     final db = await database;
+    if (db == null) return;
     await db.insert('sync_batches', batch.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateSyncBatch(SyncBatch batch) async {
     final db = await database;
+    if (db == null) return;
     await db.update(
       'sync_batches',
       batch.toMap(),

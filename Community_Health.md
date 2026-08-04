@@ -107,63 +107,71 @@ Trong nhiều trường hợp, thông tin về trẻ em, lịch sử tiêm chủ
 
 \#\#\# 1.2 Phân tích Tác nhân Hệ thống (Actors Identification)
 
-## **Tác nhân 1: Cán bộ y tế (Health Worker)**
+> **Kiến trúc Phân chia Nền tảng:**
+> - **Ứng dụng Di động (App Mobile):** Phục vụ 2 vai trò tác nhân trực tiếp tại cơ sở: **Cán bộ Y tế (Health Worker)** và **Phụ huynh (Parent)**.
+> - **Hệ thống Web Quản trị (Web Admin):** Phục vụ vai trò quản lý cấp cao: **Quản trị viên (Administrator)**.
 
-Đây là đối tượng sử dụng chính của hệ thống.
+---
+
+## **Tác nhân 1: Cán bộ y tế (Health Worker) — [Nền tảng App Mobile]**
+
+Đây là đối tượng sử dụng chính của ứng dụng di động tại các trạm y tế và bản làng.
 
 ### **Vai trò**
 
 - Quản lý hồ sơ trẻ em.  
-- Quản lý lịch sử tiêm chủng.  
+- Quản lý lịch sử tiêm chủng & cấp phát thuốc.  
 - Tra cứu thông tin bằng mã QR.  
-- Cập nhật dữ liệu ngoại tuyến.  
-- Đồng bộ dữ liệu lên hệ thống trung tâm.
+- Cập nhật dữ liệu ngoại tuyến (Offline-First).  
+- Gửi báo cáo dịch bệnh địa phương.  
+- Đồng bộ dữ liệu lên hệ thống trung tâm khi có kết nối.
 
 ### **Chức năng**
 
-- Đăng nhập hệ thống.  
-- Tìm kiếm trẻ em.  
-- Quét mã QR.  
-- Thêm thông tin tiêm chủng.  
-- Theo dõi lịch tiêm tiếp theo.  
-- Đồng bộ dữ liệu.
+- Đăng nhập hệ thống di động.  
+- Tìm kiếm và tạo mới hồ sơ trẻ em.  
+- Quét mã QR thẻ y tế.  
+- Ghi nhận thông tin tiêm chủng & thuốc uống.  
+- Theo dõi lịch tiêm tiếp theo & báo cáo ca dịch.  
+- Thực hiện đồng bộ dữ liệu thủ công / tự động.
 
 ---
 
-## **Tác nhân 2: Phụ huynh (Parent)**
+## **Tác nhân 2: Phụ huynh (Parent) — [Nền tảng App Mobile]**
 
-Đây là đối tượng được cung cấp thông tin về quá trình tiêm chủng của trẻ.
+Đây là đối tượng được cung cấp thông tin theo dõi quá trình tiêm chủng và sức khỏe của trẻ trên di động.
 
 ### **Vai trò**
 
-- Theo dõi thông tin sức khỏe của trẻ.  
-- Kiểm tra lịch tiêm.  
-- Nhận thông báo nhắc lịch tiêm.
+- Theo dõi thông tin sức khỏe và lịch tiêm của con em.  
+- Kiểm tra lịch tiêm chủng mở rộng tiếp theo.  
+- Nhận thông báo nhắc lịch tiêm từ trạm y tế.
 
 ### **Chức năng**
 
-- Xem thông tin tiêm chủng.  
-- Kiểm tra lịch tiêm tiếp theo.  
-- Nhận thông báo từ hệ thống.
+- Xem hồ sơ chi tiết và lịch sử tiêm chủng của con.  
+- Kiểm tra lịch tiêm tiếp theo & mũi nhắc lại.  
+- Nhận thông báo nhắc nhở từ hệ thống.
 
 ---
 
-## **Tác nhân 3: Quản trị viên (Administrator)**
+## **Tác nhân 3: Quản trị viên (Administrator) — [Nền tảng Web Admin]**
 
-Đây là người quản lý toàn bộ hệ thống.
+Đây là người quản lý hệ thống trên giao diện Web Admin trung tâm.
 
 ### **Vai trò**
 
-- Quản lý tài khoản người dùng.  
-- Quản lý dữ liệu tiêm chủng.  
-- Theo dõi số liệu thống kê.
+- Quản lý & phê duyệt tài khoản người dùng (Cán bộ y tế / Phụ huynh).  
+- Quản lý danh mục vắc-xin và lịch tiêm chủng quốc gia.  
+- Giám sát bản đồ dịch tễ và tỷ lệ bao phủ vắc-xin theo từng xã.  
+- Xem nhật ký hệ thống (Audit Logs) và xuất báo cáo.
 
 ### **Chức năng**
 
-- Thêm, sửa và xóa dữ liệu.  
-- Quản lý danh mục vắc-xin.  
-- Theo dõi tình trạng đồng bộ dữ liệu.  
-- Xuất báo cáo thống kê.
+- Quản lý danh sách người dùng & phê duyệt tài khoản mới đăng ký.  
+- Quản lý danh mục vắc-xin, lô vắc-xin & lập kế hoạch tiêm chủng.  
+- Theo dõi tình trạng đồng bộ dữ liệu toàn hệ thống.  
+- Xem bản đồ cảnh báo dịch tễ và xuất báo cáo thống kê.
 
 \#\#\# 1.3 Danh sách Use Cases & Sơ đồ Use Case Tổng thể (Use Case Diagram)
 

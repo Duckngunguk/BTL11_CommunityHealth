@@ -18,8 +18,6 @@ dependencies:
   flutter_riverpod: ^2.5.1
   connectivity_plus: ^6.0.3
   workmanager: ^0.5.2
-  flutter_secure_storage: ^9.2.2
-  firebase_messaging: ^14.7.10
   mobile_scanner: ^3.5.7
   fl_chart: ^0.68.0
 

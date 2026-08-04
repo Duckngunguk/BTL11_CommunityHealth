@@ -82,7 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                               ),
                               Text(
-                                'Tạo tài khoản mới trong hệ thống CommunityHealth',
+                                'Tạo tài khoản mới cho ứng dụng di động CommunityHealth',
                                 style: TextStyle(fontSize: 12, color: Colors.black54),
                               ),
                             ],
@@ -95,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // Chọn vai trò
                       const Text(
-                        'Chọn loại tài khoản:',
+                        'Chọn loại tài khoản (App Mobile):',
                         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                       ),
                       const SizedBox(height: 8),
@@ -110,11 +110,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             value: UserRole.parent,
                             icon: Icon(Icons.family_restroom_rounded),
                             label: Text('Phụ huynh'),
-                          ),
-                          ButtonSegment<UserRole>(
-                            value: UserRole.admin,
-                            icon: Icon(Icons.admin_panel_settings_outlined),
-                            label: Text('Quản trị viên'),
                           ),
                         ],
                         selected: {_selectedRole},
@@ -211,23 +206,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           validator: (v) {
                             if ((v ?? '').trim().isEmpty) return 'Vui lòng nhập mã xác thực Cán bộ Y tế';
                             if (v!.trim() != 'YTE2026') return 'Mã xác thực Y tế không hợp lệ (Mã thử nghiệm: YTE2026)';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-
-                      if (_selectedRole == UserRole.admin) ...[
-                        TextFormField(
-                          controller: _secretCodeController,
-                          decoration: const InputDecoration(
-                            labelText: 'Mã bảo mật Quản trị viên *',
-                            prefixIcon: Icon(Icons.security_rounded),
-                            hintText: 'Mã thử nghiệm: ADMIN2026',
-                          ),
-                          validator: (v) {
-                            if ((v ?? '').trim().isEmpty) return 'Vui lòng nhập mã bảo mật Admin';
-                            if (v!.trim() != 'ADMIN2026') return 'Mã bảo mật Admin không hợp lệ (Mã thử nghiệm: ADMIN2026)';
                             return null;
                           },
                         ),

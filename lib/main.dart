@@ -21,10 +21,11 @@ void callbackDispatcher() {
     try {
       final dbHelper = SqliteHelper.instance;
       final dbChildren = await dbHelper.getChildren();
-      
+
       final connection = await Connectivity().checkConnectivity();
-      final hasConnection = connection.any((result) => result != ConnectivityResult.none);
-      
+      final hasConnection =
+          connection.any((result) => result != ConnectivityResult.none);
+
       if (!hasConnection) {
         debugPrint('🔄 Background Task aborted: No network connectivity.');
         return Future.value(true);
@@ -48,7 +49,8 @@ void callbackDispatcher() {
         await dbHelper.insertSyncBatch(batch);
 
         final syncService = FirebaseSyncService.instance;
-        final success = await syncService.syncBatchUpload(batch, pendingVaccinations);
+        final success =
+            await syncService.syncBatchUpload(batch, pendingVaccinations);
 
         if (success) {
           for (var record in pendingVaccinations) {
@@ -64,7 +66,8 @@ void callbackDispatcher() {
             uploadedAt: batch.uploadedAt,
           );
           await dbHelper.updateSyncBatch(processedBatch);
-          debugPrint('🔄 Background Task: Sync batch ${batch.id} completed successfully.');
+          debugPrint(
+              '🔄 Background Task: Sync batch ${batch.id} completed successfully.');
         } else {
           final errorBatch = SyncBatch(
             id: batch.id,
@@ -126,12 +129,14 @@ class CommunityHealthApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: primaryGreen, brightness: Brightness.light),
+        colorScheme: ColorScheme.fromSeed(
+            seedColor: primaryGreen, brightness: Brightness.light),
         scaffoldBackgroundColor: pageBackground,
         cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         ),
         appBarTheme: const AppBarThemeData(
           backgroundColor: Colors.white,
@@ -141,15 +146,27 @@ class CommunityHealthApp extends StatelessWidget {
         inputDecorationTheme: InputDecorationThemeData(
           filled: true,
           fillColor: Colors.white,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFD9E0DC))),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFD9E0DC))),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: primaryGreen, width: 1.6)),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFD9E0DC))),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFD9E0DC))),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: primaryGreen, width: 1.6)),
         ),
         filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(minimumSize: const Size(0, 50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+          style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 50),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14))),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+          style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 50),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14))),
         ),
       ),
       home: const _AppRouter(),
@@ -181,4 +198,3 @@ class _AppRouterState extends State<_AppRouter> {
     return MobileShell(onLogout: () => setState(() => _mode = null));
   }
 }
-
