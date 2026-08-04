@@ -22,8 +22,9 @@ class SqliteHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -63,11 +64,22 @@ class SqliteHelper {
         status TEXT,
         nextVaccine TEXT,
         nextDue TEXT,
-        lateDays INTEGER
+        lateDays INTEGER,
+        lastSyncAt TEXT
       )
     ''');
 
-    // 3. Table vaccinations
+    // 3. Table children_fts (FTS5 virtual table for fast search)
+    await db.execute('''
+      CREATE VIRTUAL TABLE children_fts USING fts5(
+        id,
+        fullName,
+        qrCode,
+        motherName
+      )
+    ''');
+
+    // 4. Table vaccinations
     await db.execute('''
       CREATE TABLE vaccinations (
         id TEXT PRIMARY KEY,
@@ -83,7 +95,7 @@ class SqliteHelper {
       )
     ''');
 
-    // 4. Table medications
+    // 5. Table medications
     await db.execute('''
       CREATE TABLE medications (
         id TEXT PRIMARY KEY,
@@ -98,7 +110,7 @@ class SqliteHelper {
       )
     ''');
 
-    // 5. Table disease_reports
+    // 6. Table disease_reports
     await db.execute('''
       CREATE TABLE disease_reports (
         id TEXT PRIMARY KEY,
@@ -118,7 +130,7 @@ class SqliteHelper {
       )
     ''');
 
-    // 6. Table audit_logs
+    // 7. Table audit_logs
     await db.execute('''
       CREATE TABLE audit_logs (
         id TEXT PRIMARY KEY,
@@ -130,8 +142,64 @@ class SqliteHelper {
       )
     ''');
 
+    // 8. Table sync_batches
+    await db.execute('''
+      CREATE TABLE sync_batches (
+        id TEXT PRIMARY KEY,
+        deviceId TEXT,
+        healthworkerId TEXT,
+        vaccinationIds TEXT,
+        status TEXT,
+        uploadedAt TEXT,
+        errorMessage TEXT
+      )
+    ''');
+
     // Seed Initial Demo Data
     await _seedDemoData(db);
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    debugPrint('Upgrading SQLite table from $oldVersion to $newVersion...');
+    if (oldVersion < 2) {
+      // 1. Add lastSyncAt column to children
+      try {
+        await db.execute('ALTER TABLE children ADD COLUMN lastSyncAt TEXT;');
+      } catch (e) {
+        debugPrint('Column lastSyncAt already exists or error adding: $e');
+      }
+      
+      // 2. Create children_fts table
+      await db.execute('DROP TABLE IF EXISTS children_fts;');
+      await db.execute('''
+        CREATE VIRTUAL TABLE children_fts USING fts5(
+          id,
+          fullName,
+          qrCode,
+          motherName
+        )
+      ''');
+      
+      // 3. Populate children_fts
+      await db.execute('''
+        INSERT INTO children_fts(id, fullName, qrCode, motherName)
+        SELECT id, fullName, qrCode, motherName FROM children;
+      ''');
+
+      // 4. Create sync_batches table
+      await db.execute('DROP TABLE IF EXISTS sync_batches;');
+      await db.execute('''
+        CREATE TABLE sync_batches (
+          id TEXT PRIMARY KEY,
+          deviceId TEXT,
+          healthworkerId TEXT,
+          vaccinationIds TEXT,
+          status TEXT,
+          uploadedAt TEXT,
+          errorMessage TEXT
+        )
+      ''');
+    }
   }
 
   Future<void> _seedDemoData(Database db) async {
@@ -145,6 +213,12 @@ class SqliteHelper {
     // Seed Children, Vaccinations, and Medications
     for (var child in demoChildren) {
       await db.insert('children', child.toMap());
+      await db.insert('children_fts', {
+        'id': child.id,
+        'fullName': child.fullName,
+        'qrCode': child.qrCode,
+        'motherName': child.motherName,
+      });
 
       for (var v in child.vaccinations) {
         await db.insert('vaccinations', v.toMap());
@@ -196,9 +270,55 @@ class SqliteHelper {
     return list;
   }
 
+  // FTS Search offline method
+  Future<List<ChildProfile>> searchChildrenOffline(String query) async {
+    final db = await database;
+    if (query.trim().isEmpty) {
+      return getChildren();
+    }
+    
+    // Clean and query FTS5 virtual table
+    final cleanQuery = query.replaceAll('\'', '\'\'').trim();
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT children.* FROM children
+      INNER JOIN children_fts ON children.id = children_fts.id
+      WHERE children_fts MATCH ?
+    ''', ['$cleanQuery*']);
+    
+    List<ChildProfile> list = [];
+    for (var map in maps) {
+      final childId = map['id'] as String;
+      
+      // Get vaccinations
+      final List<Map<String, dynamic>> vMaps = await db.query(
+        'vaccinations',
+        where: 'childId = ?',
+        whereArgs: [childId],
+      );
+      final vaccinations = vMaps.map((v) => VaccinationRecord.fromMap(v)).toList();
+
+      // Get medications
+      final List<Map<String, dynamic>> mMaps = await db.query(
+        'medications',
+        where: 'childId = ?',
+        whereArgs: [childId],
+      );
+      final medications = mMaps.map((m) => MedicationRecord.fromMap(m)).toList();
+
+      list.add(ChildProfile.fromMap(map, vaccinations: vaccinations, medications: medications));
+    }
+    return list;
+  }
+
   Future<void> insertChild(ChildProfile child) async {
     final db = await database;
     await db.insert('children', child.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('children_fts', {
+      'id': child.id,
+      'fullName': child.fullName,
+      'qrCode': child.qrCode,
+      'motherName': child.motherName,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateChild(ChildProfile child) async {
@@ -209,11 +329,18 @@ class SqliteHelper {
       where: 'id = ?',
       whereArgs: [child.id],
     );
+    await db.insert('children_fts', {
+      'id': child.id,
+      'fullName': child.fullName,
+      'qrCode': child.qrCode,
+      'motherName': child.motherName,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> deleteChild(String childId) async {
     final db = await database;
     await db.delete('children', where: 'id = ?', whereArgs: [childId]);
+    await db.delete('children_fts', where: 'id = ?', whereArgs: [childId]);
     await db.delete('vaccinations', where: 'childId = ?', whereArgs: [childId]);
     await db.delete('medications', where: 'childId = ?', whereArgs: [childId]);
   }
@@ -319,5 +446,27 @@ class SqliteHelper {
   Future<void> insertAuditLog(SystemAuditLog log) async {
     final db = await database;
     await db.insert('audit_logs', log.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  // --- Sync Batch Methods ---
+  Future<List<SyncBatch>> getSyncBatches() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('sync_batches', orderBy: 'uploadedAt DESC');
+    return maps.map((b) => SyncBatch.fromMap(b)).toList();
+  }
+
+  Future<void> insertSyncBatch(SyncBatch batch) async {
+    final db = await database;
+    await db.insert('sync_batches', batch.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateSyncBatch(SyncBatch batch) async {
+    final db = await database;
+    await db.update(
+      'sync_batches',
+      batch.toMap(),
+      where: 'id = ?',
+      whereArgs: [batch.id],
+    );
   }
 }

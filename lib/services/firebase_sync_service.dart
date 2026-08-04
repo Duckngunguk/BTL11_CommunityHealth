@@ -99,4 +99,51 @@ class FirebaseSyncService {
       return false;
     }
   }
+
+  // Upload all vaccination records in a SyncBatch using Firestore WriteBatch for atomicity
+  Future<bool> syncBatchUpload(SyncBatch batch, List<VaccinationRecord> records) async {
+    await initialize();
+
+    if (!_isInitialized) {
+      // Simulated cloud sync delay
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      debugPrint('☁️ [Simulated Cloud Batch Sync] Uploaded Batch: ${batch.id} with ${records.length} records');
+      return true;
+    }
+
+    try {
+      debugPrint('🔥 [Firestore Batch Sync] Syncing Batch: ${batch.id}');
+      final firestore = FirebaseFirestore.instance;
+      final firestoreBatch = firestore.batch();
+
+      // 1. Write the batch metadata document
+      final batchDoc = firestore.collection('sync_batches').doc(batch.id);
+      firestoreBatch.set(batchDoc, batch.toMap());
+
+      // 2. Write each vaccination record document
+      for (var record in records) {
+        final recordDoc = firestore.collection('vaccinations').doc(record.id);
+        firestoreBatch.set(recordDoc, {
+          'id': record.id,
+          'childId': record.childId,
+          'vaccineId': record.vaccineId,
+          'vaccineName': record.vaccineName,
+          'doseNumber': record.doseNumber,
+          'lotNumber': record.lotNumber,
+          'administeredBy': record.administeredBy,
+          'reactions': record.reactions,
+          'administeredAt': record.administeredAt.toIso8601String(),
+          'syncStatus': 'synced',
+        });
+      }
+
+      // Commit the batch transaction
+      await firestoreBatch.commit();
+      debugPrint('🔥 [Firestore Batch Sync] Batch ${batch.id} committed successfully.');
+      return true;
+    } catch (e) {
+      debugPrint('❌ [Firestore Batch Sync Error]: $e');
+      return false;
+    }
+  }
 }

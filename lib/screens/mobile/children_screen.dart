@@ -105,6 +105,7 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                       onPressed: () {
                         _searchController.text = 'CH-QR-0001';
                         setState(() => _query = 'CH-QR-0001');
+                        store.searchChildren('CH-QR-0001');
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Đã mô phỏng quét QR: CH-QR-0001')),
                         );
@@ -112,7 +113,10 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                       icon: const Icon(Icons.qr_code_scanner_rounded),
                     ),
                   ],
-                  onChanged: (value) => setState(() => _query = value),
+                  onChanged: (value) {
+                    setState(() => _query = value);
+                    store.searchChildren(value);
+                  },
                 ),
                 const SizedBox(height: 10),
                 SingleChildScrollView(

@@ -1,4 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/api/api_client.dart';
 import '../data/demo_data.dart';
@@ -9,7 +12,21 @@ import '../services/firebase_sync_service.dart';
 class AppStore extends ChangeNotifier {
   AppStore() {
     _initData();
+    _initConnectivity();
   }
+
+  void _initConnectivity() {
+    Connectivity().onConnectivityChanged.listen((results) {
+      final hasConnection = results.any((result) => result != ConnectivityResult.none);
+      setOnline(hasConnection);
+      if (hasConnection && pendingCount > 0) {
+        debugPrint('📶 Connection restored! Auto-triggering pending sync...');
+        syncPending();
+      }
+    });
+  }
+
+  final _secureStorage = const FlutterSecureStorage();
 
   List<ChildProfile> children = [];
   List<DiseaseReport> diseaseReports = [];
@@ -17,7 +34,21 @@ class AppStore extends ChangeNotifier {
   List<SystemAuditLog> auditLogs = [];
   List<VaccineSchedule> vaccineSchedules = List<VaccineSchedule>.from(demoSchedules);
   List<MedicationSchedule> medicationSchedules = List<MedicationSchedule>.from(demoMedicationSchedules);
-  UserModel? currentUser;
+  
+  UserModel? _currentUser;
+  UserModel? get currentUser => _currentUser;
+  set currentUser(UserModel? value) {
+    _currentUser = value;
+    if (value != null && value.token != null) {
+      _secureStorage.write(key: 'auth_token', value: value.token!);
+      debugPrint('🔒 Token stored in Secure Storage: ${value.token}');
+    } else {
+      _secureStorage.delete(key: 'auth_token');
+      debugPrint('🔒 Token cleared from Secure Storage');
+    }
+    notifyListeners();
+  }
+
   bool isOnline = false;
   bool isSyncing = false;
   DateTime lastSyncAt = DateTime(2026, 7, 23, 16, 40);
@@ -34,6 +65,17 @@ class AppStore extends ChangeNotifier {
       children = dbChildren;
       diseaseReports = dbReports;
       auditLogs = dbLogs;
+
+      // Try loading securely stored token on startup
+      final storedToken = await _secureStorage.read(key: 'auth_token');
+      if (storedToken != null) {
+        debugPrint('🔒 Stored Token found in Secure Storage: $storedToken');
+        final matchingUser = users.where((u) => u.token == storedToken).firstOrNull;
+        if (matchingUser != null) {
+          _currentUser = matchingUser;
+          debugPrint('🔒 Auto-logged in user: ${_currentUser?.username}');
+        }
+      }
 
       notifyListeners();
     } catch (e) {
@@ -345,28 +387,74 @@ class AppStore extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Find and sync pending vaccinations
-      for (var child in children) {
-        for (var record in child.vaccinations) {
-          if (record.syncStatus == VaccinationSyncStatus.pending) {
-            final success = await FirebaseSyncService.instance
-                .syncVaccinationRecord(record);
-            if (success) {
-              await SqliteHelper.instance.updateVaccinationSyncStatus(
-                  record.id, VaccinationSyncStatus.synced.name);
-            }
+      // 1. Gather all pending vaccination records across all children
+      final pendingVaccinations = children
+          .expand((child) => child.vaccinations)
+          .where((v) => v.syncStatus == VaccinationSyncStatus.pending)
+          .toList();
+
+      if (pendingVaccinations.isNotEmpty) {
+        final batch = SyncBatch(
+          id: 'BATCH-${DateTime.now().millisecondsSinceEpoch}',
+          deviceId: 'device-sapa-01',
+          healthworkerId: currentUser?.id ?? 'worker-anonymous',
+          vaccinationIds: pendingVaccinations.map((v) => v.id).toList(),
+          status: SyncBatchStatus.uploaded,
+          uploadedAt: DateTime.now(),
+        );
+
+        // Save batch log to SQLite
+        await SqliteHelper.instance.insertSyncBatch(batch);
+
+        // Upload batch metadata and records to Firestore atomically
+        final batchSuccess = await FirebaseSyncService.instance
+            .syncBatchUpload(batch, pendingVaccinations);
+
+        if (batchSuccess) {
+          // Update SQLite records
+          for (var record in pendingVaccinations) {
+            await SqliteHelper.instance.updateVaccinationSyncStatus(
+                record.id, VaccinationSyncStatus.synced.name);
           }
+          
+          // Mark batch as processed
+          final processedBatch = SyncBatch(
+            id: batch.id,
+            deviceId: batch.deviceId,
+            healthworkerId: batch.healthworkerId,
+            vaccinationIds: batch.vaccinationIds,
+            status: SyncBatchStatus.processed,
+            uploadedAt: batch.uploadedAt,
+          );
+          await SqliteHelper.instance.updateSyncBatch(processedBatch);
+          debugPrint('SyncBatch ${batch.id} completed and updated to SQLite.');
+        } else {
+          // Mark batch as error
+          final errorBatch = SyncBatch(
+            id: batch.id,
+            deviceId: batch.deviceId,
+            healthworkerId: batch.healthworkerId,
+            vaccinationIds: batch.vaccinationIds,
+            status: SyncBatchStatus.error,
+            uploadedAt: batch.uploadedAt,
+            errorMessage: 'Firestore transaction batch commit failed.',
+          );
+          await SqliteHelper.instance.updateSyncBatch(errorBatch);
+          throw Exception('Failed to upload sync batch.');
         }
+      }
+
+      // 2. Simulated sync for pending medications
+      for (var child in children) {
         for (var record in child.medications) {
           if (record.syncStatus == VaccinationSyncStatus.pending) {
-            // Simulated local sync update for medication records
             await SqliteHelper.instance.updateMedicationSyncStatus(
                 record.id, VaccinationSyncStatus.synced.name);
           }
         }
       }
 
-      // Find and sync pending disease reports
+      // 3. Sync pending disease reports
       for (var report in diseaseReports) {
         if (report.syncStatus == VaccinationSyncStatus.pending) {
           final success =
@@ -395,18 +483,52 @@ class AppStore extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // SQLite FTS Offline Search
+  Future<void> searchChildren(String query) async {
+    try {
+      final results = await SqliteHelper.instance.searchChildrenOffline(query);
+      children = results;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error searching children offline: $e');
+    }
+  }
 }
 
-class AppScope extends InheritedNotifier<AppStore> {
+final appStoreProvider = ChangeNotifierProvider<AppStore>((ref) {
+  return AppStore();
+});
+
+class _AppScopeInherited extends InheritedNotifier<AppStore> {
+  const _AppScopeInherited({
+    required super.notifier,
+    required super.child,
+  });
+}
+
+class AppScope extends ConsumerWidget {
   const AppScope({
     super.key,
-    required AppStore notifier,
-    required super.child,
-  }) : super(notifier: notifier);
+    required this.child,
+    this.notifier,
+  });
+
+  final Widget child;
+  final AppStore? notifier;
 
   static AppStore of(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
+    final scope = context.dependOnInheritedWidgetOfExactType<_AppScopeInherited>();
     assert(scope != null, 'Không tìm thấy AppScope trong widget tree.');
     return scope!.notifier!;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final store = notifier ?? ref.watch(appStoreProvider);
+    return _AppScopeInherited(
+      notifier: store,
+      child: child,
+    );
   }
 }

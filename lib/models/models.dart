@@ -286,6 +286,7 @@ class ChildProfile {
     required this.lateDays,
     required this.vaccinations,
     this.medications = const [],
+    this.lastSyncAt,
   });
 
   final String id;
@@ -304,6 +305,7 @@ class ChildProfile {
   final int lateDays;
   final List<VaccinationRecord> vaccinations;
   final List<MedicationRecord> medications;
+  final DateTime? lastSyncAt;
 
   ChildProfile copyWith({
     String? qrCode,
@@ -321,6 +323,7 @@ class ChildProfile {
     int? lateDays,
     List<VaccinationRecord>? vaccinations,
     List<MedicationRecord>? medications,
+    DateTime? lastSyncAt,
   }) {
     return ChildProfile(
       id: id,
@@ -339,6 +342,7 @@ class ChildProfile {
       lateDays: lateDays ?? this.lateDays,
       vaccinations: vaccinations ?? this.vaccinations,
       medications: medications ?? this.medications,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
     );
   }
 
@@ -358,6 +362,7 @@ class ChildProfile {
       'nextVaccine': nextVaccine,
       'nextDue': nextDue.toIso8601String(),
       'lateDays': lateDays,
+      'lastSyncAt': lastSyncAt?.toIso8601String(),
     };
   }
 
@@ -383,6 +388,55 @@ class ChildProfile {
       lateDays: map['lateDays'] as int,
       vaccinations: vaccinations,
       medications: medications,
+      lastSyncAt: map['lastSyncAt'] != null ? DateTime.parse(map['lastSyncAt'] as String) : null,
+    );
+  }
+}
+
+enum SyncBatchStatus { uploaded, processed, error }
+
+class SyncBatch {
+  const SyncBatch({
+    required this.id,
+    required this.deviceId,
+    required this.healthworkerId,
+    required this.vaccinationIds,
+    required this.status,
+    required this.uploadedAt,
+    this.errorMessage,
+  });
+
+  final String id;
+  final String deviceId;
+  final String healthworkerId;
+  final List<String> vaccinationIds;
+  final SyncBatchStatus status;
+  final DateTime uploadedAt;
+  final String? errorMessage;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'deviceId': deviceId,
+      'healthworkerId': healthworkerId,
+      'vaccinationIds': vaccinationIds.join(','),
+      'status': status.name,
+      'uploadedAt': uploadedAt.toIso8601String(),
+      'errorMessage': errorMessage,
+    };
+  }
+
+  factory SyncBatch.fromMap(Map<String, dynamic> map) {
+    final vIdsRaw = map['vaccinationIds'] as String;
+    final List<String> vIds = vIdsRaw.isEmpty ? [] : vIdsRaw.split(',');
+    return SyncBatch(
+      id: map['id'] as String,
+      deviceId: map['deviceId'] as String,
+      healthworkerId: map['healthworkerId'] as String,
+      vaccinationIds: vIds,
+      status: SyncBatchStatus.values.firstWhere((e) => e.name == map['status']),
+      uploadedAt: DateTime.parse(map['uploadedAt'] as String),
+      errorMessage: map['errorMessage'] as String?,
     );
   }
 }

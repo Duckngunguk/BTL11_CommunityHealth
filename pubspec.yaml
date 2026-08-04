@@ -15,6 +15,11 @@ dependencies:
   path: ^1.9.0
   firebase_core: ^2.32.0
   cloud_firestore: ^4.17.5
+  flutter_riverpod: ^2.5.1
+  connectivity_plus: ^6.0.3
+  workmanager: ^0.5.2
+  flutter_secure_storage: ^9.2.2
+  firebase_messaging: ^14.7.10
 
 dev_dependencies:
   flutter_test:
