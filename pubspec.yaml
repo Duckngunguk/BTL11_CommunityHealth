@@ -20,6 +20,8 @@ dependencies:
   workmanager: ^0.5.2
   flutter_secure_storage: ^9.2.2
   firebase_messaging: ^14.7.10
+  mobile_scanner: ^3.5.7
+  fl_chart: ^0.68.0
 
 dev_dependencies:
   flutter_test:
