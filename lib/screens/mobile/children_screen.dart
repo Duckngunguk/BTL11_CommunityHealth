@@ -5,6 +5,7 @@ import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 import 'child_detail_screen.dart';
 import 'child_form_dialog.dart';
+import 'qr_scanner_screen.dart';
 
 class ChildrenScreen extends StatefulWidget {
   const ChildrenScreen({super.key});
@@ -122,14 +123,19 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                   leading: const Icon(Icons.search_rounded),
                   trailing: [
                     IconButton(
-                      tooltip: 'Quét QR demo',
-                      onPressed: () {
-                        _searchController.text = 'CH-QR-0001';
-                        setState(() => _query = 'CH-QR-0001');
-                        store.searchChildren('CH-QR-0001');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Đã mô phỏng quét QR: CH-QR-0001')),
+                      tooltip: 'Quét mã QR thẻ y tế',
+                      onPressed: () async {
+                        final result = await Navigator.of(context).push<String>(
+                          MaterialPageRoute<String>(
+                            builder: (_) => const QRScannerScreen(),
+                            fullscreenDialog: true,
+                          ),
                         );
+                        if (result != null && mounted) {
+                          _searchController.text = result;
+                          setState(() => _query = result);
+                          store.searchChildren(result);
+                        }
                       },
                       icon: const Icon(Icons.qr_code_scanner_rounded),
                     ),

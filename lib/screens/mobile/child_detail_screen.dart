@@ -202,7 +202,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
             if (child.vaccinations.isEmpty)
               const EmptyState(title: 'Chưa có bản ghi tiêm chủng', description: 'Trẻ chưa có dữ liệu tiêm chủng.')
             else
-              ...child.vaccinations.reversed.map((record) => _VaccinationCard(record: record)),
+              _VaccinationTimeline(vaccinations: child.vaccinations.toList()),
           ] else ...[
             const SectionHeader(
               title: 'Lịch sử uống thuốc',
@@ -212,7 +212,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
             if (child.medications.isEmpty)
               const EmptyState(title: 'Chưa có bản ghi thuốc uống', description: 'Trẻ chưa có dữ liệu uống thuốc bổ sung.')
             else
-              ...child.medications.reversed.map((record) => _MedicationCard(record: record)),
+              _MedicationTimeline(medications: child.medications.toList()),
           ],
           const SizedBox(height: 18),
           Card(
@@ -235,140 +235,371 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
   }
 }
 
-class _VaccinationCard extends StatelessWidget {
-  const _VaccinationCard({required this.record});
+class _VaccinationTimeline extends StatelessWidget {
+  const _VaccinationTimeline({required this.vaccinations});
+  final List<VaccinationRecord> vaccinations;
 
+  @override
+  Widget build(BuildContext context) {
+    final synced = vaccinations.where((v) => v.syncStatus == VaccinationSyncStatus.synced).length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Summary badge
+        Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFBBF7D0)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.vaccines_rounded, color: Color(0xFF18794E), size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'Đã tiêm $synced/${vaccinations.length} mũi đồng bộ thành công',
+                style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF18794E)),
+              ),
+            ],
+          ),
+        ),
+        // Timeline
+        ...vaccinations.reversed.toList().asMap().entries.map((entry) {
+          final isLast = entry.key == vaccinations.length - 1;
+          return _VaccinationTimelineItem(record: entry.value, isLast: isLast);
+        }),
+      ],
+    );
+  }
+}
+
+class _VaccinationTimelineItem extends StatefulWidget {
+  const _VaccinationTimelineItem({required this.record, required this.isLast});
   final VaccinationRecord record;
+  final bool isLast;
+
+  @override
+  State<_VaccinationTimelineItem> createState() => _VaccinationTimelineItemState();
+}
+
+class _VaccinationTimelineItemState extends State<_VaccinationTimelineItem> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
-    final pending = record.syncStatus == VaccinationSyncStatus.pending;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: softGreen, borderRadius: BorderRadius.circular(14)),
-              child: const Icon(Icons.vaccines_rounded, color: primaryGreen),
+    final pending = widget.record.syncStatus == VaccinationSyncStatus.pending;
+    final dotColor = pending ? const Color(0xFFD97706) : const Color(0xFF18794E);
+    final bgColor = pending ? const Color(0xFFFFFBEB) : const Color(0xFFF0FDF4);
+    final borderColor = pending ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Timeline column
+          SizedBox(
+            width: 40,
+            child: Column(
+              children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: dotColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: dotColor.withAlpha(80), blurRadius: 6, spreadRadius: 2)],
+                  ),
+                  child: Icon(
+                    pending ? Icons.sync_rounded : Icons.check_rounded,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                ),
+                if (!widget.isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: const Color(0xFFE2E8F0),
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${record.vaccineName} - Mũi ${record.doseNumber}',
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: pending ? const Color(0xFFFFF3CD) : const Color(0xFFE5F5EC),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        child: Text(
-                          pending ? 'Chờ đồng bộ' : 'Đã đồng bộ',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: pending ? const Color(0xFF8A5D00) : const Color(0xFF18794E),
+          ),
+          const SizedBox(width: 10),
+          // Content
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${widget.record.vaccineName} — Mũi ${widget.record.doseNumber}',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: pending ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            pending ? '⏳ Chờ đồng bộ' : '✅ Đã đồng bộ',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: pending ? const Color(0xFF92400E) : const Color(0xFF14532D),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      formatDate(widget.record.administeredAt),
+                      style: const TextStyle(color: Colors.black54, fontSize: 13),
+                    ),
+                    // Expandable details
+                    if (_expanded) ...[ 
+                      const Divider(height: 16),
+                      _DetailRow(label: 'Số lô vaccine', value: widget.record.lotNumber),
+                      _DetailRow(label: 'Cán bộ tiêm', value: widget.record.administeredBy),
+                      if ((widget.record.reactions ?? '').isNotEmpty)
+                        _DetailRow(
+                          label: 'Phản ứng sau tiêm',
+                          value: widget.record.reactions!,
+                          valueColor: const Color(0xFFB42318),
+                        ),
                     ],
-                  ),
-                  const SizedBox(height: 7),
-                  Text('Ngày tiêm: ${formatDate(record.administeredAt)}'),
-                  Text('Số lô: ${record.lotNumber}'),
-                  Text('Cán bộ tiêm: ${record.administeredBy}'),
-                  if ((record.reactions ?? '').isNotEmpty) Text('Phản ứng: ${record.reactions}'),
-                ],
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          _expanded ? 'Thu gọn ▲' : 'Xem chi tiết ▼',
+                          style: const TextStyle(fontSize: 12, color: Colors.black45),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _MedicationCard extends StatelessWidget {
-  const _MedicationCard({required this.record});
+class _MedicationTimeline extends StatelessWidget {
+  const _MedicationTimeline({required this.medications});
+  final List<MedicationRecord> medications;
 
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFFDE68A)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.medication_rounded, color: Color(0xFFD97706), size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'Tổng ${medications.length} lần uống thuốc được ghi nhận',
+                style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF92400E)),
+              ),
+            ],
+          ),
+        ),
+        ...medications.reversed.toList().asMap().entries.map((entry) {
+          final isLast = entry.key == medications.length - 1;
+          return _MedicationTimelineItem(record: entry.value, isLast: isLast);
+        }),
+      ],
+    );
+  }
+}
+
+class _MedicationTimelineItem extends StatefulWidget {
+  const _MedicationTimelineItem({required this.record, required this.isLast});
   final MedicationRecord record;
+  final bool isLast;
+
+  @override
+  State<_MedicationTimelineItem> createState() => _MedicationTimelineItemState();
+}
+
+class _MedicationTimelineItemState extends State<_MedicationTimelineItem> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
-    final pending = record.syncStatus == VaccinationSyncStatus.pending;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3CD),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.medication_rounded, color: Color(0xFF8A5D00)),
+    final pending = widget.record.syncStatus == VaccinationSyncStatus.pending;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 40,
+            child: Column(
+              children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD97706),
+                    shape: BoxShape.circle,
+                    boxShadow: [const BoxShadow(color: Color(0x40D97706), blurRadius: 6, spreadRadius: 2)],
+                  ),
+                  child: Icon(
+                    pending ? Icons.sync_rounded : Icons.check_rounded,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                ),
+                if (!widget.isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: const Color(0xFFE2E8F0),
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          record.medicationName,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: pending ? const Color(0xFFFFF3CD) : const Color(0xFFE5F5EC),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        child: Text(
-                          pending ? 'Chờ đồng bộ' : 'Đã đồng bộ',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: pending ? const Color(0xFF8A5D00) : const Color(0xFF18794E),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.record.medicationName,
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                           ),
                         ),
-                      ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: pending ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            pending ? '⏳ Chờ đồng bộ' : '✅ Đã đồng bộ',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: pending ? const Color(0xFF92400E) : const Color(0xFF14532D),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      formatDate(widget.record.administeredAt),
+                      style: const TextStyle(color: Colors.black54, fontSize: 13),
+                    ),
+                    if (_expanded) ...[
+                      const Divider(height: 16),
+                      _DetailRow(label: 'Liều dùng', value: widget.record.dosage),
+                      _DetailRow(label: 'Cán bộ cho uống', value: widget.record.administeredBy),
+                      if ((widget.record.notes ?? '').isNotEmpty)
+                        _DetailRow(label: 'Ghi chú', value: widget.record.notes!),
                     ],
-                  ),
-                  const SizedBox(height: 7),
-                  Text('Liều dùng: ${record.dosage}'),
-                  Text('Ngày uống: ${formatDate(record.administeredAt)}'),
-                  Text('Cán bộ cho uống: ${record.administeredBy}'),
-                  if ((record.notes ?? '').isNotEmpty) Text('Ghi chú: ${record.notes}'),
-                ],
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          _expanded ? 'Thu gọn ▲' : 'Xem chi tiết ▼',
+                          style: const TextStyle(fontSize: 12, color: Colors.black45),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value, this.valueColor});
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 class _InfoLine extends StatelessWidget {
   const _InfoLine({required this.icon, required this.text});
