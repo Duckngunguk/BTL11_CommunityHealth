@@ -22,6 +22,20 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
   String? _village;
   String? _ageGroup;
 
+  bool _initializedCommune = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initializedCommune) {
+      final user = AppScope.of(context).currentUser;
+      if (user?.assignedCommune != null) {
+        _commune = user!.assignedCommune;
+      }
+      _initializedCommune = true;
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();

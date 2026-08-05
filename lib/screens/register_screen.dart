@@ -311,19 +311,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (response.success) {
+      final isPending = response.data?.isPending ?? false;
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF18794E), size: 48),
-          title: const Text('Đăng ký thành công!'),
-          content: Text(response.message ?? 'Tài khoản của bạn đã được đăng ký thành công.'),
+          icon: Icon(
+            isPending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded,
+            color: isPending ? const Color(0xFFD97706) : const Color(0xFF18794E),
+            size: 48,
+          ),
+          title: Text(isPending ? 'Đăng ký thành công - Chờ Admin duyệt' : 'Đăng ký thành công!'),
+          content: Text(response.message ?? 'Tài khoản của bạn đã được đăng ký.'),
           actions: [
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: isPending ? const Color(0xFFD97706) : const Color(0xFF18794E),
+              ),
               onPressed: () {
                 Navigator.pop(context);
                 widget.onBackToLogin(_usernameController.text.trim());
               },
-              child: const Text('Đăng nhập ngay'),
+              child: Text(isPending ? 'Quay lại Đăng nhập' : 'Đăng nhập ngay'),
             ),
           ],
         ),

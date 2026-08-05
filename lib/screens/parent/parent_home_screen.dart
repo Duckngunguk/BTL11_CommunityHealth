@@ -16,13 +16,30 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final children = store.children;
+    final user = store.currentUser;
+
+    // Filter children for the logged-in parent
+    final children = store.children.where((child) {
+      if (user == null) return true;
+      // Match demo parent
+      if (user.username == 'parent.demo') {
+        return child.motherName.contains('Giàng A Sáng') || child.motherName.contains('Giàng');
+      }
+      // Match by full name or phone number
+      final parentName = user.fullName.toLowerCase().trim();
+      final motherName = child.motherName.toLowerCase().trim();
+      return (parentName.isNotEmpty && motherName.contains(parentName)) ||
+          (user.phone.isNotEmpty && child.motherPhone == user.phone);
+    }).toList();
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         // Header chào mừng
-        _WelcomeBanner(totalChildren: children.length),
+        _WelcomeBanner(
+          parentName: user?.fullName ?? 'Phụ huynh',
+          totalChildren: children.length,
+        ),
         const SizedBox(height: 20),
 
         // Thống kê nhanh
@@ -43,8 +60,8 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
         if (children.isEmpty)
           const EmptyState(
-            title: 'Chưa có hồ sơ nào',
-            description: 'Liên hệ cán bộ y tế để được tạo hồ sơ tiêm chủng cho con.',
+            title: 'Chưa có hồ sơ con nào',
+            description: 'Tài khoản chưa có trẻ nào liên kết. Vui lòng liên hệ Cán bộ Y tế xã để đăng ký và tạo sổ tiêm cho con.',
           )
         else
           ...children.map((child) => _ParentChildCard(child: child)),
@@ -54,7 +71,8 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 }
 
 class _WelcomeBanner extends StatelessWidget {
-  const _WelcomeBanner({required this.totalChildren});
+  const _WelcomeBanner({required this.parentName, required this.totalChildren});
+  final String parentName;
   final int totalChildren;
 
   @override
@@ -75,9 +93,9 @@ class _WelcomeBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Xin chào, Phụ huynh! 👋',
-                  style: TextStyle(
+                Text(
+                  'Xin chào, $parentName! 👋',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
                     fontSize: 18,

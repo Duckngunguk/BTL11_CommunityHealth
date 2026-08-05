@@ -167,6 +167,10 @@ class AppStore extends ChangeNotifier {
           400, 'Tên đăng nhập hoặc email đã tồn tại trên hệ thống!');
     }
 
+    final initialStatus = role == UserRole.healthWorker
+        ? UserAccountStatus.pendingApproval
+        : UserAccountStatus.active;
+
     final newUser = UserModel(
       id: 'USR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       username: username,
@@ -174,7 +178,7 @@ class AppStore extends ChangeNotifier {
       email: email,
       phone: phone,
       role: role,
-      status: UserAccountStatus.active,
+      status: initialStatus,
       createdAt: DateTime.now(),
       assignedCommune: assignedCommune,
       password: password,
@@ -193,9 +197,11 @@ class AppStore extends ChangeNotifier {
     await addAuditLog('Đăng ký tài khoản',
         'Đăng ký tài khoản mới "${newUser.username}" với vai trò ${role.name}');
 
-    return ApiResponse.created(newUser,
-        message:
-            'Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.');
+    final successMsg = role == UserRole.healthWorker
+        ? 'Đăng ký tài khoản Cán bộ Y tế thành công! Tài khoản đang ở trạng thái Chờ phê duyệt từ Quản trị viên (Admin).'
+        : 'Đăng ký tài khoản Phụ huynh thành công! Bạn có thể đăng nhập ngay bây giờ.';
+
+    return ApiResponse.created(newUser, message: successMsg);
   }
 
   Future<void> approveUser(String userId) async {
