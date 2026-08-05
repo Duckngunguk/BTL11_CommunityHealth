@@ -331,17 +331,17 @@ class _CornerPainter extends CustomPainter {
     final w = size.width;
 
     if (top && left) {
-      canvas.drawLine(Offset(0, h), const Offset(0, 0));
-      canvas.drawLine(const Offset(0, 0), Offset(w, 0));
+      canvas.drawLine(Offset(0, h), const Offset(0, 0), paint);
+      canvas.drawLine(const Offset(0, 0), Offset(w, 0), paint);
     } else if (top && !left) {
-      canvas.drawLine(const Offset(0, 0), Offset(w, 0));
-      canvas.drawLine(Offset(w, 0), Offset(w, h));
+      canvas.drawLine(const Offset(0, 0), Offset(w, 0), paint);
+      canvas.drawLine(Offset(w, 0), Offset(w, h), paint);
     } else if (!top && left) {
-      canvas.drawLine(const Offset(0, 0), Offset(0, h));
-      canvas.drawLine(Offset(0, h), Offset(w, h));
+      canvas.drawLine(const Offset(0, 0), Offset(0, h), paint);
+      canvas.drawLine(Offset(0, h), Offset(w, h), paint);
     } else {
-      canvas.drawLine(Offset(w, 0), Offset(w, h));
-      canvas.drawLine(Offset(w, h), Offset(0, h));
+      canvas.drawLine(Offset(w, 0), Offset(w, h), paint);
+      canvas.drawLine(Offset(w, h), Offset(0, h), paint);
     }
   }
 
