@@ -59,9 +59,47 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         const SizedBox(height: 12),
 
         if (children.isEmpty)
-          const EmptyState(
-            title: 'Chưa có hồ sơ con nào',
-            description: 'Tài khoản chưa có trẻ nào liên kết. Vui lòng liên hệ Cán bộ Y tế xã để đăng ký và tạo sổ tiêm cho con.',
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.child_friendly_rounded, size: 54, color: Color(0xFF18794E)),
+                const SizedBox(height: 14),
+                const Text(
+                  'Chưa có hồ sơ con nào',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Tài khoản chưa có trẻ nào được liên kết.\nVui lòng liên hệ Cán bộ Y tế xã gần nhất để đăng ký và tạo sổ tiêm cho con.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.black54, height: 1.5),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFD1FAE5)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.phone_outlined, color: Color(0xFF18794E), size: 18),
+                      SizedBox(width: 8),
+                      Text('Liên hệ trạm y tế xã/phường', style: TextStyle(color: Color(0xFF18794E), fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           )
         else
           ...children.map((child) => _ParentChildCard(child: child)),

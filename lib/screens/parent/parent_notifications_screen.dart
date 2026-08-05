@@ -12,14 +12,28 @@ class ParentNotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final lateChildren = store.children.where((c) => c.status == ChildVaccinationStatus.late).toList();
-    final dueSoonChildren = store.children.where((c) => c.status == ChildVaccinationStatus.dueSoon).toList();
+    final user = store.currentUser;
+
+    // Filter children strictly for the logged-in parent
+    final myChildren = store.children.where((child) {
+      if (user == null) return true;
+      if (user.username == 'parent.demo') {
+        return child.motherName.contains('Giàng A Sáng') || child.motherName.contains('Giàng');
+      }
+      final parentName = user.fullName.toLowerCase().trim();
+      final motherName = child.motherName.toLowerCase().trim();
+      return (parentName.isNotEmpty && motherName.contains(parentName)) ||
+          (user.phone.isNotEmpty && child.motherPhone == user.phone);
+    }).toList();
+
+    final lateChildren = myChildren.where((c) => c.status == ChildVaccinationStatus.late).toList();
+    final dueSoonChildren = myChildren.where((c) => c.status == ChildVaccinationStatus.dueSoon).toList();
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Thông tin tài khoản
-        _AccountCard(onLogout: onLogout),
+        // Thông tin tài khoản thực tế
+        _AccountCard(user: user, onLogout: onLogout),
         const SizedBox(height: 20),
 
         // Thông báo trễ lịch
@@ -133,7 +147,8 @@ class _NotificationTile extends StatelessWidget {
 }
 
 class _AccountCard extends StatelessWidget {
-  const _AccountCard({required this.onLogout});
+  const _AccountCard({required this.user, required this.onLogout});
+  final UserModel? user;
   final VoidCallback onLogout;
 
   @override
@@ -146,21 +161,37 @@ class _AccountCard extends StatelessWidget {
           children: [
             const Text('Tài khoản của bạn', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 12),
-            const Row(
+            Row(
               children: [
-                Icon(Icons.account_circle_outlined, size: 18, color: Colors.black45),
-                SizedBox(width: 8),
-                Text('parent.demo', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Icon(Icons.account_circle_outlined, size: 18, color: Colors.black45),
+                const SizedBox(width: 8),
+                Text(
+                  user?.fullName != null ? '${user!.fullName} (@${user!.username})' : (user?.username ?? 'phuhuynh'),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ],
             ),
             const SizedBox(height: 6),
-            const Row(
+            Row(
               children: [
-                Icon(Icons.shield_outlined, size: 18, color: Color(0xFF2E7D32)),
-                SizedBox(width: 8),
-                Text('Vai trò: Phụ huynh', style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w600)),
+                const Icon(Icons.shield_outlined, size: 18, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 8),
+                Text(
+                  'Vai trò: ${user?.role == UserRole.parent ? "Phụ huynh" : "Thành viên"}',
+                  style: const TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w600),
+                ),
               ],
             ),
+            if ((user?.phone ?? '').isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.phone_outlined, size: 18, color: Colors.black45),
+                  const SizedBox(width: 8),
+                  Text('SĐT: ${user!.phone}', style: const TextStyle(color: Colors.black87)),
+                ],
+              ),
+            ],
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: onLogout,
