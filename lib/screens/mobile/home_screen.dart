@@ -1,113 +1,451 @@
 import 'package:flutter/material.dart';
 
+import '../../models/models.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 import 'child_detail_screen.dart';
+import 'qr_scanner_screen.dart';
+import 'settings_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.onOpenChildren});
 
   final VoidCallback onOpenChildren;
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _selectedVillage = '';
+
+  static const _villages = [
+    '',
+    'Bản Nậm Lùng',
+    'Bản Sapa',
+    'Bản Cát Cát',
+    'Bản Tả Phìn',
+  ];
+
+  @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final urgentChildren = store.children.where((child) => child.lateDays > 0).take(3).toList();
+    final userName = store.currentUser?.fullName ?? 'Y sĩ Lê Thu';
+    final commune = store.currentUser?.assignedCommune ?? 'Tả Phìn';
 
-    return RefreshIndicator(
-      onRefresh: () async => Future<void>.delayed(const Duration(milliseconds: 500)),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [primaryGreen, Color(0xFF24A875)]),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Xin chào, ${store.currentUser?.fullName ?? 'Y sĩ Lê Thu'}', style: const TextStyle(color: Colors.white70)),
-                const SizedBox(height: 8),
-                const Text(
-                  'Hôm nay có 2 trẻ cần được ưu tiên tiêm.',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 18),
-                FilledButton.tonalIcon(
-                  onPressed: onOpenChildren,
-                  icon: const Icon(Icons.search_rounded),
-                  label: const Text('Tìm kiếm trẻ em'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          GridView.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.35,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              StatCard(label: 'Tổng số trẻ', value: '${store.children.length}', icon: Icons.groups_2_outlined, background: const Color(0xFFE7F0FF)),
-              StatCard(label: 'Ca bệnh nghi ngờ', value: '${store.suspectedDiseaseCount}', icon: Icons.coronavirus_rounded, background: const Color(0xFFFFE9E7)),
-              StatCard(label: 'Trễ lịch tiêm', value: '${store.lateCount}', icon: Icons.warning_amber_rounded, background: const Color(0xFFFFF3CD)),
-              StatCard(label: 'Chờ đồng bộ', value: '${store.pendingCount}', icon: Icons.cloud_upload_outlined, background: softGreen),
-            ],
-          ),
-          const SizedBox(height: 24),
-          SectionHeader(
-            title: 'Cần ưu tiên',
-            subtitle: 'Các trẻ đang trễ lịch tiêm chủng.',
-            trailing: TextButton(onPressed: onOpenChildren, child: const Text('Xem tất cả')),
-          ),
-          const SizedBox(height: 12),
-          ...urgentChildren.map(
-            (child) => Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(14),
-                leading: CircleAvatar(
-                  backgroundColor: const Color(0xFFFFE9E7),
-                  child: Text(child.fullName.characters.first, style: const TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.bold)),
-                ),
-                title: Text(child.fullName, style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Text('${child.village} • Trễ ${child.nextVaccine} ${child.lateDays} ngày'),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => ChildDetailScreen(childId: child.id)),
+    // Count children per village for chip labels
+    final allChildren = store.children;
+    final totalCount = allChildren.length;
+    final namLungCount = allChildren.where((c) => c.village == 'Bản Nậm Lùng').length;
+    final sapaCount = allChildren.where((c) => c.village == 'Bản Sapa').length;
+    final catCatCount = allChildren.where((c) => c.village == 'Bản Cát Cát').length;
+
+    // Filter children by village
+    final scheduleList = allChildren.where((child) {
+      final matchVillage = _selectedVillage.isEmpty || child.village == _selectedVillage;
+      return matchVillage;
+    }).toList();
+
+    return Scaffold(
+      backgroundColor: gray100,
+      body: RefreshIndicator(
+        color: primaryDark,
+        onRefresh: () async => Future<void>.delayed(const Duration(milliseconds: 500)),
+        child: CustomScrollView(
+          slivers: [
+            // ── 1. Top Offline Alert Banner (Matching Prototype) ──
+            SliverToBoxAdapter(
+              child: Container(
+                color: const Color(0xFFB06000), // Dark yellow-orange bar
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      store.isOnline
+                          ? 'CHẾ ĐỘ TRỰC TUYẾN • ĐÃ ĐỒNG BỘ'
+                          : 'CHẾ ĐỘ NGOẠI TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "Sẵn sàng ghi dữ liệu"}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.02,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-            child: Row(
-              children: [
-                Icon(store.isOnline ? Icons.cloud_done : Icons.cloud_off, color: store.isOnline ? primaryGreen : const Color(0xFF8A5D00)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(store.isOnline ? 'Thiết bị đang trực tuyến' : 'Thiết bị đang ngoại tuyến', style: const TextStyle(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 3),
-                      Text('Đồng bộ gần nhất: ${formatDate(store.lastSyncAt)} ${store.lastSyncAt.hour}:${store.lastSyncAt.minute.toString().padLeft(2, '0')}', style: const TextStyle(color: Colors.black54)),
-                    ],
+
+            // ── 2. Green Header Container ─────────────────────
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF059669), // Dark emerald green
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
                   ),
                 ),
-              ],
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                child: Column(
+                  children: [
+                    // Top row: LT Avatar + Name + Settings Icon
+                    Row(
+                      children: [
+                        // Avatar circle "LT"
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.5),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'LT',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'TRẠM Y TẾ XÃ ${commune.toUpperCase()}',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  letterSpacing: 0.04,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                userName,
+                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Settings Gear button
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => Scaffold(
+                                appBar: AppBar(title: const Text('Cài đặt')),
+                                body: SettingsScreen(onLogout: () => Navigator.of(context).pop()),
+                              ),
+                            ),
+                          ),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            child: const Icon(Icons.settings_outlined, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Search input + QR button row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: widget.onOpenChildren,
+                            child: Container(
+                              height: 42,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.search_rounded, color: gray400, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Tra cứu phụ huynh, trẻ con...',
+                                    style: TextStyle(fontSize: 12.5, color: gray400, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // QR scan square button
+                        GestureDetector(
+                          onTap: () async {
+                            await Navigator.of(context).push<String>(
+                              MaterialPageRoute<String>(
+                                builder: (_) => const QRScannerScreen(),
+                                fullscreenDialog: true,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.qr_code_scanner_rounded, color: primaryBlue, size: 20),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
+
+            // ── 3. TÓM TẮT DỰ TRÙ VẮC-XIN PHIÊN TIÊM ──────────
+            const SliverToBoxAdapter(
+              child: SectionLabel('TÓM TẮT DỰ TRÙ VẮC-XIN PHIÊN TIÊM'),
+            ),
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF), // Light blue background
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: Row(
+                  children: [
+                    // Blue circle badge "4"
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: const BoxDecoration(
+                        color: primaryBlue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${scheduleList.length}',
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.shield_outlined, size: 14, color: primaryBlue),
+                              const SizedBox(width: 4),
+                              Text(
+                                _selectedVillage.isEmpty ? 'Tất cả địa bàn' : _selectedVillage,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13.5,
+                                  color: Color(0xFF1E40AF),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'DPT Mũi 3 (2) • Sởi Mũi 1 (2)',
+                            style: TextStyle(fontSize: 11.5, color: gray600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Pill chip on right "Hộp nhỏ 2.5L"
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: primaryBlue),
+                      ),
+                      child: const Text(
+                        'Hộp nhỏ 2.5L',
+                        style: TextStyle(color: primaryBlue, fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── 4. DANH SÁCH CẦN TIÊM CHÚNG THỰC ĐỊA ─────────
+            const SliverToBoxAdapter(
+              child: SectionLabel('DANH SÁCH CẦN TIÊM CHÚNG THỰC ĐỊA'),
+            ),
+
+            // Chip Filter row
+            SliverToBoxAdapter(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Row(
+                  children: [
+                    _buildFilterChip('Tất cả bản ($totalCount)', ''),
+                    _buildFilterChip('Bản Nậm Lùng ($namLungCount)', 'Bản Nậm Lùng'),
+                    _buildFilterChip('Bản Sapa ($sapaCount)', 'Bản Sapa'),
+                    _buildFilterChip('Bản Cát Cát ($catCatCount)', 'Bản Cát Cát'),
+                  ],
+                ),
+              ),
+            ),
+
+            // Children List Cards
+            scheduleList.isEmpty
+                ? const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(
+                        child: Text('Không có trẻ nào trong địa bàn này.', style: TextStyle(color: gray500, fontSize: 13)),
+                      ),
+                    ),
+                  )
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == scheduleList.length) return const SizedBox(height: 24);
+                        final child = scheduleList[index];
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: _buildChildRow(context, child),
+                        );
+                      },
+                      childCount: scheduleList.length + 1,
+                    ),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _selectedVillage == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedVillage = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryBlue : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? primaryBlue : gray200),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : gray700,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChildRow(BuildContext context, ChildProfile child) {
+    Color pillBg;
+    Color pillFg;
+    String pillText;
+
+    if (child.lateDays > 0) {
+      pillBg = redLight;
+      pillFg = accentRed;
+      pillText = 'Trễ ${child.lateDays} ngày';
+    } else if (child.status == ChildVaccinationStatus.dueSoon) {
+      pillBg = yellowLight;
+      pillFg = accentYellow;
+      pillText = 'Hẹn ${formatDate(child.nextDue)}';
+    } else {
+      pillBg = primaryLight;
+      pillFg = primaryDark;
+      pillText = 'Đủ lịch';
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: gray200),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.015), blurRadius: 4)],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => ChildDetailScreen(childId: child.id)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              // Avatar circle with first letter
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(color: blueLight, shape: BoxShape.circle),
+                child: Center(
+                  child: Text(
+                    child.fullName.characters.first,
+                    style: const TextStyle(color: primaryBlue, fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      child.fullName,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: gray900),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${child.village} • ${child.nextVaccine} • Mẹ: ${child.motherName}',
+                      style: const TextStyle(fontSize: 11.5, color: gray500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Status pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: pillBg, borderRadius: BorderRadius.circular(6)),
+                child: Text(
+                  pillText,
+                  style: TextStyle(color: pillFg, fontSize: 10.5, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

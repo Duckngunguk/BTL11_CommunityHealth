@@ -5,21 +5,17 @@ import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 
 class ParentNotificationsScreen extends StatelessWidget {
-  const ParentNotificationsScreen({super.key, required this.onLogout});
-
-  final VoidCallback onLogout;
+  const ParentNotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final user = store.currentUser;
 
-    // Filter children strictly for the logged-in parent
+    // Filter children for the logged-in parent
     final myChildren = store.children.where((child) {
       if (user == null) return true;
-      if (user.username == 'parent.demo') {
-        return child.motherName.contains('Giàng A Sáng') || child.motherName.contains('Giàng');
-      }
+      if (user.username == 'parent.demo') return true;
       final parentName = user.fullName.toLowerCase().trim();
       final motherName = child.motherName.toLowerCase().trim();
       return (parentName.isNotEmpty && motherName.contains(parentName)) ||
@@ -29,56 +25,191 @@ class ParentNotificationsScreen extends StatelessWidget {
     final lateChildren = myChildren.where((c) => c.status == ChildVaccinationStatus.late).toList();
     final dueSoonChildren = myChildren.where((c) => c.status == ChildVaccinationStatus.dueSoon).toList();
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Thông tin tài khoản thực tế
-        _AccountCard(user: user, onLogout: onLogout),
-        const SizedBox(height: 20),
-
-        // Thông báo trễ lịch
-        if (lateChildren.isNotEmpty) ...[
-          const SectionHeader(
-            title: '🚨 Cảnh báo trễ lịch tiêm',
-            subtitle: 'Các trẻ cần đi tiêm ngay.',
-          ),
-          const SizedBox(height: 10),
-          ...lateChildren.map((c) => _NotificationTile(
-                child: c,
-                type: _NotifType.late,
-              )),
-          const SizedBox(height: 20),
-        ],
-
-        // Thông báo sắp đến hạn
-        if (dueSoonChildren.isNotEmpty) ...[
-          const SectionHeader(
-            title: '🔔 Nhắc lịch tiêm sắp đến',
-            subtitle: 'Chuẩn bị đưa con đến trạm y tế.',
-          ),
-          const SizedBox(height: 10),
-          ...dueSoonChildren.map((c) => _NotificationTile(
-                child: c,
-                type: _NotifType.dueSoon,
-              )),
-          const SizedBox(height: 20),
-        ],
-
-        // Không có thông báo
-        if (lateChildren.isEmpty && dueSoonChildren.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 40),
-            child: EmptyState(
-              title: 'Không có thông báo mới',
-              description: 'Các con của bạn đang có lịch tiêm tốt. Hãy tiếp tục theo dõi định kỳ!',
+    return Scaffold(
+      backgroundColor: gray100,
+      body: Column(
+        children: [
+          // ── Top Offline Bar ──────────────────────────────
+          Container(
+            color: const Color(0xFFB06000),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  store.isOnline
+                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ĐÃ ĐỒNG BỘ'
+                      : 'CHẾ ĐỘ NGOẠI TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "Sẵn sàng xem thông báo"}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.02,
+                  ),
+                ),
+              ],
             ),
           ),
 
-        const SizedBox(height: 16),
+          // ── Header Bar ──────────────────────────────────
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.only(top: 40, bottom: 12, left: 16, right: 16),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Tin tức & Thông báo Y tế',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: gray900),
+                  ),
+                ),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: blueLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.notifications_none_rounded, color: primaryBlue, size: 20),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: gray200),
 
-        // Hướng dẫn phụ huynh
-        const _GuideCard(),
-      ],
+          // ── Main Content ListView ──────────────────────────
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // ── 1. CẢNH BẢO TRỄ LỊCH TIÊM (red panel) ───────
+                if (lateChildren.isNotEmpty) ...[
+                  const SectionLabel('CẢNH BÁO TRỄ LỊCH TIÊM CỦA CON'),
+                  ...lateChildren.map((c) => _NotificationTile(
+                        child: c,
+                        type: _NotifType.late,
+                      )),
+                  const SizedBox(height: 12),
+                ],
+
+                // ── 2. NHẮC LỊCH TIÊM SẮP ĐẾN HẠN (yellow panel) ─
+                if (dueSoonChildren.isNotEmpty) ...[
+                  const SectionLabel('NHẮC LỊCH TIÊM SẮP ĐẾN HẠN'),
+                  ...dueSoonChildren.map((c) => _NotificationTile(
+                        child: c,
+                        type: _NotifType.dueSoon,
+                      )),
+                  const SizedBox(height: 12),
+                ],
+
+                // ── 3. HOẠT ĐỘNG KHUYẾN KHÍCH TIÊM PHÒNG NGỪA ──
+                const SectionLabel('HOẠT ĐỘNG KHUYẾN KHÍCH TIÊM PHÒNG NGỪA'),
+                _buildNewsCard(
+                  icon: Icons.campaign_rounded,
+                  iconColor: primaryBlue,
+                  iconBg: blueLight,
+                  tag: 'CHIẾN DỊCH QUỐC GIA',
+                  title: 'Chiến dịch Tiêm chủng vắc-xin Sởi – Rubella mở rộng 2026',
+                  content:
+                      'Bộ Y tế tổ chức tiêm bổ sung vắc-xin miễn phí cho tất cả trẻ từ 1 đến 5 tuổi tại các trạm y tế xã và điểm tiêm lưu động tại bản. Đưa trẻ đi tiêm phòng giúp nâng cao miễn dịch cộng đồng!',
+                  time: 'Hôm nay · Trạm Y tế xã Tả Phìn',
+                ),
+                const SizedBox(height: 10),
+                _buildNewsCard(
+                  icon: Icons.verified_user_rounded,
+                  iconColor: primaryDark,
+                  iconBg: primaryLight,
+                  tag: 'KHUYẾN CÁO Y TẾ',
+                  title: 'Tại sao cần đưa trẻ đi tiêm vắc-xin đúng lịch?',
+                  content:
+                      'Tiêm vắc-xin đúng lịch giúp cơ thể trẻ sản sinh đủ kháng thể phòng bệnh sớm nhất, ngăn ngừa các biến chứng nguy hiểm như suy hô hấp, tiêu chảy cấp hay sốt cao.',
+                  time: 'Được tham vấn bởi Y sĩ Lê Thu',
+                ),
+                const SizedBox(height: 10),
+                _buildNewsCard(
+                  icon: Icons.location_on_rounded,
+                  iconColor: accentYellow,
+                  iconBg: yellowLight,
+                  tag: 'LỊCH TIÊM LƯU ĐỘNG',
+                  title: 'Lịch tiêm lưu động tại Bản Nậm Lùng & Bản Cát Cát',
+                  content:
+                      'Đội y tế lưu động sẽ thăm khám và tiêm chủng trực tiếp tại Nhà văn hóa Bản Nậm Lùng từ 08h00 - 11h30 ngày 12/08/2026. Phụ huynh vui lòng mang theo Sổ tiêm chủng của con.',
+                  time: '12/08/2026 · Đội Y tế Lưu động',
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNewsCard({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String tag,
+    required String title,
+    required String content,
+    required String time,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: gray200),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.015), blurRadius: 4)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(6)),
+                child: Text(
+                  tag,
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: iconColor),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: gray900, height: 1.3),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            content,
+            style: const TextStyle(fontSize: 12, color: gray600, height: 1.45),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            time,
+            style: const TextStyle(fontSize: 11, color: gray400, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -93,162 +224,48 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLate = type == _NotifType.late;
-    return Card(
+    final statusColor = isLate ? accentRed : accentYellow;
+    final bgBorderColor = isLate ? redLight : yellowLight;
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: isLate ? const Color(0xFFFFE9E7) : const Color(0xFFFFF3CD),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Icon(
-                isLate ? Icons.warning_amber_rounded : Icons.notifications_active_rounded,
-                color: isLate ? const Color(0xFFB42318) : const Color(0xFF8A5D00),
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    child.fullName,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    isLate
-                        ? 'Trễ ${child.lateDays} ngày - ${child.nextVaccine}'
-                        : 'Đến hạn ngày ${formatDate(child.nextDue)} - ${child.nextVaccine}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isLate ? const Color(0xFFB42318) : const Color(0xFF8A5D00),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    '${child.village}, ${child.commune}',
-                    style: const TextStyle(color: Colors.black45, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: bgBorderColor, width: 1.5),
       ),
-    );
-  }
-}
-
-class _AccountCard extends StatelessWidget {
-  const _AccountCard({required this.user, required this.onLogout});
-  final UserModel? user;
-  final VoidCallback onLogout;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Tài khoản của bạn', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-            const SizedBox(height: 12),
-            Row(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: bgBorderColor, shape: BoxShape.circle),
+            child: Icon(
+              isLate ? Icons.warning_amber_rounded : Icons.schedule_rounded,
+              color: statusColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.account_circle_outlined, size: 18, color: Colors.black45),
-                const SizedBox(width: 8),
                 Text(
-                  user?.fullName != null ? '${user!.fullName} (@${user!.username})' : (user?.username ?? 'phuhuynh'),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  isLate ? 'Cảnh báo: ${child.fullName} trễ lịch tiêm!' : 'Nhắc lịch: ${child.fullName} sắp đến ngày tiêm!',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: statusColor),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Mũi tiêm: ${child.nextVaccine} · Dự kiến: ${formatDate(child.nextDue)}',
+                  style: const TextStyle(fontSize: 11.5, color: gray600),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.shield_outlined, size: 18, color: Color(0xFF2E7D32)),
-                const SizedBox(width: 8),
-                Text(
-                  'Vai trò: ${user?.role == UserRole.parent ? "Phụ huynh" : "Thành viên"}',
-                  style: const TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-            if ((user?.phone ?? '').isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.phone_outlined, size: 18, color: Colors.black45),
-                  const SizedBox(width: 8),
-                  Text('SĐT: ${user!.phone}', style: const TextStyle(color: Colors.black87)),
-                ],
-              ),
-            ],
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              onPressed: onLogout,
-              icon: const Icon(Icons.logout_rounded, size: 18),
-              label: const Text('Đăng xuất'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 44),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GuideCard extends StatelessWidget {
-  const _GuideCard();
-
-  @override
-  Widget build(BuildContext context) {
-    const guideItems = [
-      '• Kiểm tra hồ sơ con thường xuyên để không bỏ lỡ lịch tiêm.',
-      '• Liên hệ trạm y tế xã/phường nếu con bị trễ lịch tiêm.',
-      '• Thông tin trên đây do cán bộ y tế cập nhật và xác minh.',
-      '• Mã QR của con được dùng để cán bộ tra cứu nhanh hồ sơ.',
-    ];
-
-    return Card(
-      color: const Color(0xFFE8F5E9),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.info_outline_rounded, color: Color(0xFF2E7D32)),
-                SizedBox(width: 8),
-                Text(
-                  'Hướng dẫn dành cho phụ huynh',
-                  style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF2E7D32)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...guideItems.map(
-              (text) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  text,
-                  style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF1B5E20)),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

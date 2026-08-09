@@ -77,14 +77,41 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
       _staffController.text = store.currentUser!.fullName;
     }
 
+    if (_medicationSchedule == null && store.medicationSchedules.isNotEmpty) {
+      _medicationSchedule = store.medicationSchedules.first;
+      _dosageController.text = _medicationSchedule!.defaultDosage;
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Ghi nhận uống thuốc')),
+      appBar: AppBar(
+        leading: TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Hủy', style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
+        ),
+        title: const Text('Ghi nhận thuốc', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: _save,
+            child: const Text('Lưu', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.all(16),
+        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: FilledButton.icon(
           onPressed: _save,
-          icon: const Icon(Icons.save_outlined),
-          label: const Text('Lưu bản ghi ngoại tuyến'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF16A34A),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          icon: const Icon(Icons.save_rounded, color: Colors.white, size: 20),
+          label: const Text(
+            'Lưu bản ghi (Lưu tạm Offline)',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
       body: Form(
@@ -92,24 +119,32 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Card(
-              color: softGreen,
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.medication_rounded, color: primaryGreen),
-                ),
-                title: Text(child.fullName, style: const TextStyle(fontWeight: FontWeight.w800)),
-                subtitle: Text('${child.village}, ${child.commune}'),
+            // Top banner child info
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Text('👉 ', style: TextStyle(fontSize: 16)),
+                  const Text(
+                    'Trẻ uống: ',
+                    style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    child.fullName,
+                    style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 18),
+
             DropdownButtonFormField<MedicationSchedule>(
-              initialValue: _medicationSchedule,
-              decoration: const InputDecoration(
-                labelText: 'Thuốc / Bổ sung đường uống *',
-                prefixIcon: Icon(Icons.medication_liquid_outlined),
-              ),
+              value: _medicationSchedule,
+              decoration: const InputDecoration(labelText: 'Loại Vitamin / Dược chất bổ sung *'),
               items: store.medicationSchedules
                   .map((item) => DropdownMenuItem(
                         value: item,
@@ -119,32 +154,16 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
               onChanged: _onScheduleChanged,
               validator: (v) => v == null ? 'Vui lòng chọn thuốc uống' : null,
             ),
-            if (_medicationSchedule != null) ...[
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  'Mô tả: ${_medicationSchedule!.description}',
-                  style: const TextStyle(fontSize: 13, color: Colors.black54, fontStyle: FontStyle.italic),
-                ),
-              ),
-            ],
             const SizedBox(height: 14),
             TextFormField(
               controller: _dosageController,
-              decoration: const InputDecoration(
-                labelText: 'Liều dùng *',
-                prefixIcon: Icon(Icons.numbers_outlined),
-              ),
+              decoration: const InputDecoration(labelText: 'Liều lượng được chỉ định *'),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập liều dùng' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _staffController,
-              decoration: const InputDecoration(
-                labelText: 'Cán bộ thực hiện *',
-                prefixIcon: Icon(Icons.badge_outlined),
-              ),
+              decoration: const InputDecoration(labelText: 'Cán bộ phụ trách cho uống *'),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập tên cán bộ' : null,
             ),
             const SizedBox(height: 14),
@@ -159,10 +178,7 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
                 if (value != null) setState(() => _administeredAt = value);
               },
               child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Ngày uống',
-                  prefixIcon: Icon(Icons.calendar_month_outlined),
-                ),
+                decoration: const InputDecoration(labelText: 'Ngày uống *'),
                 child: Text(formatDate(_administeredAt)),
               ),
             ),
@@ -171,27 +187,9 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
               controller: _notesController,
               maxLines: 3,
               decoration: const InputDecoration(
-                labelText: 'Ghi chú / Phản ứng / Dặn dò phụ huynh',
+                labelText: 'Ghi chú lâm sàng',
                 alignLabelWithHint: true,
-                prefixIcon: Icon(Icons.notes_rounded),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E7),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.cloud_off_rounded, color: Color(0xFF8A5D00)),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text('Bản ghi uống thuốc được lưu cục bộ với trạng thái pending. Hãy thực hiện đồng bộ khi có kết nối mạng.'),
-                  ),
-                ],
+                hintText: 'Bé khỏe mạnh, uống tốt...',
               ),
             ),
           ],
@@ -200,3 +198,4 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
     );
   }
 }
+

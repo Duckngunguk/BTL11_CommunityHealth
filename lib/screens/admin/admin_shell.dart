@@ -60,7 +60,7 @@ class _AdminShellState extends State<AdminShell> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.health_and_safety_rounded, color: primaryGreen, size: 34),
+                  const Icon(Icons.health_and_safety_rounded, color: primaryBlue, size: 34),
                   if (extended) ...[
                     const SizedBox(width: 10),
                     const Text('CommunityHealth', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),

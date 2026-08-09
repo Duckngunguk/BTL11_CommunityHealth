@@ -25,158 +25,87 @@ class _DiseaseReportScreenState extends State<DiseaseReportScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Color(0xFFB42318)),
-            SizedBox(width: 8),
-            Text('Giám sát dịch bệnh', style: TextStyle(fontWeight: FontWeight.w800)),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Tooltip(
-              message: store.isOnline ? 'Đang có mạng' : 'Đang ngoại tuyến',
-              child: CircleAvatar(
-                backgroundColor: store.isOnline ? const Color(0xFFE5F5EC) : const Color(0xFFFFF3CD),
-                child: Icon(
-                  store.isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-                  color: store.isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: gray100,
+      body: Column(
         children: [
-          // Banner Hướng dẫn
-          _OfflineBanner(isOnline: store.isOnline),
-          const SizedBox(height: 16),
-
-          // Bộ lọc loại bệnh
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _diseases.map((disease) {
-                final isSelected = _selectedFilter == disease;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(disease),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) setState(() => _selectedFilter = disease);
-                    },
-                    selectedColor: const Color(0xFFE5F5EC),
-                    labelStyle: TextStyle(
-                      color: isSelected ? const Color(0xFF18794E) : Colors.black87,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Tiêu đề & Nút báo cáo mới
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Danh sách ca bệnh (${reports.length})',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-              ),
-              FilledButton.icon(
-                onPressed: () => _showAddReportDialog(context),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Báo ca bệnh'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFB42318),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          if (reports.isEmpty)
-            const EmptyState(
-              title: 'Không có ca bệnh nghi ngờ',
-              description: 'Chưa có báo cáo dịch bệnh nào cho loại bệnh này.',
-            )
-          else
-            ...reports.map((report) => _DiseaseReportCard(report: report)),
-
-          const SizedBox(height: 80),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddReportDialog(context),
-        backgroundColor: const Color(0xFFB42318),
-        icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
-        label: const Text('Khai báo ca bệnh', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-      ),
-    );
-  }
-
-  void _showAddReportDialog(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _AddDiseaseReportSheet(),
-    );
-  }
-}
-
-class _OfflineBanner extends StatelessWidget {
-  const _OfflineBanner({required this.isOnline});
-  final bool isOnline;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isOnline ? const Color(0xFFE5F5EC) : const Color(0xFFFFF3CD),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isOnline ? const Color(0xFFA3E2C3) : const Color(0xFFFFE082),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isOnline ? Icons.wifi_rounded : Icons.wifi_off_rounded,
-            color: isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          // Header
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.only(top: 48, bottom: 0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  isOnline ? 'Hệ thống trực tuyến' : 'Đang hoạt động ngoại tuyến (Offline)',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                    color: isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Giám sát dịch bệnh',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: gray900),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(builder: (_) => const AddDiseaseReportScreen()),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: redLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.add_rounded, color: accentRed, size: 14),
+                              SizedBox(width: 4),
+                              Text('Khai báo mới', style: TextStyle(color: accentRed, fontSize: 12, fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  isOnline
-                      ? 'Báo cáo ca bệnh sẽ được gửi lên hệ thống và hiển thị ngay trên Bản đồ cảnh báo dịch tễ.'
-                      : 'Báo cáo sẽ được lưu cục bộ trên máy và tự động đồng bộ khi cán bộ có kết nối mạng.',
-                  style: const TextStyle(fontSize: 12, height: 1.3, color: Colors.black87),
-                ),
+                const Divider(height: 1, color: gray200),
               ],
             ),
+          ),
+
+          // Chip filter
+          Container(
+            color: Colors.white,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Row(
+                children: _diseases.map((disease) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: AppChip(
+                      label: disease,
+                      selected: _selectedFilter == disease,
+                      onTap: () => setState(() => _selectedFilter = disease),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          Container(height: 1, color: gray200),
+
+          // List
+          Expanded(
+            child: reports.isEmpty
+                ? const EmptyState(
+                    title: 'Không có ca bệnh nghi ngờ',
+                    description: 'Chưa có báo cáo dịch bệnh nào cho loại bệnh này.',
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: reports.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) => _DiseaseReportCard(report: reports[index]),
+                  ),
           ),
         ],
       ),
@@ -190,429 +119,54 @@ class _DiseaseReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPending = report.syncStatus == VaccinationSyncStatus.pending;
-    final (statusBg, statusColor) = switch (report.status) {
-      'Nghi ngờ' => (const Color(0xFFFFE9E7), const Color(0xFFB42318)),
-      'Đã xác minh' => (const Color(0xFFFFF3CD), const Color(0xFF8A5D00)),
-      'Đã khoanh vùng' => (const Color(0xFFE3F2FD), const Color(0xFF1565C0)),
-      _ => (const Color(0xFFE5F5EC), const Color(0xFF18794E)),
-    };
-
-    final (severityLabel, severityColor) = switch (report.severity) {
-      DiseaseSeverity.severe => ('Nặng (Cấp cứu)', const Color(0xFFB42318)),
-      DiseaseSeverity.moderate => ('Trung bình', const Color(0xFF8A5D00)),
-      DiseaseSeverity.mild => ('Nhẹ', const Color(0xFF18794E)),
-    };
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFE9E7),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.coronavirus_rounded, size: 16, color: Color(0xFFB42318)),
-                      const SizedBox(width: 4),
-                      Text(
-                        report.diseaseType,
-                        style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFB42318), fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusBg,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(
-                    report.status,
-                    style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isPending ? const Color(0xFFFFF3CD) : const Color(0xFFE5F5EC),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(
-                    isPending ? 'Chờ đồng bộ' : 'Đã đồng bộ',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isPending ? const Color(0xFF8A5D00) : const Color(0xFF18794E),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              report.patientName,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 15, color: Colors.black45),
-                const SizedBox(width: 4),
-                Text(
-                  '${report.village}, ${report.commune}, ${report.district}',
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(fontSize: 13, color: Colors.black87),
-                      children: [
-                        const TextSpan(text: 'Triệu chứng: ', style: TextStyle(fontWeight: FontWeight.w700)),
-                        TextSpan(text: report.symptoms),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Text('Mức độ: ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black87)),
-                      Text(severityLabel, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: severityColor)),
-                      const Spacer(),
-                      Text('Báo lúc: ${formatDate(report.reportedAt)}', style: const TextStyle(fontSize: 12, color: Colors.black45)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if ((report.notes ?? '').isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Ghi chú xử lý: ${report.notes}',
-                style: const TextStyle(fontSize: 12, color: Colors.black54, fontStyle: FontStyle.italic),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AddDiseaseReportSheet extends StatefulWidget {
-  const _AddDiseaseReportSheet();
-
-  @override
-  State<_AddDiseaseReportSheet> createState() => _AddDiseaseReportSheetState();
-}
-
-class _AddDiseaseReportSheetState extends State<_AddDiseaseReportSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _symptomsController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  String _selectedCommune = 'Tả Phìn';
-  String _selectedVillage = 'Bản Tả Phìn 1';
-  String _diseaseType = 'Sởi';
-  DiseaseSeverity _severity = DiseaseSeverity.moderate;
-  ChildProfile? _selectedChild;
-
-  final _diseases = ['Sởi', 'Tả', 'Sốt xuất huyết', 'Thuỷ đậu', 'Bệnh Dại', 'Cúm A/H5N1', 'Khác'];
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _symptomsController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final store = AppScope.of(context);
+    final isConfirmed = report.status == 'Đã xác minh';
+    final Color borderColor = isConfirmed ? accentRed : accentYellow;
+    final Color pillBg = isConfirmed ? redLight : yellowLight;
+    final Color pillFg = isConfirmed ? accentRed : accentYellow;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: gray200),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.015), blurRadius: 4)],
       ),
-      padding: EdgeInsets.only(
-        top: 20,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: IntrinsicHeight(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFE9E7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.coronavirus_rounded, color: Color(0xFFB42318)),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Khai báo ca bệnh nghi ngờ',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              // Left color stripe
+              Container(width: 4, color: borderColor),
+              // Body
+              Expanded(
+                child: Padding(padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Nghi ổ dịch ${report.diseaseType}',
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: gray900),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${report.village} · ${formatDate(report.reportedAt)} · ${report.reportedBy}',
+                              style: const TextStyle(fontSize: 11.5, color: gray500),
+                            ),
+                          ],
                         ),
-                        Text(
-                          'Tự động ghi nhận offline khi chưa có mạng',
-                          style: TextStyle(color: Colors.black54, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
-
-              // Chọn từ danh sách trẻ (nếu có)
-              DropdownButtonFormField<ChildProfile?>(
-                initialValue: _selectedChild,
-                decoration: const InputDecoration(
-                  labelText: 'Chọn trẻ từ hồ sơ (Không bắt buộc)',
-                  prefixIcon: Icon(Icons.child_care_rounded),
-                ),
-                items: [
-                  const DropdownMenuItem<ChildProfile?>(
-                    value: null,
-                    child: Text('-- Nhập tên bệnh nhân tự do --'),
-                  ),
-                  ...store.children.map(
-                    (child) => DropdownMenuItem<ChildProfile?>(
-                      value: child,
-                      child: Text('${child.fullName} (${child.village})'),
-                    ),
-                  ),
-                ],
-                onChanged: (child) {
-                  setState(() {
-                    _selectedChild = child;
-                    if (child != null) {
-                      _nameController.text = child.fullName;
-                      if (kVillagesByCommune.containsKey(child.commune)) {
-                        _selectedCommune = child.commune;
-                        if (kVillagesByCommune[child.commune]!.contains(child.village)) {
-                          _selectedVillage = child.village;
-                        } else {
-                          _selectedVillage = kVillagesByCommune[child.commune]!.first;
-                        }
-                      }
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 14),
-
-              // Tên bệnh nhân
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Tên bệnh nhân *',
-                  prefixIcon: Icon(Icons.person_outline_rounded),
-                ),
-                validator: (value) => (value ?? '').trim().isEmpty ? 'Vui lòng nhập tên bệnh nhân' : null,
-              ),
-              const SizedBox(height: 14),
-
-              // Loại bệnh dịch
-              DropdownButtonFormField<String>(
-                initialValue: _diseaseType,
-                decoration: const InputDecoration(
-                  labelText: 'Loại bệnh nghi ngờ *',
-                  prefixIcon: Icon(Icons.warning_amber_rounded),
-                ),
-                items: _diseases
-                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _diseaseType = val);
-                },
-              ),
-              const SizedBox(height: 14),
-
-              // Địa chỉ: Thôn/Bản & Xã (Cascade Dropdowns)
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      key: ValueKey('commune-$_selectedCommune'),
-                      initialValue: kVillagesByCommune.containsKey(_selectedCommune) ? _selectedCommune : kVillagesByCommune.keys.first,
-                      decoration: const InputDecoration(
-                        labelText: 'Xã / Phường *',
-                        prefixIcon: Icon(Icons.location_city_outlined),
                       ),
-                      items: kVillagesByCommune.keys.map((commune) => DropdownMenuItem(
-                        value: commune,
-                        child: Text(commune),
-                      )).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            _selectedCommune = val;
-                            _selectedVillage = kVillagesByCommune[val]!.first;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      key: ValueKey('village-$_selectedCommune-$_selectedVillage'),
-                      initialValue: kVillagesByCommune[_selectedCommune]!.contains(_selectedVillage) 
-                          ? _selectedVillage 
-                          : kVillagesByCommune[_selectedCommune]!.first,
-                      decoration: const InputDecoration(
-                        labelText: 'Thôn / Bản *',
-                        prefixIcon: Icon(Icons.home_outlined),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(color: pillBg, borderRadius: BorderRadius.circular(6)),
+                        child: Text(report.status, style: TextStyle(color: pillFg, fontSize: 10.5, fontWeight: FontWeight.w700)),
                       ),
-                      items: kVillagesByCommune[_selectedCommune]!.map((village) => DropdownMenuItem(
-                        value: village,
-                        child: Text(village),
-                      )).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            _selectedVillage = val;
-                          });
-                        }
-                      },
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Triệu chứng lâm sàng
-              TextFormField(
-                controller: _symptomsController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Triệu chứng lâm sàng quan sát *',
-                  prefixIcon: Icon(Icons.medical_information_outlined),
-                  hintText: 'Ví dụ: Sốt 39°C, phát ban đỏ, tiêu chảy...',
-                ),
-                validator: (value) => (value ?? '').trim().isEmpty ? 'Vui lòng mô tả triệu chứng' : null,
-              ),
-              const SizedBox(height: 14),
-
-              // Mức độ nghiêm trọng
-              DropdownButtonFormField<DiseaseSeverity>(
-                initialValue: _severity,
-                decoration: const InputDecoration(
-                  labelText: 'Mức độ nghiêm trọng',
-                  prefixIcon: Icon(Icons.speed_rounded),
-                ),
-                items: const [
-                  DropdownMenuItem(value: DiseaseSeverity.mild, child: Text('Nhẹ (Theo dõi tại nhà)')),
-                  DropdownMenuItem(value: DiseaseSeverity.moderate, child: Text('Trung bình (Cách ly y tế)')),
-                  DropdownMenuItem(value: DiseaseSeverity.severe, child: Text('Nhẹ (Chuyển tuyến khẩn cấp)')), // Matches severity enum
-                ],
-                onChanged: (val) {
-                  if (val != null) setState(() => _severity = val);
-                },
-              ),
-              const SizedBox(height: 14),
-
-              // Ghi chú xử lý
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Biện pháp xử lý ban đầu',
-                  prefixIcon: Icon(Icons.note_alt_outlined),
-                  hintText: 'Hướng dẫn gia đình cách ly, phát thuốc...',
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Nút lưu báo cáo
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFB42318),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                onPressed: () {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    final isOnline = store.isOnline;
-                    final newReport = DiseaseReport(
-                      id: 'RPT-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-                      childId: _selectedChild?.id,
-                      patientName: _nameController.text.trim(),
-                      diseaseType: _diseaseType,
-                      village: _selectedVillage,
-                      commune: _selectedCommune,
-                      district: 'Sa Pa',
-                      reportedAt: DateTime.now(),
-                      reportedBy: store.currentUser?.fullName ?? 'Y sĩ Lê Thu',
-                      symptoms: _symptomsController.text.trim(),
-                      syncStatus: isOnline ? VaccinationSyncStatus.synced : VaccinationSyncStatus.pending,
-                      status: 'Nghi ngờ',
-                      severity: _severity,
-                      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-                    );
-
-                    store.addDiseaseReport(newReport);
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isOnline
-                              ? 'Đã gửi báo cáo ca bệnh "${newReport.diseaseType}" lên hệ thống thành công!'
-                              : 'Đã lưu báo cáo offline (Ngoại tuyến). Dữ liệu sẽ tự động đồng bộ khi có mạng.',
-                        ),
-                        backgroundColor: isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.save_rounded),
-                label: Text(
-                  store.isOnline ? 'Gửi báo cáo ngay' : 'Lưu báo cáo Offline',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                 ),
               ),
             ],
@@ -622,3 +176,174 @@ class _AddDiseaseReportSheetState extends State<_AddDiseaseReportSheet> {
     );
   }
 }
+
+class AddDiseaseReportScreen extends StatefulWidget {
+  const AddDiseaseReportScreen({super.key});
+
+  @override
+  State<AddDiseaseReportScreen> createState() => _AddDiseaseReportScreenState();
+}
+
+class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _caseCountController = TextEditingController(text: '1');
+  final _symptomsController = TextEditingController();
+
+  String _selectedVillage = 'Bản Sapa';
+  String _diseaseType = 'Sởi';
+  final _diseases = ['Sởi', 'Tả', 'Sốt xuất huyết', 'Thuỷ đậu', 'Bệnh Dại', 'Khác'];
+
+  @override
+  void dispose() {
+    _caseCountController.dispose();
+    _symptomsController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    final store = AppScope.of(context);
+
+    final isOnline = store.isOnline;
+    final newReport = DiseaseReport(
+      id: 'RPT-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      patientName: 'Ổ dịch ${formatDate(DateTime.now())}',
+      diseaseType: _diseaseType,
+      village: _selectedVillage,
+      commune: 'Tả Phìn',
+      district: 'Sa Pa',
+      reportedAt: DateTime.now(),
+      reportedBy: store.currentUser?.fullName ?? 'Y sĩ Lê Thu',
+      symptoms: _symptomsController.text.trim(),
+      syncStatus: isOnline ? VaccinationSyncStatus.synced : VaccinationSyncStatus.pending,
+      status: 'Nghi ngờ',
+      severity: DiseaseSeverity.moderate,
+      notes: 'Số ca ghi nhận: ${_caseCountController.text}',
+    );
+
+    store.addDiseaseReport(newReport);
+    Navigator.pop(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isOnline
+              ? 'Đã gửi báo cáo ca bệnh "${newReport.diseaseType}" lên hệ thống thành công!'
+              : 'Đã lưu báo cáo offline (Ngoại tuyến). Dữ liệu sẽ tự động đồng bộ khi có mạng.',
+        ),
+        backgroundColor: isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: gray100,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: Container(
+          color: Colors.white,
+          child: SafeArea(
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.chevron_left_rounded, color: primaryBlue, size: 22),
+                        Text('Danh sách', style: TextStyle(color: primaryBlue, fontSize: 13, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Báo cáo ca dịch',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: gray900),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _submit,
+                  child: const Text('Gửi', style: TextStyle(color: accentRed, fontWeight: FontWeight.w700, fontSize: 13)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: gray200)),
+        ),
+        child: SizedBox(
+          height: 46,
+          child: FilledButton(
+            onPressed: _submit,
+            style: FilledButton.styleFrom(
+              backgroundColor: accentRed,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text(
+              'Gửi báo cáo khẩn cấp về xã',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+            ),
+          ),
+        ),
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            DropdownButtonFormField<String>(
+              value: _diseaseType,
+              decoration: const InputDecoration(labelText: 'Loại bệnh truyền nhiễm nghi ngờ *'),
+              items: _diseases.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _diseaseType = val);
+              },
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _caseCountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Số ca mắc nghi ngờ ghi nhận *'),
+              validator: (value) => (value ?? '').trim().isEmpty ? 'Vui lòng nhập số ca' : null,
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              value: _selectedVillage,
+              decoration: const InputDecoration(labelText: 'Ổ dịch xảy ra tại bản nào *'),
+              items: const [
+                DropdownMenuItem(value: 'Bản Nậm Lùng', child: Text('Bản Nậm Lùng')),
+                DropdownMenuItem(value: 'Bản Sapa', child: Text('Bản Sapa')),
+                DropdownMenuItem(value: 'Bản Cát Cát', child: Text('Bản Cát Cát')),
+              ],
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedVillage = val);
+              },
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _symptomsController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Triệu chứng / Ghi chú thực tế *',
+                alignLabelWithHint: true,
+                hintText: 'Mô tả các triệu chứng lâm sàng quan sát được...',
+              ),
+              validator: (value) => (value ?? '').trim().isEmpty ? 'Vui lòng mô tả triệu chứng thực tế' : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

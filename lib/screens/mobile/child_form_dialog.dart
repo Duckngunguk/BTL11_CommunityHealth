@@ -129,14 +129,31 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Sửa thông tin trẻ' : 'Thêm trẻ mới'),
+        leading: TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Hủy', style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
+        ),
+        title: Text(_isEditing ? 'Sửa thông tin trẻ' : 'Tạo hồ sơ trẻ', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: _save,
+            child: Text(_isEditing ? 'Lưu' : 'Xong', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.all(16),
+        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: FilledButton.icon(
           onPressed: _save,
-          icon: const Icon(Icons.check_circle_outline_rounded),
-          label: Text(_isEditing ? 'Lưu thay đổi' : 'Tạo hồ sơ trẻ'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF16A34A),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          icon: const Icon(Icons.save_rounded, color: Colors.white, size: 20),
+          label: Text(_isEditing ? 'Lưu thay đổi' : 'Tạo hồ sơ lưu trữ', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         ),
       ),
       body: Form(
@@ -144,17 +161,15 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Thông tin cá nhân của trẻ', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
             TextFormField(
               controller: _fullNameController,
               decoration: const InputDecoration(
-                labelText: 'Họ và tên trẻ *',
-                prefixIcon: Icon(Icons.child_care_rounded),
+                labelText: 'Họ và tên trẻ em *',
+                hintText: 'Nhập họ tên đầy đủ',
               ),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập họ tên trẻ' : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
@@ -170,20 +185,24 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                     },
                     child: InputDecorator(
                       decoration: const InputDecoration(
-                        labelText: 'Ngày sinh *',
-                        prefixIcon: Icon(Icons.cake_outlined),
+                        labelText: 'Ngày tháng năm sinh *',
                       ),
-                      child: Text(formatDate(_dob)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(formatDate(_dob)),
+                          const Icon(Icons.calendar_today_rounded, size: 16, color: Colors.black45),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    initialValue: _gender,
+                    value: _gender,
                     decoration: const InputDecoration(
                       labelText: 'Giới tính *',
-                      prefixIcon: Icon(Icons.wc_rounded),
                     ),
                     items: const [
                       DropdownMenuItem(value: 'Nam', child: Text('Nam')),
@@ -196,47 +215,15 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _qrCodeController,
-              decoration: const InputDecoration(
-                labelText: 'Mã QR / Mã định danh',
-                hintText: 'Tự động tạo nếu để trống',
-                prefixIcon: Icon(Icons.qr_code_rounded),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text('Thông tin người nuôi dưỡng / Phụ huynh', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _motherNameController,
-              decoration: const InputDecoration(
-                labelText: 'Họ tên mẹ / Người giám hộ *',
-                prefixIcon: Icon(Icons.person_outline),
-              ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập tên mẹ / giám hộ' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _motherPhoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Số điện thoại liên hệ',
-                prefixIcon: Icon(Icons.phone_outlined),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text('Địa chỉ cư trú', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     key: ValueKey('commune-$_selectedCommune'),
-                    initialValue: _selectedCommune,
+                    value: _selectedCommune,
                     decoration: const InputDecoration(
-                      labelText: 'Xã *',
-                      prefixIcon: Icon(Icons.location_city_outlined),
+                      labelText: 'Xã cư trú *',
                     ),
                     items: kVillagesByCommune.keys.map((commune) => DropdownMenuItem(
                       value: commune,
@@ -256,10 +243,9 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     key: ValueKey('village-$_selectedCommune-$_selectedVillage'),
-                    initialValue: _selectedVillage,
+                    value: _selectedVillage,
                     decoration: const InputDecoration(
-                      labelText: 'Thôn / Bản *',
-                      prefixIcon: Icon(Icons.home_outlined),
+                      labelText: 'Địa bàn cư trú (Thôn bản) *',
                     ),
                     items: kVillagesByCommune[_selectedCommune]!.map((village) => DropdownMenuItem(
                       value: village,
@@ -276,14 +262,39 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _motherNameController,
+              decoration: const InputDecoration(
+                labelText: 'Họ tên cha / mẹ / Người giám hộ *',
+                hintText: 'Nhập tên phụ huynh',
+              ),
+              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập tên mẹ / giám hộ' : null,
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _motherPhoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Số điện thoại liên hệ khẩn cấp',
+                hintText: 'Ví dụ: 0987654321',
+              ),
+            ),
+            const SizedBox(height: 14),
             TextFormField(
               controller: _districtController,
               decoration: const InputDecoration(
                 labelText: 'Huyện / Thị xã *',
-                prefixIcon: Icon(Icons.map_outlined),
               ),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập huyện' : null,
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _qrCodeController,
+              decoration: const InputDecoration(
+                labelText: 'Mã QR / Mã định danh (Không bắt buộc)',
+                hintText: 'Tự động tạo nếu để trống',
+              ),
             ),
           ],
         ),
@@ -291,3 +302,4 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     );
   }
 }
+

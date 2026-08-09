@@ -23,6 +23,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _showRegister = false;
 
+  // 0 = role selector, 1 = login form
+  int _step = 0;
+  String _selectedRole = 'cb'; // 'cb' hoặc 'ph'
+
   @override
   void dispose() {
     _usernameController.dispose();
@@ -32,7 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Hiển thị màn hình đăng ký nếu user click "Đăng ký"
     if (_showRegister) {
       return RegisterScreen(
         onBackToLogin: ([registeredUsername]) {
@@ -48,125 +51,341 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 900;
-          return Row(
-            children: [
-              if (wide)
-                Expanded(
-                  child: Container(
-                    color: primaryGreen,
-                    padding: const EdgeInsets.all(56),
-                    child: const _BrandPanel(),
+      backgroundColor: gray100,
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: _step == 0 ? _buildRoleSelector() : _buildLoginForm(),
+        ),
+      ),
+    );
+  }
+
+  // ─── VIEW 1: Role Selector ─────────────────────────────────
+  Widget _buildRoleSelector() {
+    return Container(
+      key: const ValueKey('role'),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Logo
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2563EB).withOpacity(0.18),
+                      blurRadius: 25,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.health_and_safety_rounded, color: Colors.white, size: 32),
+              ),
+            ),
+            const SizedBox(height: 22),
+
+            // Title
+            const Text(
+              'COMMUNITY HEALTH',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1E3A8A),
+                letterSpacing: 0.03,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Sổ tay tiêm chủng & Giám sát dịch bệnh',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12.5, color: gray500, fontWeight: FontWeight.w600, height: 1.4),
+            ),
+            const SizedBox(height: 36),
+
+            // Role button: Cán bộ Y tế
+            // Role button 1: Cán bộ Y tế
+            _buildRoleButton(
+              icon: Icons.monitor_heart_outlined,
+              iconColor: primaryBlue,
+              iconBg: blueLight,
+              title: 'Cán bộ Y tế',
+              subtitle: 'Ghi nhận tiêm chủng, giám sát dịch bệnh',
+              onTap: () {
+                setState(() {
+                  _selectedRole = 'cb';
+                  _usernameController.text = 'healthworker.demo';
+                  _passwordController.text = '123456';
+                  _step = 1;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Role button 2: Phụ huynh
+            _buildRoleButton(
+              icon: Icons.family_restroom_rounded,
+              iconColor: primaryDark,
+              iconBg: primaryLight,
+              title: 'Phụ huynh',
+              subtitle: 'Theo dõi lịch tiêm của con, nhận thông báo',
+              onTap: () {
+                setState(() {
+                  _selectedRole = 'ph';
+                  _usernameController.text = 'parent.demo';
+                  _passwordController.text = '123456';
+                  _step = 1;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleButton({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: gray200, width: 1.5),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 12, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: gray900)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(fontSize: 11.5, color: gray500, height: 1.3)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: gray400),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── VIEW 2: Login Form ─────────────────────────────────────
+  Widget _buildLoginForm() {
+    return Container(
+      key: const ValueKey('form'),
+      color: Colors.white,
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: gray200)),
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => setState(() => _step = 0),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.chevron_left_rounded, color: primaryBlue, size: 22),
+                      Text('Trở về', style: TextStyle(color: primaryBlue, fontSize: 13, fontWeight: FontWeight.w600)),
+                    ],
                   ),
                 ),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 430),
-                      child: Card(
-                        elevation: 0,
-                        child: Padding(
-                          padding: const EdgeInsets.all(28),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (!wide) ...[
-                                const Icon(Icons.health_and_safety_rounded, size: 54, color: primaryGreen),
-                                const SizedBox(height: 12),
-                              ],
-                              Text(
-                                'Đăng nhập CommunityHealth',
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'App Mobile (Cán bộ y tế & Phụ huynh) | Web Admin (Quản trị viên)',
-                                style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500),
-                              ),
-                              const SizedBox(height: 24),
-                              TextField(
-                                controller: _usernameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Tên đăng nhập',
-                                  prefixIcon: Icon(Icons.person_outline_rounded),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              TextField(
-                                controller: _passwordController,
-                                obscureText: _obscure,
-                                decoration: InputDecoration(
-                                  labelText: 'Mật khẩu',
-                                  prefixIcon: const Icon(Icons.lock_outline_rounded),
-                                  suffixIcon: IconButton(
-                                    onPressed: () => setState(() => _obscure = !_obscure),
-                                    icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 22),
-                              FilledButton(
-                                onPressed: _isLoading ? null : _handleLogin,
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 22,
-                                        width: 22,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                      )
-                                    : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.login_rounded),
-                                          SizedBox(width: 8),
-                                          Text('Đăng nhập', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                                        ],
-                                      ),
-                              ),
-                              const SizedBox(height: 20),
-                              const Wrap(
-                                alignment: WrapAlignment.center,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  Icon(Icons.cloud_off_rounded, size: 17, color: Colors.black45),
-                                  SizedBox(width: 6),
-                                  Text('Hỗ trợ đăng nhập với dữ liệu đã lưu ngoại tuyến', style: TextStyle(color: Colors.black54, fontSize: 13), textAlign: TextAlign.center),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              const Divider(height: 1),
-                              const SizedBox(height: 16),
-                              // Nút Đăng ký tài khoản mới
-                              Wrap(
-                                alignment: WrapAlignment.center,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  const Text('Chưa có tài khoản? ', style: TextStyle(color: Colors.black54)),
-                                  GestureDetector(
-                                    onTap: () => setState(() => _showRegister = true),
-                                    child: const Text(
-                                      'Đăng ký ngay',
-                                      style: TextStyle(color: primaryGreen, fontWeight: FontWeight.w800, fontSize: 14),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                const Expanded(
+                  child: Text(
+                    'Đăng nhập',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: gray900),
+                  ),
+                ),
+                const SizedBox(width: 56),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Logo nhỏ
+                  Align(
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.person_rounded, color: Colors.white, size: 28),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Form card
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: gray200),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6)],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Username
+                        const Text('TÊN ĐĂNG NHẬP / SỐ ĐIỆN THOẠI',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: gray600, letterSpacing: 0.02)),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: _usernameController,
+                          style: const TextStyle(fontSize: 13, color: gray900),
+                          decoration: const InputDecoration(
+                            hintText: 'Nhập tài khoản của bạn',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        // Password
+                        const Text('MẬT KHẨU',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: gray600, letterSpacing: 0.02)),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscure,
+                          style: const TextStyle(fontSize: 13, color: gray900),
+                          decoration: InputDecoration(
+                            hintText: 'Nhập mật khẩu',
+                            suffixIcon: GestureDetector(
+                              onTap: () => setState(() => _obscure = !_obscure),
+                              child: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  size: 18, color: gray500),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Remember + Forgot
+                        Row(
+                          children: [
+                            const Icon(Icons.check_box_outlined, size: 16, color: primaryDark),
+                            const SizedBox(width: 4),
+                            const Text('Ghi nhớ mật khẩu', style: TextStyle(fontSize: 12, color: gray700)),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () {},
+                              child: const Text('Quên mật khẩu?',
+                                  style: TextStyle(fontSize: 12, color: primaryBlue, fontWeight: FontWeight.w700)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Login + Biometric buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: FilledButton(
+                            onPressed: _isLoading ? null : _handleLogin,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: primaryDark,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Text('Đăng nhập tài khoản',
+                                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.white)),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      // Biometric button
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: blueLight,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: primaryBlue, width: 1.5),
+                        ),
+                        child: const Icon(Icons.fingerprint_rounded, color: primaryBlue, size: 24),
+                      ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+
+                  // Register link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Chưa có tài khoản? ', style: TextStyle(fontSize: 12.5, color: gray600)),
+                      GestureDetector(
+                        onTap: () => setState(() => _showRegister = true),
+                        child: const Text(
+                          'Đăng ký ngay',
+                          style: TextStyle(fontSize: 12.5, color: primaryDark, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -190,14 +409,12 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
-    // Giả lập độ trễ xác thực REST API (400ms)
     await Future<void>.delayed(const Duration(milliseconds: 400));
 
     if (!mounted) return;
 
     final store = AppScope.of(context);
 
-    // Kiểm tra tài khoản trong hệ thống
     final user = store.users.where((u) => u.username.toLowerCase() == username).firstOrNull;
 
     setState(() => _isLoading = false);
@@ -206,7 +423,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tài khoản chưa được đăng ký trong hệ thống. Vui lòng bấm "Đăng ký ngay"!'),
-          backgroundColor: Color(0xFFB42318),
+          backgroundColor: accentRed,
         ),
       );
       return;
@@ -216,7 +433,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Mật khẩu không chính xác. Vui lòng thử lại!'),
-          backgroundColor: Color(0xFFB42318),
+          backgroundColor: accentRed,
         ),
       );
       return;
@@ -226,7 +443,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tài khoản đang chờ Admin phê duyệt. Vui lòng thử lại sau.'),
-          backgroundColor: Color(0xFF8A5D00),
+          backgroundColor: accentYellow,
         ),
       );
       return;
@@ -236,17 +453,26 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tài khoản đã bị khóa. Vui lòng liên hệ Quản trị viên.'),
-          backgroundColor: Color(0xFFB42318),
+          backgroundColor: accentRed,
         ),
       );
       return;
     }
 
-    // Lưu currentUser vào AppStore
-    store.currentUser = user;
-    store.addAuditLog('Đăng nhập hệ thống', 'Đăng nhập thành công từ ứng dụng');
+    // Role security check
+    if (_selectedRole == 'admin' && user.role != UserRole.admin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⛔ Tài khoản này không có quyền Quản trị viên (Admin)!'),
+          backgroundColor: accentRed,
+        ),
+      );
+      return;
+    }
 
-    // Route theo vai trò
+    store.currentUser = user;
+    store.addAuditLog('Đăng nhập hệ thống', 'Đăng nhập thành công từ ứng dụng (${user.role.name})');
+
     if (user.role == UserRole.admin) {
       widget.onLogin(AppMode.admin);
     } else if (user.role == UserRole.parent) {
@@ -254,64 +480,5 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       widget.onLogin(AppMode.mobile);
     }
-  }
-}
-
-class _BrandPanel extends StatelessWidget {
-  const _BrandPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: const Icon(Icons.health_and_safety_rounded, color: primaryGreen, size: 42),
-        ),
-        const SizedBox(height: 28),
-        const Text(
-          'CommunityHealth',
-          style: TextStyle(color: Colors.white, fontSize: 38, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Sổ tay tiêm chủng ngoại tuyến và giám sát dịch tễ vùng sâu.',
-          style: TextStyle(color: Colors.white70, fontSize: 19, height: 1.5),
-        ),
-        const SizedBox(height: 34),
-        const _FeatureLine(icon: Icons.smartphone_rounded, text: 'App Mobile: Dành cho Cán bộ Y tế & Phụ huynh'),
-        const _FeatureLine(icon: Icons.admin_panel_settings_rounded, text: 'Web Admin: Dành cho Quản trị viên quản lý'),
-        const _FeatureLine(icon: Icons.cloud_off_rounded, text: 'Tra cứu và ghi nhận tiêm khi không có mạng'),
-        const _FeatureLine(icon: Icons.sync_rounded, text: 'Đồng bộ an toàn khi kết nối trở lại'),
-      ],
-    );
-  }
-}
-
-class _FeatureLine extends StatelessWidget {
-  const _FeatureLine({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 16))),
-        ],
-      ),
-    );
   }
 }

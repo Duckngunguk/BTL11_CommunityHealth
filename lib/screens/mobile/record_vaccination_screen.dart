@@ -15,7 +15,7 @@ class RecordVaccinationScreen extends StatefulWidget {
 
 class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _lotController = TextEditingController(text: 'DPT2607-A12');
+  final _lotController = TextEditingController(text: 'LOT-DPT-2026-03');
   late final TextEditingController _staffController;
   final _reactionController = TextEditingController();
   VaccineSchedule? _schedule;
@@ -87,29 +87,81 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
       _staffController.text = store.currentUser!.fullName;
     }
 
+    // Default select child's next recommended vaccine schedule if match
+    if (_schedule == null) {
+      final recommendedName = child.nextVaccine.split(' - ').first;
+      for (final s in store.vaccineSchedules) {
+        if (s.displayName.contains(recommendedName)) {
+          _schedule = s;
+          break;
+        }
+      }
+      _schedule ??= store.vaccineSchedules.first;
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Ghi nhận mũi tiêm')),
+      appBar: AppBar(
+        leading: TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Hủy', style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
+        ),
+        title: const Text('Ghi nhận tiêm', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: _save,
+            child: const Text('Lưu', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.all(16),
-        child: FilledButton.icon(onPressed: _save, icon: const Icon(Icons.save_outlined), label: const Text('Lưu bản ghi ngoại tuyến')),
+        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: FilledButton.icon(
+          onPressed: _save,
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF16A34A),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          icon: const Icon(Icons.save_rounded, color: Colors.white, size: 20),
+          label: const Text(
+            'Lưu bản ghi (Lưu tạm Offline)',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+        ),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Card(
-              color: softGreen,
-              child: ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.child_care_rounded, color: primaryGreen)),
-                title: Text(child.fullName, style: const TextStyle(fontWeight: FontWeight.w800)),
-                subtitle: Text('Lịch đề xuất: ${child.nextVaccine}'),
+            // Top banner child info
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Text('👉 ', style: TextStyle(fontSize: 16)),
+                  const Text(
+                    'Trẻ thụ hưởng: ',
+                    style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    child.fullName,
+                    style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 18),
+
             DropdownButtonFormField<VaccineSchedule>(
-              initialValue: _schedule,
-              decoration: const InputDecoration(labelText: 'Vaccine đang tiêm *', prefixIcon: Icon(Icons.vaccines_outlined)),
+              value: _schedule,
+              decoration: const InputDecoration(labelText: 'Loại vắc-xin *'),
               items: store.vaccineSchedules.map((schedule) => DropdownMenuItem(value: schedule, child: Text(schedule.displayName))).toList(),
               onChanged: (value) => setState(() => _schedule = value),
               validator: (value) => value == null ? 'Vui lòng chọn vaccine' : null,
@@ -117,13 +169,13 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
             const SizedBox(height: 14),
             TextFormField(
               controller: _lotController,
-              decoration: const InputDecoration(labelText: 'Số lô vaccine *', prefixIcon: Icon(Icons.inventory_2_outlined)),
+              decoration: const InputDecoration(labelText: 'Số lô sản xuất (Lot number) *'),
               validator: (value) => (value ?? '').trim().isEmpty ? 'Vui lòng nhập số lô' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _staffController,
-              decoration: const InputDecoration(labelText: 'Cán bộ tiêm *', prefixIcon: Icon(Icons.badge_outlined)),
+              decoration: const InputDecoration(labelText: 'Cán bộ thực hiện tiêm *'),
               validator: (value) => (value ?? '').trim().isEmpty ? 'Vui lòng nhập tên cán bộ' : null,
             ),
             const SizedBox(height: 14),
@@ -138,7 +190,7 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
                 if (value != null) setState(() => _administeredAt = value);
               },
               child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'Ngày tiêm', prefixIcon: Icon(Icons.calendar_month_outlined)),
+                decoration: const InputDecoration(labelText: 'Ngày tiêm *'),
                 child: Text(formatDate(_administeredAt)),
               ),
             ),
@@ -146,19 +198,10 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
             TextFormField(
               controller: _reactionController,
               maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Ghi chú phản ứng sau tiêm', alignLabelWithHint: true, prefixIcon: Icon(Icons.notes_rounded)),
-            ),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: const Color(0xFFFFF8E7), borderRadius: BorderRadius.circular(16)),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.cloud_off_rounded, color: Color(0xFF8A5D00)),
-                  SizedBox(width: 10),
-                  Expanded(child: Text('Bản ghi được lưu cục bộ với trạng thái pending. Không tắt ứng dụng trong lúc đang lưu.')),
-                ],
+              decoration: const InputDecoration(
+                labelText: 'Phản ứng phụ sau tiêm (nếu có)',
+                alignLabelWithHint: true,
+                hintText: 'Ví dụ: Sốt nhẹ 38.2°C, sưng tấy vết tiêm...',
               ),
             ),
           ],
@@ -167,3 +210,4 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
     );
   }
 }
+

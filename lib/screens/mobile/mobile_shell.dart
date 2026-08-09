@@ -8,6 +8,8 @@ import 'home_screen.dart';
 import 'settings_screen.dart';
 import 'sync_screen.dart';
 
+import 'child_form_dialog.dart';
+
 class MobileShell extends StatefulWidget {
   const MobileShell({super.key, required this.onLogout});
 
@@ -32,41 +34,57 @@ class _MobileShellState extends State<MobileShell> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(Icons.health_and_safety_rounded, color: primaryGreen),
-            const SizedBox(width: 8),
-            Text(['Tổng quan', 'Trẻ em', 'Giám sát dịch', 'Đồng bộ', 'Cài đặt'][_index]),
+      backgroundColor: gray100,
+      body: IndexedStack(index: _index, children: pages),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: gray200, width: 1)),
+        ),
+        child: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: (value) => setState(() => _index = value),
+          height: 64,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Trang chủ',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Phụ huynh',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.warning_amber_outlined),
+              selectedIcon: Icon(Icons.warning_amber_rounded),
+              label: 'Báo dịch',
+            ),
+            NavigationDestination(
+              icon: Badge(
+                isLabelVisible: store.pendingCount > 0,
+                label: Text('${store.pendingCount}'),
+                child: const Icon(Icons.sync_outlined),
+              ),
+              selectedIcon: Badge(
+                isLabelVisible: store.pendingCount > 0,
+                label: Text('${store.pendingCount}'),
+                child: const Icon(Icons.sync_rounded),
+              ),
+              label: 'Đồng bộ',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings_rounded),
+              label: 'Cài đặt',
+            ),
           ],
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Tooltip(
-              message: store.isOnline ? 'Đang có mạng' : 'Đang ngoại tuyến',
-              child: CircleAvatar(
-                backgroundColor: store.isOnline ? const Color(0xFFE5F5EC) : const Color(0xFFFFF3CD),
-                child: Icon(
-                  store.isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-                  color: store.isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: IndexedStack(index: _index, children: pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Trang chủ'),
-          NavigationDestination(icon: Icon(Icons.child_care_outlined), selectedIcon: Icon(Icons.child_care_rounded), label: 'Trẻ em'),
-          NavigationDestination(icon: Icon(Icons.coronavirus_outlined), selectedIcon: Icon(Icons.coronavirus_rounded), label: 'Báo dịch'),
-          NavigationDestination(icon: Icon(Icons.sync_outlined), selectedIcon: Icon(Icons.sync_rounded), label: 'Đồng bộ'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings_rounded), label: 'Cài đặt'),
-        ],
       ),
     );
   }

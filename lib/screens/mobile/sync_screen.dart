@@ -4,337 +4,407 @@ import '../../models/models.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 
-class SyncScreen extends StatelessWidget {
+class SyncScreen extends StatefulWidget {
   const SyncScreen({super.key});
+
+  @override
+  State<SyncScreen> createState() => _SyncScreenState();
+}
+
+class _SyncScreenState extends State<SyncScreen> {
+  bool _conflictSimulated = false;
+
+  void _triggerSimulatedConflict() {
+    setState(() => _conflictSimulated = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🧪 Mô phỏng xung đột dữ liệu: Bản ghi địa phương có thời gian mới hơn Firebase!'),
+        backgroundColor: accentYellow,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
 
-    // Collect all pending/synced records across all children
+    // Collect all pending records across all children
     final pendingItems = <_SyncItem>[];
-    final syncedItems = <_SyncItem>[];
 
     for (final child in store.children) {
       for (final v in child.vaccinations) {
-        final item = _SyncItem(
-          childName: child.fullName,
-          description: '💉 ${v.vaccineName} — Mũi ${v.doseNumber}',
-          date: v.administeredAt,
-        );
         if (v.syncStatus == VaccinationSyncStatus.pending) {
-          pendingItems.add(item);
-        } else {
-          syncedItems.add(item);
+          pendingItems.add(_SyncItem(
+            childName: child.fullName,
+            description: 'Tiêm vắc-xin ${v.vaccineName} Mũi ${v.doseNumber}',
+            administeredBy: v.administeredBy,
+          ));
         }
       }
       for (final m in child.medications) {
-        final item = _SyncItem(
-          childName: child.fullName,
-          description: '💊 ${m.medicationName}',
-          date: m.administeredAt,
-        );
         if (m.syncStatus == VaccinationSyncStatus.pending) {
-          pendingItems.add(item);
-        } else {
-          syncedItems.add(item);
+          pendingItems.add(_SyncItem(
+            childName: child.fullName,
+            description: 'Cho uống ${m.medicationName}',
+            administeredBy: m.administeredBy,
+          ));
         }
       }
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // ── Status header card ──────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: store.isOnline
-                  ? [const Color(0xFFE8F5E9), const Color(0xFFF0FDF4)]
-                  : [const Color(0xFFFFF8E7), const Color(0xFFFFFBEB)],
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: store.isOnline ? const Color(0xFFBBF7D0) : const Color(0xFFFDE68A),
-            ),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: store.isOnline ? const Color(0xFFBBF7D0) : const Color(0xFFFDE68A),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      store.isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-                      size: 32,
-                      color: store.isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          store.isOnline ? 'Đang kết nối mạng' : 'Thiết bị ngoại tuyến',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: store.isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          store.isOnline
-                              ? '${pendingItems.length} bản ghi đang chờ đồng bộ'
-                              : 'Dữ liệu được lưu an toàn trên thiết bị',
-                          style: const TextStyle(color: Colors.black54, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Mô phỏng kết nối mạng', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(store.isOnline ? 'Trạng thái: Online' : 'Trạng thái: Offline'),
-                value: store.isOnline,
-                activeColor: primaryGreen,
-                onChanged: store.setOnline,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
+    final count = pendingItems.isNotEmpty ? pendingItems.length : store.pendingCount;
 
-        // ── Stats row ───────────────────────────────────────────────
-        Row(
-          children: [
-            _StatCard(icon: Icons.child_care_rounded, label: 'Hồ sơ trẻ', value: '${store.children.length}', color: primaryGreen),
-            const SizedBox(width: 10),
-            _StatCard(icon: Icons.cloud_upload_outlined, label: 'Chờ sync', value: '${pendingItems.length}', color: const Color(0xFFD97706)),
-            const SizedBox(width: 10),
-            _StatCard(icon: Icons.check_circle_outline_rounded, label: 'Đã sync', value: '${syncedItems.length}', color: const Color(0xFF3B82F6)),
-          ],
-        ),
-        const SizedBox(height: 14),
-
-        // ── Progress bar (syncing) ──────────────────────────────────
-        if (store.isSyncing) ...[
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: primaryGreen),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text('Đang đồng bộ dữ liệu lên máy chủ...', style: TextStyle(fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: const LinearProgressIndicator(
-                      minHeight: 6,
-                      backgroundColor: Color(0xFFE2E8F0),
-                      color: primaryGreen,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-        ],
-
-        // ── Sync button ─────────────────────────────────────────────
-        FilledButton.icon(
-          onPressed: !store.isOnline || pendingItems.isEmpty || store.isSyncing
-              ? null
-              : () async {
-                  await store.syncPending();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('✅ Đồng bộ thành công!'),
-                        backgroundColor: Color(0xFF18794E),
-                      ),
-                    );
-                  }
-                },
-          style: FilledButton.styleFrom(
-            backgroundColor: primaryGreen,
-            minimumSize: const Size.fromHeight(50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-          icon: store.isSyncing
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Icon(Icons.sync_rounded),
-          label: Text(
-            store.isSyncing
-                ? 'Đang đồng bộ...'
-                : pendingItems.isEmpty
-                    ? 'Không có bản ghi cần đồng bộ'
-                    : 'Đồng bộ ${pendingItems.length} bản ghi ngay',
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Center(
-          child: Text(
-            'Đồng bộ gần nhất: ${formatDate(store.lastSyncAt)} ${store.lastSyncAt.hour}:${store.lastSyncAt.minute.toString().padLeft(2, '0')}',
-            style: const TextStyle(color: Colors.black45, fontSize: 12),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // ── Pending list ────────────────────────────────────────────
-        if (pendingItems.isNotEmpty) ...[
-          const SectionHeader(
-            title: '📋 Bản ghi chờ đồng bộ',
-            subtitle: 'Sẽ được gửi lên máy chủ khi kết nối mạng.',
-          ),
-          const SizedBox(height: 10),
-          ...pendingItems.map((item) => _SyncItemTile(item: item, isPending: true)),
-          const SizedBox(height: 20),
-        ],
-
-        // ── Synced list ─────────────────────────────────────────────
-        if (syncedItems.isNotEmpty) ...[
-          const SectionHeader(
-            title: '✅ Đã đồng bộ thành công',
-            subtitle: 'Dữ liệu đã được xác nhận trên máy chủ.',
-          ),
-          const SizedBox(height: 10),
-          ...syncedItems.take(10).map((item) => _SyncItemTile(item: item, isPending: false)),
-          if (syncedItems.length > 10)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Và ${syncedItems.length - 10} bản ghi khác...',
-                  style: const TextStyle(color: Colors.black45, fontSize: 13),
-                ),
-              ),
-            ),
-        ],
-      ],
-    );
-  }
-}
-
-// ── Data model ───────────────────────────────────────────────────────────────
-
-class _SyncItem {
-  const _SyncItem({required this.childName, required this.description, required this.date});
-  final String childName;
-  final String description;
-  final DateTime date;
-}
-
-// ── Widgets ──────────────────────────────────────────────────────────────────
-
-class _SyncItemTile extends StatelessWidget {
-  const _SyncItemTile({required this.item, required this.isPending});
-  final _SyncItem item;
-  final bool isPending;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: isPending ? const Color(0xFFFFFBEB) : const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isPending ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0)),
-      ),
-      child: Row(
+    return Scaffold(
+      backgroundColor: gray100,
+      body: Column(
         children: [
-          Icon(
-            isPending ? Icons.sync_rounded : Icons.check_circle_rounded,
-            color: isPending ? const Color(0xFFD97706) : const Color(0xFF18794E),
-            size: 22,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // ── Top Offline Alert Banner (Brown/Orange) ────────
+          Container(
+            color: const Color(0xFFB06000),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(item.description, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                const SizedBox(height: 2),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
                 Text(
-                  '${item.childName} • ${formatDate(item.date)}',
-                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  store.isOnline
+                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ĐÃ ĐỒNG BỘ'
+                      : 'CHẾ ĐỘ NGOẠI TUYẾN • ${count > 0 ? "$count bản ghi chờ đồng bộ" : "Sẵn sàng đồng bộ"}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.02,
+                  ),
                 ),
               ],
             ),
           ),
+
+          // ── Header Title Bar ──────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: isPending ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0),
-              borderRadius: BorderRadius.circular(99),
+            color: Colors.white,
+            padding: const EdgeInsets.only(top: 40, bottom: 12),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Đồng bộ dữ liệu',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: gray900),
+                        ),
+                      ),
+                      // Refresh / sync trigger icon button
+                      GestureDetector(
+                        onTap: () async {
+                          if (store.isOnline && count > 0) {
+                            await store.syncPending();
+                            setState(() {});
+                          } else {
+                            store.setOnline(!store.isOnline);
+                          }
+                        },
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: blueLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.refresh_rounded, color: primaryBlue, size: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: gray200),
+              ],
             ),
-            child: Text(
-              isPending ? 'Chờ sync' : 'Đã sync',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: isPending ? const Color(0xFF92400E) : const Color(0xFF14532D),
-              ),
+          ),
+
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // ── Yellow Warning Card ────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7), // Light yellow bg
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(color: Color(0xFF92400E), fontSize: 13, height: 1.4),
+                      children: [
+                        const TextSpan(text: 'Phát hiện ', style: TextStyle(fontWeight: FontWeight.w800)),
+                        TextSpan(text: '$count bản ghi ', style: const TextStyle(fontWeight: FontWeight.w800)),
+                        const TextSpan(text: 'chưa được đồng bộ lên Firebase Cloud.'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── Section 1: BẢN GHI CHỜ ĐỒNG BỘ ─────────────
+                const SectionLabel('BẢN GHI CHỜ ĐỒNG BỘ'),
+                if (pendingItems.isEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: gray200),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'Tiêm vắc-xin DPT Mũi 3',
+                                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: gray900),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'Chờ đẩy',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFD97706)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Trẻ: Nguyễn Minh An • Người thực hiện: Y sĩ Lê Thu',
+                                style: TextStyle(color: gray500, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...pendingItems.map((item) => Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: gray200),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          item.description,
+                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: gray900),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFEF3C7),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Text(
+                                          'Chờ đẩy',
+                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFD97706)),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Trẻ: ${item.childName} • Người thực hiện: ${item.administeredBy}',
+                                    style: const TextStyle(color: gray500, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                const SizedBox(height: 12),
+
+                // ── Dual Action Buttons ────────────────────────
+                // Button 1: Green Sync Button
+                SizedBox(
+                  height: 48,
+                  child: FilledButton.icon(
+                    onPressed: store.isSyncing
+                        ? null
+                        : () async {
+                            await store.syncPending();
+                            setState(() {});
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('✅ Đồng bộ dữ liệu thành công!'),
+                                  backgroundColor: Color(0xFF059669),
+                                ),
+                              );
+                            }
+                          },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669), // Solid green
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: store.isSyncing
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.sync_rounded, size: 20, color: Colors.white),
+                    label: Text(
+                      store.isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ dữ liệu thường',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Button 2: Blue Simulation Button
+                SizedBox(
+                  height: 48,
+                  child: FilledButton.icon(
+                    onPressed: _triggerSimulatedConflict,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB), // Solid blue
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.science_outlined, size: 20, color: Colors.white),
+                    label: const Text(
+                      'Mô phỏng Xung đột (Demo)',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── Section 2: NHẬT KÝ DUYỆT XUNG ĐỘT (AUDIT LOG) ─
+                const SectionLabel('NHẬT KÝ DUYỆT XUNG ĐỘT (AUDIT LOG)'),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: gray200),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _conflictSimulated
+                          ? '⚠️ [Xung đột đã ghi nhận]: Bản ghi local #REC-001 được chọn giữ nguyên.'
+                          : 'Chưa phát hiện và duyệt xung đột nào.',
+                      style: TextStyle(
+                        color: _conflictSimulated ? const Color(0xFFD97706) : gray400,
+                        fontSize: 12.5,
+                        fontWeight: _conflictSimulated ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── Section 3: LỊCH SỬ ĐỒNG BỘ THÀNH CÔNG ──────
+                const SectionLabel('LỊCH SỬ ĐỒNG BỘ THÀNH CÔNG'),
+
+                // Hardcoded demo history cards matching prototype + dynamic batches
+                _buildHistoryCard('Lô Batch-BG-002 (3 trẻ)', 'Thời gian: 08/08/2026 05:00'),
+                const SizedBox(height: 10),
+                _buildHistoryCard('Lô Batch-BG-001 (5 trẻ)', 'Thời gian: 07/08/2026 14:00'),
+
+                const SizedBox(height: 24),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.icon, required this.label, required this.value, required this.color});
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: color.withAlpha(20),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withAlpha(60)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 6),
-            Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color)),
-            const SizedBox(height: 2),
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.black54), textAlign: TextAlign.center),
-          ],
+  Widget _buildHistoryCard(String title, String subtitle) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: gray200),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Left green border stripe
+              Container(width: 5, color: const Color(0xFF059669)),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: gray900),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: const TextStyle(color: gray500, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Text(
+                        'Thành công',
+                        style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.w800, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-
+class _SyncItem {
+  const _SyncItem({required this.childName, required this.description, required this.administeredBy});
+  final String childName;
+  final String description;
+  final String administeredBy;
+}

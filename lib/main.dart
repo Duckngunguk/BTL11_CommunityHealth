@@ -7,6 +7,7 @@ import 'package:workmanager/workmanager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'screens/admin/admin_shell.dart';
+import 'screens/admin/admin_web_login_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/mobile/mobile_shell.dart';
 import 'screens/parent/parent_shell.dart';
@@ -137,43 +138,79 @@ class CommunityHealthApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-            seedColor: primaryGreen, brightness: Brightness.light),
+            seedColor: primaryBlue, brightness: Brightness.light),
         scaffoldBackgroundColor: pageBackground,
+        fontFamily: 'Roboto',
         cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: gray200)),
         ),
         appBarTheme: const AppBarThemeData(
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.white,
-          centerTitle: false,
+          centerTitle: true,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          titleTextStyle: TextStyle(
+            color: gray900,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+          iconTheme: IconThemeData(color: primaryBlue),
         ),
         inputDecorationTheme: InputDecorationThemeData(
           filled: true,
           fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFD9E0DC))),
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: gray200)),
           enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFD9E0DC))),
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: gray200)),
           focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: primaryGreen, width: 1.6)),
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: primaryBlue, width: 1.5)),
+          hintStyle: const TextStyle(color: gray400, fontSize: 13),
+          labelStyle: const TextStyle(color: gray600, fontSize: 11, fontWeight: FontWeight.w700),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 50),
+              backgroundColor: primaryDark,
+              minimumSize: const Size(0, 46),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14))),
+                  borderRadius: BorderRadius.circular(12))),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 50),
+              minimumSize: const Size(0, 46),
+              side: const BorderSide(color: gray200),
+              backgroundColor: gray100,
+              foregroundColor: gray800,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14))),
+                  borderRadius: BorderRadius.circular(12))),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: Colors.white,
+          indicatorColor: blueLight,
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return TextStyle(
+              color: selected ? primaryBlue : gray500,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            );
+          }),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return IconThemeData(
+              color: selected ? primaryBlue : gray500,
+              size: 22,
+            );
+          }),
         ),
       ),
       home: const _AppRouter(),
@@ -193,15 +230,14 @@ class _AppRouterState extends State<_AppRouter> {
 
   @override
   Widget build(BuildContext context) {
-    if (_mode == null) {
-      return LoginScreen(onLogin: (mode) => setState(() => _mode = mode));
-    }
-    if (_mode == AppMode.admin) {
-      return AdminShell(onLogout: () => setState(() => _mode = null));
-    }
     if (_mode == AppMode.parent) {
       return ParentShell(onLogout: () => setState(() => _mode = null));
     }
-    return MobileShell(onLogout: () => setState(() => _mode = null));
+    if (_mode == AppMode.mobile) {
+      return MobileShell(onLogout: () => setState(() => _mode = null));
+    }
+    return LoginScreen(
+      onLogin: (mode) => setState(() => _mode = mode),
+    );
   }
 }
