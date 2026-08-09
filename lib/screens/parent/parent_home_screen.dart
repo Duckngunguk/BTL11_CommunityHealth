@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/models.dart';
+import '../../services/notification_service.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 import 'parent_child_detail_screen.dart';
@@ -14,6 +15,7 @@ class ParentHomeScreen extends StatefulWidget {
 
 class _ParentHomeScreenState extends State<ParentHomeScreen> {
   String _selectedFilter = 'all'; // 'all', 'late', 'complete'
+  bool _notifBannerDismissed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +37,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     final lateChildren = children.where((c) => c.lateDays > 0).toList();
     final hasLateChild = lateChildren.isNotEmpty;
     final lateChild = hasLateChild ? lateChildren.first : null;
+
+    // Generate in-app notifications for vaccine reminders
+    NotificationService.instance.generateVaccineReminders(children);
 
     // Filter children based on selected tab filter
     final filteredChildren = children.where((c) {
@@ -77,6 +82,34 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               ],
             ),
           ),
+
+          // ── Notification Banner (Vaccine Reminder) ──
+          if (!_notifBannerDismissed && lateChildren.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.notification_important_rounded, color: Color(0xFFDC2626), size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '⚠️ ${lateChildren.length} trẻ trễ lịch tiêm! Vui lòng đưa trẻ đến trạm y tế sớm nhất.',
+                      style: const TextStyle(fontSize: 12.5, color: Color(0xFFDC2626), fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _notifBannerDismissed = true),
+                    child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFFDC2626)),
+                  ),
+                ],
+              ),
+            ),
 
           // ── 2. Header Title Bar ──────────────────────────────
           Container(
@@ -148,7 +181,11 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        parentName.startsWith('Mẹ') || parentName.startsWith('Bố') ? parentName : 'Mẹ $parentName',
+                        parentName.startsWith('Mẹ') || parentName.startsWith('Bố') || parentName.startsWith('Phụ huynh')
+                            ? parentName
+                            : (parentName.toLowerCase().contains('bính') || parentName.toLowerCase().contains('sáng') || parentName.toLowerCase().contains('đức') || parentName.toLowerCase().contains('bố')
+                                ? 'Bố $parentName'
+                                : 'Mẹ $parentName'),
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,

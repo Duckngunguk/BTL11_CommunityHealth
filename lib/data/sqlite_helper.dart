@@ -11,6 +11,7 @@ class SqliteHelper {
   static final SqliteHelper instance = SqliteHelper._internal();
 
   Database? _database;
+  bool _ftsSupported = false;
 
   Future<Database?> get database async {
     if (kIsWeb) return null;
@@ -81,15 +82,21 @@ class SqliteHelper {
       )
     ''');
 
-    // 3. Table children_fts (FTS5 virtual table for fast search)
-    await db.execute('''
-      CREATE VIRTUAL TABLE children_fts USING fts5(
-        id,
-        fullName,
-        qrCode,
-        motherName
-      )
-    ''');
+    // 3. Table children_fts (FTS5 virtual table for fast search) - optional per platform
+    try {
+      await db.execute('''
+        CREATE VIRTUAL TABLE children_fts USING fts5(
+          id,
+          fullName,
+          qrCode,
+          motherName
+        )
+      ''');
+      _ftsSupported = true;
+    } catch (e) {
+      _ftsSupported = false;
+      debugPrint('ℹ️ FTS5 virtual table not supported on this platform SQLite build ($e). Skipping FTS5 table.');
+    }
 
     // 4. Table vaccinations
     await db.execute('''
@@ -182,21 +189,25 @@ class SqliteHelper {
       }
       
       // 2. Create children_fts table
-      await db.execute('DROP TABLE IF EXISTS children_fts;');
-      await db.execute('''
-        CREATE VIRTUAL TABLE children_fts USING fts5(
-          id,
-          fullName,
-          qrCode,
-          motherName
-        )
-      ''');
-      
-      // 3. Populate children_fts
-      await db.execute('''
-        INSERT INTO children_fts(id, fullName, qrCode, motherName)
-        SELECT id, fullName, qrCode, motherName FROM children;
-      ''');
+      try {
+        await db.execute('DROP TABLE IF EXISTS children_fts;');
+        await db.execute('''
+          CREATE VIRTUAL TABLE children_fts USING fts5(
+            id,
+            fullName,
+            qrCode,
+            motherName
+          )
+        ''');
+        await db.execute('''
+          INSERT INTO children_fts(id, fullName, qrCode, motherName)
+          SELECT id, fullName, qrCode, motherName FROM children;
+        ''');
+        _ftsSupported = true;
+      } catch (e) {
+        _ftsSupported = false;
+        debugPrint('ℹ️ FTS5 table skipped during upgrade: $e');
+      }
 
       // 4. Create sync_batches table
       await db.execute('DROP TABLE IF EXISTS sync_batches;');
@@ -225,12 +236,16 @@ class SqliteHelper {
     // Seed Children, Vaccinations, and Medications
     for (var child in demoChildren) {
       await db.insert('children', child.toMap());
-      await db.insert('children_fts', {
-        'id': child.id,
-        'fullName': child.fullName,
-        'qrCode': child.qrCode,
-        'motherName': child.motherName,
-      });
+      if (_ftsSupported) {
+        try {
+          await db.insert('children_fts', {
+            'id': child.id,
+            'fullName': child.fullName,
+            'qrCode': child.qrCode,
+            'motherName': child.motherName,
+          });
+        } catch (_) {}
+      }
 
       for (var v in child.vaccinations) {
         await db.insert('vaccinations', v.toMap());
@@ -291,14 +306,29 @@ class SqliteHelper {
       return getChildren();
     }
     
-    // Clean and query FTS5 virtual table
-    final cleanQuery = query.replaceAll('\'', '\'\'').trim();
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT children.* FROM children
-      INNER JOIN children_fts ON children.id = children_fts.id
-      WHERE children_fts MATCH ?
-    ''', ['$cleanQuery*']);
+    List<Map<String, dynamic>> maps = [];
+    if (_ftsSupported) {
+      try {
+        final cleanQuery = query.replaceAll('\'', '\'\'').trim();
+        maps = await db.rawQuery('''
+          SELECT children.* FROM children
+          INNER JOIN children_fts ON children.id = children_fts.id
+          WHERE children_fts MATCH ?
+        ''', ['$cleanQuery*']);
+      } catch (_) {
+        maps = [];
+      }
+    }
     
+    if (maps.isEmpty) {
+      final term = '%${query.trim()}%';
+      maps = await db.query(
+        'children',
+        where: 'fullName LIKE ? OR motherName LIKE ? OR qrCode LIKE ? OR village LIKE ?',
+        whereArgs: [term, term, term, term],
+      );
+    }
+
     List<ChildProfile> list = [];
     for (var map in maps) {
       final childId = map['id'] as String;
@@ -328,12 +358,16 @@ class SqliteHelper {
     final db = await database;
     if (db == null) return;
     await db.insert('children', child.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
-    await db.insert('children_fts', {
-      'id': child.id,
-      'fullName': child.fullName,
-      'qrCode': child.qrCode,
-      'motherName': child.motherName,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    if (_ftsSupported) {
+      try {
+        await db.insert('children_fts', {
+          'id': child.id,
+          'fullName': child.fullName,
+          'qrCode': child.qrCode,
+          'motherName': child.motherName,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      } catch (_) {}
+    }
   }
 
   Future<void> updateChild(ChildProfile child) async {
@@ -345,19 +379,27 @@ class SqliteHelper {
       where: 'id = ?',
       whereArgs: [child.id],
     );
-    await db.insert('children_fts', {
-      'id': child.id,
-      'fullName': child.fullName,
-      'qrCode': child.qrCode,
-      'motherName': child.motherName,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    if (_ftsSupported) {
+      try {
+        await db.insert('children_fts', {
+          'id': child.id,
+          'fullName': child.fullName,
+          'qrCode': child.qrCode,
+          'motherName': child.motherName,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      } catch (_) {}
+    }
   }
 
   Future<void> deleteChild(String childId) async {
     final db = await database;
     if (db == null) return;
     await db.delete('children', where: 'id = ?', whereArgs: [childId]);
-    await db.delete('children_fts', where: 'id = ?', whereArgs: [childId]);
+    if (_ftsSupported) {
+      try {
+        await db.delete('children_fts', where: 'id = ?', whereArgs: [childId]);
+      } catch (_) {}
+    }
     await db.delete('vaccinations', where: 'childId = ?', whereArgs: [childId]);
     await db.delete('medications', where: 'childId = ?', whereArgs: [childId]);
   }

@@ -229,6 +229,25 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   ],
                 ),
               ),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await store.syncFromStorage();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('🎉 Đã làm mới và đồng bộ danh sách tài khoản mới nhất!'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Đồng bộ dữ liệu'),
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),

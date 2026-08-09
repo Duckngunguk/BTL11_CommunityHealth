@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../models/models.dart';
+import '../../services/notification_service.dart';
+import '../../services/report_export_service.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 import 'child_detail_screen.dart';
@@ -294,7 +296,65 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // ── 4. DANH SÁCH CẦN TIÊM CHÚNG THỰC ĐỊA ─────────
+            // ── 4. XUẤT BÁO CÁO ─────────────────────────────────
+            const SliverToBoxAdapter(
+              child: SectionLabel('XUẤT BÁO CÁO VÀ DANH SÁCH TIÊM CHỦNG'),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ExportButton(
+                        icon: Icons.table_chart_rounded,
+                        label: 'Xuất CSV',
+                        subtitle: 'Mở Excel',
+                        color: const Color(0xFF059669),
+                        onTap: () async {
+                          final children = AppScope.of(context).children;
+                          final reporterName = AppScope.of(context).currentUser?.fullName ?? 'Cán bộ Y tế';
+                          final result = await ReportExportService.instance.exportChildrenToCsv(children);
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result != null ? '✅ Đã xuất CSV thành công!' : '❌ Xuất thất bại!'),
+                              backgroundColor: result != null ? primaryDark : accentRed,
+                            ),
+                          );
+                          NotificationService.instance.sendSystemNotification(
+                            title: '📄 Xuất báo cáo thành công',
+                            body: 'Báo cáo tiêm chủng đã được xuất bởi $reporterName.',
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ExportButton(
+                        icon: Icons.picture_as_pdf_rounded,
+                        label: 'Xuất PDF',
+                        subtitle: 'In báo cáo',
+                        color: const Color(0xFFDC2626),
+                        onTap: () async {
+                          final store = AppScope.of(context);
+                          final reporterName = store.currentUser?.fullName ?? 'Cán bộ Y tế';
+                          final commune = store.currentUser?.assignedCommune ?? 'Tả Phìn';
+                          await ReportExportService.instance.exportLatePdfReport(
+                            children: store.children,
+                            reporterName: reporterName,
+                            commune: commune,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+            // ── 5. DANH SÁCH CẦN TIÊM CHÚNG THỰC ĐỊA ─────────
             const SliverToBoxAdapter(
               child: SectionLabel('DANH SÁCH CẦN TIÊM CHÚNG THỰC ĐỊA'),
             ),
@@ -445,6 +505,61 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Export Button Widget
+// ─────────────────────────────────────────────────────────────────────────────
+class _ExportButton extends StatelessWidget {
+  const _ExportButton({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: color)),
+                  Text(subtitle, style: const TextStyle(fontSize: 11, color: gray500)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 12, color: color.withOpacity(0.6)),
+          ],
         ),
       ),
     );

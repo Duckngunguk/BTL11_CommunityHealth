@@ -124,7 +124,11 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              parentName,
+                              parentName.startsWith('Mẹ') || parentName.startsWith('Bố') || parentName.startsWith('Phụ huynh')
+                                  ? parentName
+                                  : (parentName.toLowerCase().contains('bính') || parentName.toLowerCase().contains('sáng') || parentName.toLowerCase().contains('đức') || parentName.toLowerCase().contains('bố')
+                                      ? 'Bố $parentName'
+                                      : 'Mẹ $parentName'),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -154,7 +158,12 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                   ),
                   child: Column(
                     children: [
-                      _infoRow('Chủ hộ gia đình', 'Nguyễn Văn Bính (Chồng)'),
+                      _infoRow(
+                        'Chủ hộ gia đình',
+                        parentName.toLowerCase().contains('sáng') || parentName.toLowerCase().contains('bính') || parentName.toLowerCase().contains('đức') || parentName.toLowerCase().contains('bố')
+                            ? '$parentName (Chủ hộ)'
+                            : 'Nguyễn Văn Bính (Chồng)',
+                      ),
                       const Divider(height: 1, color: gray100, indent: 16),
                       _infoRow('Địa chỉ đăng ký', 'Bản Nậm Lùng, xã Tả Phìn'),
                       const Divider(height: 1, color: gray100, indent: 16),

@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../models/models.dart';
+import '../../services/notification_service.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 
-class ParentNotificationsScreen extends StatelessWidget {
+class ParentNotificationsScreen extends StatefulWidget {
   const ParentNotificationsScreen({super.key});
 
+  @override
+  State<ParentNotificationsScreen> createState() => _ParentNotificationsScreenState();
+}
+
+class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
@@ -88,11 +94,80 @@ class ParentNotificationsScreen extends StatelessWidget {
 
           // ── Main Content ListView ──────────────────────────
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // ── 1. CẢNH BẢO TRỄ LỊCH TIÊM (red panel) ───────
-                if (lateChildren.isNotEmpty) ...[
+            child: Builder(
+              builder: (context) {
+                final sysNotifs = NotificationService.instance.notifications
+                    .where((n) => n.priority == NotificationPriority.urgent || n.priority == NotificationPriority.warning)
+                    .take(5)
+                    .toList();
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // ── 0. THÔNG BÁO HỆ THỐNG (from NotificationService) ──
+                    if (sysNotifs.isNotEmpty) ...[
+                      Row(
+                        children: [
+                          const Expanded(child: SectionLabel('THÔNG BÁO NHẮC TIÊM TỰ HỆ THỐNG')),
+                          TextButton(
+                            onPressed: () {
+                              NotificationService.instance.markAllAsRead();
+                              setState(() {});
+                            },
+                            child: const Text('Đã đọc hết', style: TextStyle(fontSize: 11, color: primaryBlue)),
+                          ),
+                        ],
+                      ),
+                      ...sysNotifs.map((n) => Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: n.isRead ? Colors.white : const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: n.isRead ? gray200 : const Color(0xFFFCA5A5)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              n.priority == NotificationPriority.urgent ? Icons.notification_important_rounded : Icons.notifications_active_rounded,
+                              color: n.priority == NotificationPriority.urgent ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(n.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: gray900)),
+                                  const SizedBox(height: 3),
+                                  Text(n.body, style: const TextStyle(fontSize: 12, color: gray600, height: 1.4)),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${n.timestamp.hour}:${n.timestamp.minute.toString().padLeft(2, '0')} ${n.timestamp.day}/${n.timestamp.month}',
+                                    style: const TextStyle(fontSize: 10, color: gray400),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (!n.isRead)
+                              GestureDetector(
+                                onTap: () {
+                                  NotificationService.instance.markAsRead(n.id);
+                                  setState(() {});
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.only(left: 6),
+                                  child: Icon(Icons.check_circle_outline_rounded, size: 18, color: primaryBlue),
+                                ),
+                              ),
+                          ],
+                        ),
+                      )),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // ── 1. CẢNH BẢO TRỄ LỊCH TIÊM (red panel) ───────
+                    if (lateChildren.isNotEmpty) ...[
                   const SectionLabel('CẢNH BÁO TRỄ LỊCH TIÊM CỦA CON'),
                   ...lateChildren.map((c) => _NotificationTile(
                         child: c,
@@ -146,7 +221,9 @@ class ParentNotificationsScreen extends StatelessWidget {
                   time: '12/08/2026 · Đội Y tế Lưu động',
                 ),
                 const SizedBox(height: 24),
-              ],
+                  ],
+                );
+              },
             ),
           ),
         ],

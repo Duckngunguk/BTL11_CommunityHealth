@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/demo_data.dart';
+import '../../services/report_export_service.dart';
 import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -21,6 +22,57 @@ class AdminDashboardScreen extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           children: [
             const SectionHeader(title: 'Tình hình tiêm chủng toàn huyện', subtitle: 'Dữ liệu demo cập nhật đến ngày 24/07/2026.'),
+            const SizedBox(height: 18),
+            // ── Export Report Buttons ──
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final children = store.children;
+                      final result = await ReportExportService.instance.exportChildrenToCsv(children);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(result != null ? '✅ Xuất CSV thành công!' : '❌ Xuất thất bại'),
+                          backgroundColor: result != null ? Colors.green.shade700 : Colors.red.shade700,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.table_chart_rounded, size: 18),
+                    label: const Text('Xuất Excel/CSV', style: TextStyle(fontWeight: FontWeight.w700)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF059669),
+                      side: const BorderSide(color: Color(0xFF059669)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final children = store.children;
+                      await ReportExportService.instance.exportLatePdfReport(
+                        children: children,
+                        reporterName: store.currentUser?.fullName ?? 'Admin',
+                        commune: 'Toàn huyện',
+                      );
+                    },
+                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                    label: const Text('Xuất PDF', style: TextStyle(fontWeight: FontWeight.w700)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 18),
             GridView.count(
               crossAxisCount: columns,

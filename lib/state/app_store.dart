@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -66,6 +67,9 @@ class AppStore extends ChangeNotifier {
       diseaseReports = dbReports;
       auditLogs = dbLogs;
 
+      // Try loading cross-tab / web storage users
+      await syncFromStorage();
+
       // Try loading securely stored token on startup
       final storedToken = await _secureStorage.read(key: 'auth_token');
       if (storedToken != null) {
@@ -85,6 +89,7 @@ class AppStore extends ChangeNotifier {
       diseaseReports = List<DiseaseReport>.from(demoDiseaseReports);
       users = List<UserModel>.from(demoUsers);
       auditLogs = List<SystemAuditLog>.from(demoAuditLogs);
+      await syncFromStorage();
       notifyListeners();
     }
   }
@@ -187,6 +192,7 @@ class AppStore extends ChangeNotifier {
 
     users.insert(0, newUser);
     notifyListeners();
+    await _saveUsersToStorage();
 
     try {
       await SqliteHelper.instance.insertUser(newUser);
@@ -204,12 +210,45 @@ class AppStore extends ChangeNotifier {
     return ApiResponse.created(newUser, message: successMsg);
   }
 
+  Future<void> _saveUsersToStorage() async {
+    try {
+      final jsonStr = jsonEncode(users.map((u) => u.toMap()).toList());
+      await _secureStorage.write(key: 'storage_users', value: jsonStr);
+    } catch (e) {
+      debugPrint('Error saving users to storage: $e');
+    }
+  }
+
+  Future<void> syncFromStorage() async {
+    try {
+      final jsonStr = await _secureStorage.read(key: 'storage_users');
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List raw = jsonDecode(jsonStr) as List;
+        final loaded = raw.map((item) => UserModel.fromMap(Map<String, dynamic>.from(item as Map))).toList();
+        if (loaded.isNotEmpty) {
+          for (final lu in loaded) {
+            final idx = users.indexWhere((u) => u.id == lu.id || u.username == lu.username);
+            if (idx != -1) {
+              users[idx] = lu;
+            } else {
+              users.insert(0, lu);
+            }
+          }
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing from storage: $e');
+    }
+  }
+
   Future<void> approveUser(String userId) async {
     final index = users.indexWhere((u) => u.id == userId);
     if (index == -1) return;
     final u = users[index];
     users[index] = u.copyWith(status: UserAccountStatus.active);
     notifyListeners();
+    await _saveUsersToStorage();
 
     try {
       await SqliteHelper.instance
@@ -228,6 +267,7 @@ class AppStore extends ChangeNotifier {
     final u = users[index];
     users.removeAt(index);
     notifyListeners();
+    await _saveUsersToStorage();
 
     try {
       await SqliteHelper.instance.deleteUser(userId);
@@ -248,6 +288,7 @@ class AppStore extends ChangeNotifier {
         : UserAccountStatus.active;
     users[index] = u.copyWith(status: newStatus);
     notifyListeners();
+    await _saveUsersToStorage();
 
     try {
       await SqliteHelper.instance.updateUserStatus(userId, newStatus.name);
