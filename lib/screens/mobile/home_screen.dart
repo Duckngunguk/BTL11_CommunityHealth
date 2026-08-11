@@ -35,6 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final userName = store.currentUser?.fullName ?? 'Y sĩ Lê Thu';
     final commune = store.currentUser?.assignedCommune ?? 'Tả Phìn';
 
+    // Dynamic initials for doctor profile avatar
+    final nameParts = userName.trim().split(RegExp(r'\s+'));
+    final initials = nameParts.length >= 2
+        ? '${nameParts[nameParts.length - 2][0]}${nameParts[nameParts.length - 1][0]}'.toUpperCase()
+        : (nameParts.isNotEmpty && nameParts[0].isNotEmpty ? nameParts[0][0].toUpperCase() : 'YT');
+
     // Count children per village for chip labels
     final allChildren = store.children;
     final totalCount = allChildren.length;
@@ -104,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Top row: LT Avatar + Name + Settings Icon
                     Row(
                       children: [
-                        // Avatar circle "LT"
+                        // Avatar circle with dynamic initials
                         Container(
                           width: 44,
                           height: 44,
@@ -113,10 +119,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.5),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              'LT',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                              initials,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
                             ),
                           ),
                         ),
@@ -126,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'TRẠM Y TẾ XÃ ${commune.toUpperCase()}',
+                                'CHÀO MỪNG',
                                 style: TextStyle(
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w700,
@@ -140,27 +146,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white),
                               ),
                             ],
-                          ),
-                        ),
-                        // Settings Gear button
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => Scaffold(
-                                appBar: AppBar(title: const Text('Cài đặt')),
-                                body: SettingsScreen(onLogout: () => Navigator.of(context).pop()),
-                              ),
-                            ),
-                          ),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                            ),
-                            child: const Icon(Icons.settings_outlined, color: Colors.white, size: 18),
                           ),
                         ),
                       ],
@@ -355,8 +340,8 @@ class _HomeScreenState extends State<HomeScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
             // ── 5. DANH SÁCH CẦN TIÊM CHÚNG THỰC ĐỊA ─────────
-            const SliverToBoxAdapter(
-              child: SectionLabel('DANH SÁCH CẦN TIÊM CHÚNG THỰC ĐỊA'),
+            SliverToBoxAdapter(
+              child: SectionLabel('DANH SÁCH CẦN TIÊM CHÚNG XÃ ${commune.toUpperCase()}'),
             ),
 
             // Chip Filter row
