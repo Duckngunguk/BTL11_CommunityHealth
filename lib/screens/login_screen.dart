@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-import '../data/demo_data.dart';
+import '../data/master_data.dart';
 import '../models/models.dart';
 import '../services/otp_service.dart';
 import '../state/app_store.dart';

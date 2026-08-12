@@ -459,6 +459,28 @@ class VaccineSchedule {
   final String description;
 
   String get displayName => '$vaccineName - Mũi $doseNumber';
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'vaccineName': vaccineName,
+      'doseNumber': doseNumber,
+      'ageMonths': ageMonths,
+      'toleranceDays': toleranceDays,
+      'description': description,
+    };
+  }
+
+  factory VaccineSchedule.fromMap(Map<String, dynamic> map) {
+    return VaccineSchedule(
+      id: map['id'] as String,
+      vaccineName: map['vaccineName'] as String,
+      doseNumber: map['doseNumber'] as int,
+      ageMonths: map['ageMonths'] as int,
+      toleranceDays: map['toleranceDays'] as int,
+      description: map['description'] as String,
+    );
+  }
 }
 
 class MedicationSchedule {
@@ -477,6 +499,26 @@ class MedicationSchedule {
   final String description;
 
   String get displayName => '$medicationName ($defaultDosage)';
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'medicationName': medicationName,
+      'recommendedAge': recommendedAge,
+      'defaultDosage': defaultDosage,
+      'description': description,
+    };
+  }
+
+  factory MedicationSchedule.fromMap(Map<String, dynamic> map) {
+    return MedicationSchedule(
+      id: map['id'] as String,
+      medicationName: map['medicationName'] as String,
+      recommendedAge: map['recommendedAge'] as String,
+      defaultDosage: map['defaultDosage'] as String,
+      description: map['description'] as String,
+    );
+  }
 }
 
 class CommuneCoverage {
@@ -607,3 +649,23 @@ const Map<String, List<String>> kVillagesByCommune = {
   'Lao Chải': ['Bản Lao Chải', 'Bản Cát Cát Mông', 'Bản Ý Lình Hồ 2'],
   'Bản Hồ': ['Bản Bản Hồ', 'Bản Hồ', 'Bản Séo Trung Hồ', 'Bản La Ve'],
 };
+
+class VaccinePlan {
+  const VaccinePlan({
+    required this.id,
+    required this.communeName,
+    required this.date,
+    required this.location,
+    required this.workerName,
+    required this.estimatedDoses,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String communeName;
+  final DateTime date;
+  final String location;
+  final String workerName;
+  final Map<String, int> estimatedDoses;
+  final DateTime createdAt;
+}

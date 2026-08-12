@@ -299,7 +299,7 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
-            children: [
+             children: [
               // Avatar
               Container(
                 width: 36,
@@ -307,7 +307,7 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                 decoration: const BoxDecoration(color: blueLight, shape: BoxShape.circle),
                 child: Center(
                   child: Text(
-                    child.fullName.characters.first,
+                    child.motherName.isNotEmpty ? child.motherName.characters.first : 'P',
                     style: const TextStyle(color: primaryBlue, fontWeight: FontWeight.w700, fontSize: 14),
                   ),
                 ),
@@ -318,12 +318,12 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      child.fullName,
+                      child.motherName.isNotEmpty ? child.motherName : 'Chưa nhập tên phụ huynh',
                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, color: gray900),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${child.village} · Mẹ: ${child.motherName}',
+                      '${child.village} · Con: ${child.fullName}',
                       style: const TextStyle(fontSize: 11.5, color: gray500),
                       overflow: TextOverflow.ellipsis,
                     ),

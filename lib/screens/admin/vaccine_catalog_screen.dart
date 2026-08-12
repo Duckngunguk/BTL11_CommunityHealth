@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../models/models.dart';
 import '../../state/app_store.dart';
@@ -119,6 +118,31 @@ class _VaccineCatalogScreenState extends State<VaccineCatalogScreen> {
               ),
             ),
           ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F9FF),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFB9E6FE)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: Color(0xFF0284C7), size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Lưu ý: Các thông tin và phác đồ liều dùng thuốc/vắc-xin được căn cứ chuẩn theo chương trình Tiêm chủng Mở rộng (TCMR) Quốc gia Việt Nam và các hướng dẫn y khoa lâm sàng chuẩn của Bộ Y tế.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF0369A1),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -139,9 +163,10 @@ class _AddVaccineDialogState extends State<_AddVaccineDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _doseController = TextEditingController(text: '1');
-  final _ageMonthsController = TextEditingController(text: '0');
-  final _toleranceDaysController = TextEditingController(text: '30');
+
+  int _selectedDose = 1;
+  int _selectedAgeMonths = 0;
+  int _selectedToleranceDays = 30;
 
   bool _isSaving = false;
 
@@ -149,9 +174,6 @@ class _AddVaccineDialogState extends State<_AddVaccineDialog> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _doseController.dispose();
-    _ageMonthsController.dispose();
-    _toleranceDaysController.dispose();
     super.dispose();
   }
 
@@ -167,9 +189,9 @@ class _AddVaccineDialogState extends State<_AddVaccineDialog> {
     await Future<void>.delayed(const Duration(milliseconds: 300));
 
     final name = _nameController.text.trim();
-    final dose = int.parse(_doseController.text.trim());
-    final ageMonths = int.parse(_ageMonthsController.text.trim());
-    final toleranceDays = int.parse(_toleranceDaysController.text.trim());
+    final dose = _selectedDose;
+    final ageMonths = _selectedAgeMonths;
+    final toleranceDays = _selectedToleranceDays;
 
     // Kiểm tra trùng
     final isDuplicate = widget.store.vaccineSchedules.any(
@@ -247,54 +269,53 @@ class _AddVaccineDialogState extends State<_AddVaccineDialog> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextFormField(
-                        controller: _doseController,
+                      child: DropdownButtonFormField<int>(
+                        value: _selectedDose,
                         decoration: const InputDecoration(
                           labelText: 'Số mũi *',
                           prefixIcon: Icon(Icons.pin_outlined),
                         ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        validator: (v) {
-                          final n = int.tryParse(v ?? '');
-                          if (n == null || n < 1) return 'Số mũi ≥ 1';
-                          return null;
+                        items: const [1, 2, 3, 4, 5]
+                            .map((d) => DropdownMenuItem(value: d, child: Text('$d')))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _selectedDose = val);
                         },
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextFormField(
-                        controller: _ageMonthsController,
+                      child: DropdownButtonFormField<int>(
+                        value: _selectedAgeMonths,
                         decoration: const InputDecoration(
-                          labelText: 'Tuổi tiêm (tháng) *',
+                          labelText: 'Tuổi tiêm *',
                           prefixIcon: Icon(Icons.child_care_outlined),
                         ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        validator: (v) {
-                          final n = int.tryParse(v ?? '');
-                          if (n == null || n < 0) return 'Nhập tuổi ≥ 0';
-                          return null;
+                        items: const [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 36, 48, 60]
+                            .map((m) {
+                              final text = m == 0 ? '0 (Sơ sinh)' : '$m tháng';
+                              return DropdownMenuItem(value: m, child: Text(text));
+                            })
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _selectedAgeMonths = val);
                         },
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 14),
-                TextFormField(
-                  controller: _toleranceDaysController,
+                DropdownButtonFormField<int>(
+                  value: _selectedToleranceDays,
                   decoration: const InputDecoration(
                     labelText: 'Dung sai (ngày) *',
-                    hintText: 'Số ngày cho phép sớm/muộn',
                     prefixIcon: Icon(Icons.timelapse_outlined),
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (v) {
-                    final n = int.tryParse(v ?? '');
-                    if (n == null || n < 0) return 'Dung sai ≥ 0 ngày';
-                    return null;
+                  items: const [7, 15, 30, 45, 60, 90]
+                      .map((t) => DropdownMenuItem(value: t, child: Text('± $t ngày')))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedToleranceDays = val);
                   },
                 ),
                 const SizedBox(height: 14),
@@ -344,17 +365,36 @@ class _AddMedicationDialog extends StatefulWidget {
 class _AddMedicationDialogState extends State<_AddMedicationDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _dosageController = TextEditingController();
   final _descriptionController = TextEditingController();
+
+  String _selectedAge = '6 - 12 tháng';
+  String _selectedDosage = '200.000 IU (1 viên)';
+
+  final _ageFrames = [
+    'Sơ sinh (0 - 6 tháng)',
+    '6 - 12 tháng',
+    '12 - 24 tháng',
+    'Từ 24 tháng trở lên',
+    'Từ 36 tháng trở lên',
+    'Từ 60 tháng trở lên',
+    'Mọi lứa tuổi',
+  ];
+
+  final _dosageFrames = [
+    '100.000 IU (1 viên)',
+    '200.000 IU (1 viên)',
+    '1 giọt / ngày',
+    '2 giọt / ngày',
+    '5 ml / ngày',
+    '1 viên / ngày',
+    '2 viên / ngày',
+  ];
 
   bool _isSaving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _ageController.dispose();
-    _dosageController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -370,6 +410,8 @@ class _AddMedicationDialogState extends State<_AddMedicationDialog> {
     await Future<void>.delayed(const Duration(milliseconds: 300));
 
     final name = _nameController.text.trim();
+    final age = _selectedAge;
+    final dosage = _selectedDosage;
 
     // Kiểm tra trùng
     final isDuplicate = widget.store.medicationSchedules.any(
@@ -391,8 +433,8 @@ class _AddMedicationDialogState extends State<_AddMedicationDialog> {
     final newSchedule = MedicationSchedule(
       id: '${_generateId(name)}-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
       medicationName: name,
-      recommendedAge: _ageController.text.trim(),
-      defaultDosage: _dosageController.text.trim(),
+      recommendedAge: age,
+      defaultDosage: dosage,
       description: _descriptionController.text.trim(),
     );
 
@@ -443,24 +485,28 @@ class _AddMedicationDialogState extends State<_AddMedicationDialog> {
                   },
                 ),
                 const SizedBox(height: 14),
-                TextFormField(
-                  controller: _ageController,
+                DropdownButtonFormField<String>(
+                  value: _selectedAge,
                   decoration: const InputDecoration(
                     labelText: 'Độ tuổi khuyến nghị *',
-                    hintText: 'Ví dụ: 6 - 12 tháng, Từ 24 tháng...',
                     prefixIcon: Icon(Icons.child_care_outlined),
                   ),
-                  validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập độ tuổi' : null,
+                  items: _ageFrames.map((a) => DropdownMenuItem(value: a, child: Text(a))).toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedAge = val);
+                  },
                 ),
                 const SizedBox(height: 14),
-                TextFormField(
-                  controller: _dosageController,
+                DropdownButtonFormField<String>(
+                  value: _selectedDosage,
                   decoration: const InputDecoration(
                     labelText: 'Liều dùng chuẩn *',
-                    hintText: 'Ví dụ: 200.000 IU (1 viên), 2 giọt...',
                     prefixIcon: Icon(Icons.numbers_outlined),
                   ),
-                  validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập liều dùng' : null,
+                  items: _dosageFrames.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedDosage = val);
+                  },
                 ),
                 const SizedBox(height: 14),
                 TextFormField(

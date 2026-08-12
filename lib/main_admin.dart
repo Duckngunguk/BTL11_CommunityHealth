@@ -65,12 +65,15 @@ class _AdminAppRouterState extends State<_AdminAppRouter> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoggedIn) {
+    final store = AppScope.of(context);
+    final isLoggedIn = _isLoggedIn || (store.currentUser != null && store.currentUser!.role == UserRole.admin);
+
+    if (isLoggedIn) {
       return AdminShell(
         onLogout: () {
           setState(() {
             _isLoggedIn = false;
-            AppScope.of(context).currentUser = null;
+            store.currentUser = null;
           });
         },
       );

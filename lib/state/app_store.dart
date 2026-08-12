@@ -1,11 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/api/api_client.dart';
-import '../data/demo_data.dart';
+import '../data/master_data.dart';
 import '../models/models.dart';
 import '../data/sqlite_helper.dart';
 import '../services/firebase_sync_service.dart';
@@ -35,6 +36,8 @@ class AppStore extends ChangeNotifier {
   List<SystemAuditLog> auditLogs = [];
   List<VaccineSchedule> vaccineSchedules = List<VaccineSchedule>.from(demoSchedules);
   List<MedicationSchedule> medicationSchedules = List<MedicationSchedule>.from(demoMedicationSchedules);
+  List<VaccinePlan> vaccinePlans = [];
+  double districtCoverageTarget = 80.0;
   
   UserModel? _currentUser;
   UserModel? get currentUser => _currentUser;
@@ -54,8 +57,13 @@ class AppStore extends ChangeNotifier {
   bool isSyncing = false;
   DateTime lastSyncAt = DateTime(2026, 7, 23, 16, 40);
 
-  // Initialize data from SQLite, fallback to demo data if it fails
+  // Initialize data from SQLite, fallback to empty data if it fails
   Future<void> _initData() async {
+    // Load local schedules and plans from secure storage first
+    await _loadSchedules();
+    await _loadPlans();
+    await _loadSettings();
+
     try {
       final dbUsers = await SqliteHelper.instance.getUsers();
       final dbChildren = await SqliteHelper.instance.getChildren();
@@ -66,6 +74,45 @@ class AppStore extends ChangeNotifier {
       children = dbChildren;
       diseaseReports = dbReports;
       auditLogs = dbLogs;
+
+      // If we are on Web or Online, fetch real data from Firestore
+      if (kIsWeb || isOnline) {
+        debugPrint('🌐 Fetching real data from Firestore on startup...');
+        try {
+          final firestoreUsers = await FirebaseSyncService.instance.fetchUsers();
+          final firestoreChildren = await FirebaseSyncService.instance.fetchChildren();
+          final firestoreReports = await FirebaseSyncService.instance.fetchDiseaseReports();
+          final firestoreLogs = await FirebaseSyncService.instance.fetchAuditLogs();
+          
+          final firestoreVaccines = await FirebaseSyncService.instance.fetchVaccineSchedules();
+          final firestoreMeds = await FirebaseSyncService.instance.fetchMedicationSchedules();
+
+          if (firestoreUsers.isNotEmpty) {
+            users = firestoreUsers;
+          }
+          if (firestoreChildren.isNotEmpty) {
+            children = firestoreChildren;
+          }
+          if (firestoreReports.isNotEmpty) {
+            diseaseReports = firestoreReports;
+          }
+          if (firestoreLogs.isNotEmpty) {
+            auditLogs = firestoreLogs;
+          }
+
+          if (firestoreVaccines.isNotEmpty) {
+            vaccineSchedules = firestoreVaccines;
+          }
+          if (firestoreMeds.isNotEmpty) {
+            medicationSchedules = firestoreMeds;
+          }
+
+          // Save updated schedules to secure storage
+          await _saveSchedulesToStorage();
+        } catch (syncError) {
+          debugPrint('⚠️ Error fetching startup data from Firestore: $syncError');
+        }
+      }
 
       // Try loading cross-tab / web storage users
       await syncFromStorage();
@@ -84,14 +131,160 @@ class AppStore extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading data from SQLite: $e');
-      // Fallback
-      children = List<ChildProfile>.from(demoChildren);
-      diseaseReports = List<DiseaseReport>.from(demoDiseaseReports);
+      // Fallback: only demo users for login, everything else starts empty
+      children = [];
+      diseaseReports = [];
       users = List<UserModel>.from(demoUsers);
-      auditLogs = List<SystemAuditLog>.from(demoAuditLogs);
+      auditLogs = [];
       await syncFromStorage();
+
+      // Reload schedules and plans in fallback
+      await _loadSchedules();
+      await _loadPlans();
+      await _loadSettings();
+
       notifyListeners();
     }
+  }
+
+  Future<void> _loadSchedules() async {
+    try {
+      final vacsJson = await _secureStorage.read(key: 'storage_vaccine_schedules');
+      if (vacsJson != null && vacsJson.isNotEmpty) {
+        final List raw = jsonDecode(vacsJson) as List;
+        vaccineSchedules = raw.map((item) => VaccineSchedule.fromMap(Map<String, dynamic>.from(item))).toList();
+      }
+      final medsJson = await _secureStorage.read(key: 'storage_medication_schedules');
+      if (medsJson != null && medsJson.isNotEmpty) {
+        final List raw = jsonDecode(medsJson) as List;
+        medicationSchedules = raw.map((item) => MedicationSchedule.fromMap(Map<String, dynamic>.from(item))).toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading schedules from storage: $e');
+    }
+  }
+
+  Future<void> _saveSchedulesToStorage() async {
+    try {
+      final vacsJson = jsonEncode(vaccineSchedules.map((e) => e.toMap()).toList());
+      final medsJson = jsonEncode(medicationSchedules.map((e) => e.toMap()).toList());
+      await _secureStorage.write(key: 'storage_vaccine_schedules', value: vacsJson);
+      await _secureStorage.write(key: 'storage_medication_schedules', value: medsJson);
+    } catch (e) {
+      debugPrint('Error saving schedules to storage: $e');
+    }
+  }
+
+  Future<void> _loadPlans() async {
+    try {
+      final jsonStr = await _secureStorage.read(key: 'storage_vaccine_plans');
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List raw = jsonDecode(jsonStr) as List;
+        vaccinePlans = raw.map((item) {
+          final map = Map<String, dynamic>.from(item);
+          final rawDoses = map['estimatedDoses'] as Map;
+          return VaccinePlan(
+            id: map['id'] as String,
+            communeName: map['communeName'] as String,
+            date: DateTime.parse(map['date'] as String),
+            location: map['location'] as String,
+            workerName: map['workerName'] as String,
+            estimatedDoses: rawDoses.map((k, v) => MapEntry(k as String, (v as num).toInt())),
+            createdAt: DateTime.parse(map['createdAt'] as String),
+          );
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading plans from storage: $e');
+    }
+  }
+
+  Future<void> _savePlansToStorage() async {
+    try {
+      final jsonList = vaccinePlans.map((p) => {
+        'id': p.id,
+        'communeName': p.communeName,
+        'date': p.date.toIso8601String(),
+        'location': p.location,
+        'workerName': p.workerName,
+        'estimatedDoses': p.estimatedDoses,
+        'createdAt': p.createdAt.toIso8601String(),
+      }).toList();
+      await _secureStorage.write(key: 'storage_vaccine_plans', value: jsonEncode(jsonList));
+    } catch (e) {
+      debugPrint('Error saving plans to storage: $e');
+    }
+  }
+
+  Future<void> addVaccinePlan(VaccinePlan plan) async {
+    vaccinePlans.insert(0, plan);
+    notifyListeners();
+    await _savePlansToStorage();
+
+    final dateStr = '${plan.date.day.toString().padLeft(2, '0')}/${plan.date.month.toString().padLeft(2, '0')}/${plan.date.year}';
+    await addAuditLog('Lập kế hoạch tiêm chủng',
+        'Tạo kế hoạch tiêm chủng tại xã ${plan.communeName} ngày $dateStr');
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final targetStr = await _secureStorage.read(key: 'settings_coverage_target');
+      if (targetStr != null) {
+        districtCoverageTarget = double.tryParse(targetStr) ?? 80.0;
+      }
+    } catch (e) {
+      debugPrint('Error loading settings from storage: $e');
+    }
+  }
+
+  Future<void> updateCoverageTarget(double val) async {
+    districtCoverageTarget = val;
+    notifyListeners();
+    try {
+      await _secureStorage.write(key: 'settings_coverage_target', value: val.toString());
+      await addAuditLog('Thay đổi cấu hình', 'Cập nhật chỉ tiêu bao phủ vắc-xin toàn huyện thành ${val.toStringAsFixed(1)}%');
+    } catch (e) {
+      debugPrint('Error saving settings to storage: $e');
+    }
+  }
+
+  List<CommuneCoverage> get communeCoverage {
+    final list = <CommuneCoverage>[];
+    final communes = ['Tả Phìn', 'Hầu Thào', 'San Sả Hồ', 'Tả Van', 'Lao Chải', 'Bản Hồ'];
+    
+    for (var name in communes) {
+      final communeChildren = children.where((c) => c.commune == name).toList();
+      final total = communeChildren.length;
+      
+      final fully = communeChildren.where((c) => c.status == ChildVaccinationStatus.complete).length;
+      final coverage = total > 0 ? (fully / total * 100.0) : 0.0;
+      
+      int bcg = 0;
+      int dpt1 = 0;
+      int dpt2 = 0;
+      int dpt3 = 0;
+      
+      for (var c in communeChildren) {
+        final vacNames = c.vaccinations.map((v) => v.vaccineName.toLowerCase()).toList();
+        if (vacNames.any((v) => v.contains('bcg'))) bcg++;
+        if (vacNames.any((v) => v.contains('dpt 1') || v.contains('dpt1'))) dpt1++;
+        if (vacNames.any((v) => v.contains('dpt 2') || v.contains('dpt2'))) dpt2++;
+        if (vacNames.any((v) => v.contains('dpt 3') || v.contains('dpt3'))) dpt3++;
+      }
+      
+      list.add(CommuneCoverage(
+        name: name,
+        total: total,
+        fully: fully,
+        coverage: coverage,
+        bcg: total > 0 ? ((bcg / total) * 100.0).round() : 0,
+        dpt1: total > 0 ? ((dpt1 / total) * 100.0).round() : 0,
+        dpt2: total > 0 ? ((dpt2 / total) * 100.0).round() : 0,
+        dpt3: total > 0 ? ((dpt3 / total) * 100.0).round() : 0,
+      ));
+    }
+    
+    return list;
   }
 
   int get pendingCount {
@@ -150,6 +343,12 @@ class AppStore extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error inserting audit log: $e');
     }
+
+    try {
+      await FirebaseSyncService.instance.syncAuditLog(newLog);
+    } catch (e) {
+      debugPrint('Error syncing audit log to Firestore: $e');
+    }
   }
 
   Future<ApiResponse<UserModel>> registerUser({
@@ -200,6 +399,12 @@ class AppStore extends ChangeNotifier {
       debugPrint('Error saving registered user: $e');
     }
 
+    try {
+      await FirebaseSyncService.instance.syncUser(newUser);
+    } catch (e) {
+      debugPrint('Error syncing registered user to Firestore: $e');
+    }
+
     await addAuditLog('Đăng ký tài khoản',
         'Đăng ký tài khoản mới "${newUser.username}" với vai trò ${role.name}');
 
@@ -246,7 +451,8 @@ class AppStore extends ChangeNotifier {
     final index = users.indexWhere((u) => u.id == userId);
     if (index == -1) return;
     final u = users[index];
-    users[index] = u.copyWith(status: UserAccountStatus.active);
+    final updatedUser = u.copyWith(status: UserAccountStatus.active);
+    users[index] = updatedUser;
     notifyListeners();
     await _saveUsersToStorage();
 
@@ -255,6 +461,12 @@ class AppStore extends ChangeNotifier {
           .updateUserStatus(userId, UserAccountStatus.active.name);
     } catch (e) {
       debugPrint('Error approving user: $e');
+    }
+
+    try {
+      await FirebaseSyncService.instance.syncUser(updatedUser);
+    } catch (e) {
+      debugPrint('Error syncing approved user to Firestore: $e');
     }
 
     await addAuditLog('Phê duyệt tài khoản',
@@ -275,6 +487,12 @@ class AppStore extends ChangeNotifier {
       debugPrint('Error rejecting user: $e');
     }
 
+    try {
+      await FirebaseSyncService.instance.deleteUser(userId);
+    } catch (e) {
+      debugPrint('Error deleting rejected user from Firestore: $e');
+    }
+
     await addAuditLog('Từ chối tài khoản',
         'Admin đã từ chối đơn đăng ký tài khoản "${u.fullName}" (${u.username})');
   }
@@ -286,7 +504,8 @@ class AppStore extends ChangeNotifier {
     final newStatus = u.status == UserAccountStatus.active
         ? UserAccountStatus.locked
         : UserAccountStatus.active;
-    users[index] = u.copyWith(status: newStatus);
+    final updatedUser = u.copyWith(status: newStatus);
+    users[index] = updatedUser;
     notifyListeners();
     await _saveUsersToStorage();
 
@@ -294,6 +513,12 @@ class AppStore extends ChangeNotifier {
       await SqliteHelper.instance.updateUserStatus(userId, newStatus.name);
     } catch (e) {
       debugPrint('Error toggling user status: $e');
+    }
+
+    try {
+      await FirebaseSyncService.instance.syncUser(updatedUser);
+    } catch (e) {
+      debugPrint('Error syncing toggled user to Firestore: $e');
     }
 
     await addAuditLog('Thay đổi trạng thái tài khoản',
@@ -384,16 +609,32 @@ class AppStore extends ChangeNotifier {
         'Ghi nhận thuốc uống', 'Cho trẻ uống bổ sung ${record.medicationName}');
   }
 
-  void addVaccineSchedule(VaccineSchedule schedule) {
+  Future<void> addVaccineSchedule(VaccineSchedule schedule) async {
     vaccineSchedules.add(schedule);
-    addAuditLog('Thêm lịch vaccine', 'Thêm vaccine "${schedule.vaccineName}" Mũi ${schedule.doseNumber} vào danh mục chuẩn');
     notifyListeners();
+    await _saveSchedulesToStorage();
+
+    try {
+      await FirebaseSyncService.instance.syncVaccineSchedule(schedule);
+    } catch (e) {
+      debugPrint('Error syncing vaccine schedule to Firestore: $e');
+    }
+
+    await addAuditLog('Thêm lịch vaccine', 'Thêm vaccine "${schedule.vaccineName}" Mũi ${schedule.doseNumber} vào danh mục chuẩn');
   }
 
-  void addMedicationSchedule(MedicationSchedule schedule) {
+  Future<void> addMedicationSchedule(MedicationSchedule schedule) async {
     medicationSchedules.add(schedule);
-    addAuditLog('Thêm danh mục thuốc uống', 'Thêm "${schedule.medicationName}" vào danh mục thuốc uống & bổ sung');
     notifyListeners();
+    await _saveSchedulesToStorage();
+
+    try {
+      await FirebaseSyncService.instance.syncMedicationSchedule(schedule);
+    } catch (e) {
+      debugPrint('Error syncing medication schedule to Firestore: $e');
+    }
+
+    await addAuditLog('Thêm danh mục thuốc uống', 'Thêm "${schedule.medicationName}" vào danh mục thuốc uống & bổ sung');
   }
 
   Future<void> addDiseaseReport(DiseaseReport report) async {

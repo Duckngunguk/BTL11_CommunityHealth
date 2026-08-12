@@ -230,12 +230,38 @@ class _AppRouterState extends State<_AppRouter> {
 
   @override
   Widget build(BuildContext context) {
-    if (_mode == AppMode.parent) {
-      return ParentShell(onLogout: () => setState(() => _mode = null));
+    final store = AppScope.of(context);
+    
+    AppMode? activeMode = _mode;
+    if (activeMode == null && store.currentUser != null) {
+      if (store.currentUser!.role == UserRole.parent) {
+        activeMode = AppMode.parent;
+      } else if (store.currentUser!.role == UserRole.healthWorker) {
+        activeMode = AppMode.mobile;
+      }
     }
-    if (_mode == AppMode.mobile) {
-      return MobileShell(onLogout: () => setState(() => _mode = null));
+
+    if (activeMode == AppMode.parent) {
+      return ParentShell(
+        onLogout: () {
+          setState(() {
+            _mode = null;
+            store.currentUser = null;
+          });
+        },
+      );
     }
+    if (activeMode == AppMode.mobile) {
+      return MobileShell(
+        onLogout: () {
+          setState(() {
+            _mode = null;
+            store.currentUser = null;
+          });
+        },
+      );
+    }
+
     return LoginScreen(
       onLogin: (mode) => setState(() => _mode = mode),
     );

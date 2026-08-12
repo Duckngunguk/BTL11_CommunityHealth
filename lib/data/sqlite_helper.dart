@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import '../models/models.dart';
-import 'demo_data.dart';
+import 'master_data.dart';
 
 class SqliteHelper {
   SqliteHelper._internal();
@@ -226,51 +226,18 @@ class SqliteHelper {
   }
 
   Future<void> _seedDemoData(Database db) async {
-    debugPrint('Seeding initial demo data to SQLite...');
+    debugPrint('Seeding initial login accounts to SQLite...');
     
-    // Seed Users
+    // Seed only the default login users so we can log in
     for (var u in demoUsers) {
       await db.insert('users', u.toMap());
-    }
-
-    // Seed Children, Vaccinations, and Medications
-    for (var child in demoChildren) {
-      await db.insert('children', child.toMap());
-      if (_ftsSupported) {
-        try {
-          await db.insert('children_fts', {
-            'id': child.id,
-            'fullName': child.fullName,
-            'qrCode': child.qrCode,
-            'motherName': child.motherName,
-          });
-        } catch (_) {}
-      }
-
-      for (var v in child.vaccinations) {
-        await db.insert('vaccinations', v.toMap());
-      }
-
-      for (var m in child.medications) {
-        await db.insert('medications', m.toMap());
-      }
-    }
-
-    // Seed Disease Reports
-    for (var r in demoDiseaseReports) {
-      await db.insert('disease_reports', r.toMap());
-    }
-
-    // Seed Audit Logs
-    for (var log in demoAuditLogs) {
-      await db.insert('audit_logs', log.toMap());
     }
   }
 
   // --- Child Methods ---
   Future<List<ChildProfile>> getChildren() async {
     final db = await database;
-    if (db == null) return demoChildren;
+    if (db == null) return [];
     final List<Map<String, dynamic>> maps = await db.query('children');
     
     List<ChildProfile> list = [];
@@ -301,7 +268,7 @@ class SqliteHelper {
   // FTS Search offline method
   Future<List<ChildProfile>> searchChildrenOffline(String query) async {
     final db = await database;
-    if (db == null) return demoChildren;
+    if (db == null) return [];
     if (query.trim().isEmpty) {
       return getChildren();
     }
@@ -443,7 +410,7 @@ class SqliteHelper {
   // --- Disease Report Methods ---
   Future<List<DiseaseReport>> getDiseaseReports() async {
     final db = await database;
-    if (db == null) return demoDiseaseReports;
+    if (db == null) return [];
     final List<Map<String, dynamic>> maps = await db.query('disease_reports');
     return maps.map((r) => DiseaseReport.fromMap(r)).toList();
   }
@@ -510,7 +477,7 @@ class SqliteHelper {
   // --- Audit Log Methods ---
   Future<List<SystemAuditLog>> getAuditLogs() async {
     final db = await database;
-    if (db == null) return demoAuditLogs;
+    if (db == null) return [];
     final List<Map<String, dynamic>> maps = await db.query('audit_logs', orderBy: 'timestamp DESC');
     return maps.map((log) => SystemAuditLog.fromMap(log)).toList();
   }
