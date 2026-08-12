@@ -1,59 +1,77 @@
-# CommunityHealth Flutter UI
+# CommunityHealth - Sổ Tay Tiêm Chủng & Giám Sát Dịch Tễ Ngoại Tuyến
 
-Giao diện Flutter mẫu cho bài tập lớn **Sổ tay Tiêm chủng Ngoại tuyến & Giám sát Dịch tễ Vùng sâu**.
+Hệ thống quản lý tiêm chủng ngoại tuyến (Offline-First) và giám sát dịch tễ vùng cao, phục vụ Cán bộ Y tế xã/bản và Phụ huynh học sinh. Dự án được phát triển bằng Flutter, hỗ trợ đa nền tảng (Windows Desktop, Android Mobile, Web Admin).
 
-## Màn hình đã có
+---
 
-### Mobile App
-- Đăng nhập cán bộ y tế.
-- Trang chủ với thống kê và trạng thái đồng bộ.
-- Tìm kiếm, lọc danh sách trẻ.
-- Chi tiết hồ sơ và lịch sử tiêm.
-- Ghi nhận mũi tiêm mới với trạng thái `pending`.
-- Cảnh báo khi chọn vaccine khác lịch đề xuất.
-- Màn hình đồng bộ thủ công.
-- Cài đặt cơ bản.
+## 🚀 Kiến Trúc Hệ Thống (Architecture)
 
-### Web Admin
-- Dashboard tỷ lệ phủ vaccine.
-- Bảng tỷ lệ theo xã và chi tiết từng vaccine.
-- Danh sách trẻ trễ lịch.
-- Lập kế hoạch tiêm lưu động và tính số liều dự kiến.
-- Danh mục lịch vaccine.
+Hệ thống được phát triển theo mô hình **Offline-First** nhằm thích ứng tốt nhất với môi trường vùng sâu, vùng xa có kết nối internet không ổn định:
+1. **Local Database (SQLite Helper)**: Lưu trữ cục bộ hồ sơ trẻ, lịch sử tiêm chủng, cấp phát thuốc, báo dịch và nhật ký hệ thống ngoại tuyến trên Windows/Android.
+2. **Cloud Database (Firebase Firestore)**: Đồng bộ hai chiều bất đồng bộ dữ liệu tiêm chủng, duyệt phê duyệt tài khoản cán bộ đăng ký mới từ mobile, lưu trữ audit log hoạt động.
+3. **Local Cache Encryption (Secure Storage)**: Lưu trữ bảo mật các danh mục vắc-xin, phác đồ điều trị và kế hoạch tiêm lưu động bền vững trên thiết bị.
 
-## Cách chạy
+---
 
-Máy cần cài Flutter SDK bản stable hiện hành. Mã giao diện sử dụng Material 3 và các theme-data API hiện tại.
+## ✨ Các Chức Năng Chính
 
-```bash
-flutter create community_health_app
-```
+### 📱 1. Ứng Dụng Di Động (Mobile App)
+* **Đăng ký / Đăng nhập phân quyền**: Dành cho Cán bộ Y tế và Phụ huynh. Hỗ trợ quy trình phê duyệt tài khoản từ Admin.
+* **Quét mã QR Sổ tiêm**: Nhận diện thông tin trẻ nhanh chóng trên thực địa để hỗ trợ điền phiếu báo dịch.
+* **Báo dịch ngoại tuyến**: Tạo báo cáo ca dịch nghi ngờ kèm GPS thiết bị (giả lập định vị thực địa), triệu chứng và hình ảnh.
+* **Đồng bộ thủ công & tự động**: Bảng điều khiển đồng bộ và hiển thị banner trạng thái số bản ghi ngoại tuyến chờ đồng bộ.
+* **Quản lý danh sách Phụ huynh**: Giao diện hiển thị danh sách phụ huynh thôn bản làm chủ đạo để thuận tiện liên hệ.
 
-Sao chép thư mục `lib`, `test`, tệp `pubspec.yaml` và `analysis_options.yaml` của bộ mã nguồn này vào dự án vừa tạo, sau đó chạy:
+### 💻 2. Cổng Quản Trị (Web Admin Windows)
+* **Dashboard Tổng quan**: Thống kê số lượng trẻ đã tiêm, trễ lịch, kế hoạch phát lệnh, tỷ lệ bao phủ theo biểu đồ.
+* **Bản đồ dịch tễ & Tỷ lệ bao phủ**:
+  * Bản đồ hiển thị tình hình dịch bệnh và mật độ bao phủ vắc-xin của các xã.
+  * Tích hợp thống kê biểu đồ cột tỷ lệ phủ vắc-xin chi tiết.
+* **Lập kế hoạch tiêm lưu động**: Tự động tính số liều dự phóng dựa trên số trẻ trễ lịch tại xã mục tiêu, phân công cán bộ y tế và lưu kế hoạch lâu dài.
+* **Cấu hình & Cài đặt hệ thống (Web-style)**:
+  * Quản lý thông tin hành chính cơ sở y tế.
+  * Cấu hình tần suất đồng bộ đám mây và nút sao lưu CSDL SQLite (Backup), dọn dẹp bộ nhớ đệm (Cache).
+  * Slider thay đổi chỉ tiêu bao phủ vắc-xin mục tiêu toàn huyện (tự động cập nhật vùng cảnh báo đỏ trên bản đồ).
+* **Xuất báo cáo**: Hỗ trợ xuất dữ liệu ra file Excel/CSV và tạo báo cáo PDF hoàn chỉnh.
+* **Nhật ký hệ thống**: Lưu vết toàn bộ hoạt động đăng nhập, tạo kế hoạch, phê duyệt tài khoản y tế.
 
-```bash
-flutter pub get
-flutter run
-```
+---
 
-Chạy Web Admin trên Chrome:
+## 🛠️ Hướng Dẫn Cài Đặt & Chạy Dự Án
 
-```bash
-flutter run -d chrome
-```
+### Yêu cầu hệ thống:
+* **Flutter SDK**: Bản Stable (v3.22.0 trở lên).
+* **SQLite / FTS5**: Được cài đặt và cấu hình sẵn trên nền tảng chạy Windows.
 
-## Tài khoản demo
+### Các lệnh cài đặt:
+1. Tải các gói phụ thuộc (Dependencies):
+   ```powershell
+   flutter pub get
+   ```
 
-- Tên đăng nhập: `healthworker.demo`
-- Mật khẩu: `123456`
+2. Khởi chạy phân hệ di động (Mobile App):
+   ```powershell
+   flutter run -d windows
+   # Hoặc chọn thiết bị android mobile
+   flutter run -d <android-device-id>
+   ```
 
-Trong giao diện đăng nhập, chọn **Mobile App** hoặc **Web Admin** để chuyển phân hệ.
+3. Khởi chạy cổng quản trị Admin (Web Admin):
+   ```powershell
+   flutter run -t lib/main_admin.dart -d windows
+   ```
 
-## Lưu ý triển khai thật
+*(Gợi ý: Sử dụng file script `run_3_roles.bat` trong thư mục gốc của dự án để khởi chạy nhanh cả 3 phân hệ kiểm thử).*
 
-Bản hiện tại tập trung vào UI và dữ liệu giả lập trong bộ nhớ. Khi triển khai chức năng thật, thay `AppStore` bằng repository sử dụng:
+---
 
-- `sqflite` cho dữ liệu offline.
-- `mobile_scanner` cho QR.
-- `connectivity_plus` và `workmanager` cho đồng bộ.
-- Firebase Auth, Firestore và FCM cho backend.
+## 🔑 Tài Khoản Kiểm Thử (Demo Accounts)
+
+Hệ thống đã được nạp sẵn dữ liệu demo (Seeded) trong CSDL SQLite:
+
+| Vai trò | Tên đăng nhập | Mật khẩu | Phân hệ tương ứng |
+| :--- | :--- | :--- | :--- |
+| **Quản trị viên (Admin)** | `admin.demo` | `123456` | Web Admin (`main_admin.dart`) |
+| **Cán bộ Y tế xã** | `healthworker.demo` | `123456` | Mobile App (`main.dart`) |
+| **Phụ huynh** | `parent.demo` | `123456` | Mobile App (`main.dart`) |
+| **Tài khoản chờ duyệt** | `pending.demo` | `123456` | Sử dụng để test tính năng phê duyệt của Admin |
