@@ -1,13 +1,13 @@
 # CommunityHealth - Sổ Tay Tiêm Chủng & Giám Sát Dịch Tễ Ngoại Tuyến
 
-Hệ thống quản lý tiêm chủng ngoại tuyến (Offline-First) và giám sát dịch tễ vùng cao, phục vụ Cán bộ Y tế xã/bản và Phụ huynh học sinh. Dự án được phát triển bằng Flutter, hỗ trợ đa nền tảng (Windows Desktop, Android Mobile, Web Admin).
+Hệ thống quản lý tiêm chủng ngoại tuyến (Offline-First) và giám sát dịch tễ vùng cao, phục vụ Cán bộ Y tế xã/bản, Phụ huynh học sinh và Quản trị viên. Dự án được phát triển bằng Flutter với ứng dụng Android và cổng quản trị Web.
 
 ---
 
 ## 🚀 Kiến Trúc Hệ Thống (Architecture)
 
 Hệ thống được phát triển theo mô hình **Offline-First** nhằm thích ứng tốt nhất với môi trường vùng sâu, vùng xa có kết nối internet không ổn định:
-1. **Local Database (SQLite Helper)**: Lưu trữ cục bộ hồ sơ trẻ, lịch sử tiêm chủng, cấp phát thuốc, báo dịch và nhật ký hệ thống ngoại tuyến trên Windows/Android.
+1. **Local Database (SQLite Helper)**: Lưu trữ cục bộ hồ sơ trẻ, lịch sử tiêm chủng, cấp phát thuốc, báo dịch và nhật ký hệ thống ngoại tuyến trên Android.
 2. **Cloud Database (Firebase Firestore)**: Đồng bộ hai chiều bất đồng bộ dữ liệu tiêm chủng, duyệt phê duyệt tài khoản cán bộ đăng ký mới từ mobile, lưu trữ audit log hoạt động.
 3. **Local Cache Encryption (Secure Storage)**: Lưu trữ bảo mật các danh mục vắc-xin, phác đồ điều trị và kế hoạch tiêm lưu động bền vững trên thiết bị.
 
@@ -22,7 +22,7 @@ Hệ thống được phát triển theo mô hình **Offline-First** nhằm thí
 * **Đồng bộ thủ công & tự động**: Bảng điều khiển đồng bộ và hiển thị banner trạng thái số bản ghi ngoại tuyến chờ đồng bộ.
 * **Quản lý danh sách Phụ huynh**: Giao diện hiển thị danh sách phụ huynh thôn bản làm chủ đạo để thuận tiện liên hệ.
 
-### 💻 2. Cổng Quản Trị (Web Admin Windows)
+### 💻 2. Cổng Quản Trị (Web Admin)
 * **Dashboard Tổng quan**: Thống kê số lượng trẻ đã tiêm, trễ lịch, kế hoạch phát lệnh, tỷ lệ bao phủ theo biểu đồ.
 * **Bản đồ dịch tễ & Tỷ lệ bao phủ**:
   * Bản đồ hiển thị tình hình dịch bệnh và mật độ bao phủ vắc-xin của các xã.
@@ -41,7 +41,7 @@ Hệ thống được phát triển theo mô hình **Offline-First** nhằm thí
 
 ### Yêu cầu hệ thống:
 * **Flutter SDK**: Bản Stable (v3.22.0 trở lên).
-* **SQLite / FTS5**: Được cài đặt và cấu hình sẵn trên nền tảng chạy Windows.
+* **Lưu trữ**: SQLite trên Android; Web dùng dữ liệu fallback/Firestore.
 
 ### Các lệnh cài đặt:
 1. Tải các gói phụ thuộc (Dependencies):
@@ -51,14 +51,14 @@ Hệ thống được phát triển theo mô hình **Offline-First** nhằm thí
 
 2. Khởi chạy phân hệ di động (Mobile App):
    ```powershell
-   flutter run -d windows
-   # Hoặc chọn thiết bị android mobile
    flutter run -d <android-device-id>
    ```
 
 3. Khởi chạy cổng quản trị Admin (Web Admin):
    ```powershell
-   flutter run -t lib/main_admin.dart -d windows
+   flutter run -d chrome
+   # Hoặc dùng entry point Admin độc lập:
+   flutter run -t lib/main_admin.dart -d chrome
    ```
 
 *(Gợi ý: Sử dụng file script `run_3_roles.bat` trong thư mục gốc của dự án để khởi chạy nhanh cả 3 phân hệ kiểm thử).*
@@ -67,11 +67,11 @@ Hệ thống được phát triển theo mô hình **Offline-First** nhằm thí
 
 ## 🔑 Tài Khoản Kiểm Thử (Demo Accounts)
 
-Hệ thống đã được nạp sẵn dữ liệu demo (Seeded) trong CSDL SQLite:
+Hệ thống đã được nạp sẵn dữ liệu demo (SQLite trên Android, dữ liệu fallback trên Web):
 
 | Vai trò | Tên đăng nhập | Mật khẩu | Phân hệ tương ứng |
 | :--- | :--- | :--- | :--- |
-| **Quản trị viên (Admin)** | `admin.demo` | `123456` | Web Admin (`main_admin.dart`) |
+| **Quản trị viên (Admin)** | `admin.demo` | `123456` | Web Admin (`main.dart` hoặc `main_admin.dart`) |
 | **Cán bộ Y tế xã** | `healthworker.demo` | `123456` | Mobile App (`main.dart`) |
 | **Phụ huynh** | `parent.demo` | `123456` | Mobile App (`main.dart`) |
-| **Tài khoản chờ duyệt** | `pending.demo` | `123456` | Sử dụng để test tính năng phê duyệt của Admin |
+| **Tài khoản chờ duyệt** | `healthworker.nam` | `123456` | Sử dụng để test tính năng phê duyệt của Admin |

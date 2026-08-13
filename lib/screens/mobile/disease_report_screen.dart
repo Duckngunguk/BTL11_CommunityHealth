@@ -44,7 +44,7 @@ class _DiseaseReportScreenState extends State<DiseaseReportScreen> {
                 const SizedBox(width: 6),
                 Text(
                   store.isOnline
-                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ĐÃ ĐỒNG BỘ'
+                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "ĐÃ ĐỒNG BỘ"}'
                       : 'CHẾ ĐỘ NGOẠI TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "Sẵn sàng ghi dữ liệu"}',
                   style: const TextStyle(
                     color: Colors.white,
@@ -75,16 +75,20 @@ class _DiseaseReportScreenState extends State<DiseaseReportScreen> {
                 // Dropdown location selector (matching "Xã Tả Phìn")
                 Theme(
                   data: Theme.of(context).copyWith(
-                    dividerTheme: const DividerThemeData(color: Colors.transparent),
+                    dividerTheme:
+                        const DividerThemeData(color: Colors.transparent),
                   ),
                   child: PopupMenuButton<String>(
                     initialValue: _selectedCommune,
-                    onSelected: (value) => setState(() => _selectedCommune = value),
+                    onSelected: (value) =>
+                        setState(() => _selectedCommune = value),
                     itemBuilder: (context) => kVillagesByCommune.keys
-                        .map((c) => PopupMenuItem(value: c, child: Text('Xã $c')))
+                        .map((c) =>
+                            PopupMenuItem(value: c, child: Text('Xã $c')))
                         .toList(),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
@@ -93,14 +97,19 @@ class _DiseaseReportScreenState extends State<DiseaseReportScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.location_on_outlined, color: gray500, size: 14),
+                          const Icon(Icons.location_on_outlined,
+                              color: gray500, size: 14),
                           const SizedBox(width: 4),
                           Text(
                             'Xã $_selectedCommune',
-                            style: const TextStyle(color: gray700, fontSize: 13, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                                color: gray700,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.keyboard_arrow_down_rounded, color: gray500, size: 14),
+                          const Icon(Icons.keyboard_arrow_down_rounded,
+                              color: gray500, size: 14),
                         ],
                       ),
                     ),
@@ -139,12 +148,15 @@ class _DiseaseReportScreenState extends State<DiseaseReportScreen> {
                   child: reports.isEmpty
                       ? const EmptyState(
                           title: 'Không có ca bệnh nghi ngờ',
-                          description: 'Chưa có báo cáo dịch bệnh nào tại địa phương này.',
+                          description:
+                              'Chưa có báo cáo dịch bệnh nào tại địa phương này.',
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           itemCount: reports.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                           itemBuilder: (context, index) => _DiseaseReportCard(
                             report: reports[index],
                             index: index,
@@ -166,15 +178,21 @@ class _DiseaseReportScreenState extends State<DiseaseReportScreen> {
           height: 48,
           child: FilledButton(
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const AddDiseaseReportScreen()),
+              MaterialPageRoute<void>(
+                  builder: (_) => const AddDiseaseReportScreen()),
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: accentRed, // Changed from green to red as requested
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor:
+                  accentRed, // Changed from green to red as requested
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text(
               'Báo cáo ca dịch nghi ngờ mới',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white),
             ),
           ),
         ),
@@ -206,7 +224,8 @@ class _DiseaseReportCard extends StatelessWidget {
     // Dynamic case counts from notes or fallback
     int caseCount = 1;
     if (report.notes != null) {
-      final match = RegExp(r'Số ca (ghi nhận|mắc)?:?\s*(\d+)').firstMatch(report.notes!);
+      final match =
+          RegExp(r'Số ca (ghi nhận|mắc)?:?\s*(\d+)').firstMatch(report.notes!);
       if (match != null) {
         caseCount = int.tryParse(match.group(2) ?? '') ?? 1;
       } else {
@@ -229,7 +248,7 @@ class _DiseaseReportCard extends StatelessWidget {
         border: Border.all(color: gray200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.015),
+            color: Colors.black.withValues(alpha: 0.015),
             blurRadius: 4,
             offset: const Offset(0, 2),
           )
@@ -284,7 +303,8 @@ class _DiseaseReportCard extends StatelessWidget {
                       // Status Badge
                       isConfirmed
                           ? Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
                                 color: accentRed,
                                 borderRadius: BorderRadius.circular(6),
@@ -299,11 +319,13 @@ class _DiseaseReportCard extends StatelessWidget {
                               ),
                             )
                           : Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: accentYellow, width: 1.2),
+                                border:
+                                    Border.all(color: accentYellow, width: 1.2),
                               ),
                               child: const Text(
                                 'Đang theo dõi',
@@ -356,7 +378,14 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
   String? _capturedImagePath;
   bool _isCapturing = false;
 
-  final _diseases = ['Sởi', 'Tả', 'Sốt xuất huyết', 'Thuỷ đậu', 'Bệnh Dại', 'Khác'];
+  final _diseases = [
+    'Sởi',
+    'Tả',
+    'Sốt xuất huyết',
+    'Thuỷ đậu',
+    'Bệnh Dại',
+    'Khác'
+  ];
 
   @override
   void dispose() {
@@ -377,7 +406,8 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
           _isLocating = false;
           final lat = 22.3564 + (DateTime.now().millisecond % 100) * 0.0001;
           final lng = 103.8427 + (DateTime.now().microsecond % 100) * 0.0001;
-          _gpsCoordinates = '${lat.toStringAsFixed(4)}° N, ${lng.toStringAsFixed(4)}° E';
+          _gpsCoordinates =
+              '${lat.toStringAsFixed(4)}° N, ${lng.toStringAsFixed(4)}° E';
         });
       }
     });
@@ -390,23 +420,28 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
         final store = AppScope.of(context);
         final childrenList = store.children;
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
               Icon(Icons.qr_code_scanner_rounded, color: primaryBlue),
               SizedBox(width: 8),
-              Text('Quét QR Sổ Tiêm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('Quét QR Sổ Tiêm',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
           content: SizedBox(
             width: double.maxFinite,
             child: childrenList.isEmpty
-                ? const Text('Không tìm thấy dữ liệu trẻ em nào trong cơ sở dữ liệu.')
+                ? const Text(
+                    'Không tìm thấy dữ liệu trẻ em nào trong cơ sở dữ liệu.')
                 : Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Chọn một trẻ để mô phỏng quét mã QR thành công:', style: TextStyle(fontSize: 12, color: gray600)),
+                      const Text(
+                          'Chọn một trẻ để mô phỏng quét mã QR thành công:',
+                          style: TextStyle(fontSize: 12, color: gray600)),
                       const SizedBox(height: 12),
                       Flexible(
                         child: ListView.builder(
@@ -416,12 +451,18 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                             final child = childrenList[idx];
                             return ListTile(
                               contentPadding: EdgeInsets.zero,
-                              leading: CircleAvatar(
+                              leading: const CircleAvatar(
                                 backgroundColor: blueLight,
-                                child: const Icon(Icons.person_rounded, color: primaryBlue),
+                                child: Icon(Icons.person_rounded,
+                                    color: primaryBlue),
                               ),
-                              title: Text(child.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              subtitle: Text('Mã QR: ${child.qrCode} • ${child.village}', style: const TextStyle(fontSize: 11)),
+                              title: Text(child.fullName,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13)),
+                              subtitle: Text(
+                                  'Mã QR: ${child.qrCode} • ${child.village}',
+                                  style: const TextStyle(fontSize: 11)),
                               onTap: () {
                                 Navigator.pop(context, child);
                               },
@@ -441,14 +482,16 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
         );
       },
     ).then((value) {
-      if (value != null && value is ChildProfile) {
+      if (!mounted) return;
+      if (value != null) {
         setState(() {
           _scannedChildName = value.fullName;
           _scannedChildId = value.id;
           _scannedVillage = value.village;
-          
+
           if (_symptomsController.text.isEmpty) {
-            _symptomsController.text = 'Trẻ ${value.fullName} (Mã QR: ${value.qrCode}). ';
+            _symptomsController.text =
+                'Trẻ ${value.fullName} (Mã QR: ${value.qrCode}). ';
           }
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -470,7 +513,8 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
       if (mounted) {
         setState(() {
           _isCapturing = false;
-          _capturedImagePath = 'danh_sach_viet_tay_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          _capturedImagePath =
+              'danh_sach_viet_tay_${DateTime.now().millisecondsSinceEpoch}.jpg';
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -482,7 +526,7 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final store = AppScope.of(context);
     final isOnline = store.isOnline;
     final commune = store.currentUser?.assignedCommune ?? 'Tả Phìn';
@@ -533,14 +577,16 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
 
     if (_selectedDisease == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn loại bệnh truyền nhiễm nghi ngờ')),
+        const SnackBar(
+            content: Text('Vui lòng chọn loại bệnh truyền nhiễm nghi ngờ')),
       );
       return;
     }
 
     if (_symptomsController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập triệu chứng / ghi chú thực tế')),
+        const SnackBar(
+            content: Text('Vui lòng nhập triệu chứng / ghi chú thực tế')),
       );
       return;
     }
@@ -555,24 +601,26 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
       reportedAt: DateTime.now(),
       reportedBy: store.currentUser?.fullName ?? 'Y sĩ Lê Thu',
       symptoms: _symptomsController.text.trim(),
-      syncStatus: isOnline ? VaccinationSyncStatus.synced : VaccinationSyncStatus.pending,
+      syncStatus: VaccinationSyncStatus.pending,
       status: 'Nghi ngờ',
       severity: DiseaseSeverity.moderate,
       notes: finalNotes,
       childId: finalChildId,
     );
 
-    store.addDiseaseReport(newReport);
+    await store.addDiseaseReport(newReport);
+    if (!mounted) return;
     Navigator.pop(context);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           isOnline
-              ? 'Đã gửi báo cáo ca dịch "${newReport.diseaseType}" lên hệ thống thành công!'
+              ? 'Đã lưu báo cáo "${newReport.diseaseType}". Hệ thống sẽ xác nhận sau khi Firestore đồng bộ thành công.'
               : 'Đã lưu báo cáo offline (Ngoại tuyến). Dữ liệu sẽ tự động đồng bộ khi có mạng.',
         ),
-        backgroundColor: isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
+        backgroundColor:
+            isOnline ? const Color(0xFF18794E) : const Color(0xFF8A5D00),
       ),
     );
   }
@@ -581,7 +629,8 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final commune = store.currentUser?.assignedCommune ?? 'Tả Phìn';
-    final communeVillages = kVillagesByCommune[commune] ?? ['Bản Nậm Lùng', 'Bản Tả Phìn 1', 'Bản Tả Phìn 2'];
+    final communeVillages = kVillagesByCommune[commune] ??
+        ['Bản Nậm Lùng', 'Bản Tả Phìn 1', 'Bản Tả Phìn 2'];
 
     return Scaffold(
       backgroundColor: gray100,
@@ -605,7 +654,7 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                 const SizedBox(width: 6),
                 Text(
                   store.isOnline
-                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ĐÃ ĐỒNG BỘ'
+                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "ĐÃ ĐỒNG BỘ"}'
                       : 'CHẾ ĐỘ NGOẠI TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "Sẵn sàng ghi dữ liệu"}',
                   style: const TextStyle(
                     color: Colors.white,
@@ -630,8 +679,13 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.chevron_left_rounded, color: primaryBlue, size: 22),
-                        Text('Danh sách', style: TextStyle(color: primaryBlue, fontSize: 13, fontWeight: FontWeight.w600)),
+                        Icon(Icons.chevron_left_rounded,
+                            color: primaryBlue, size: 22),
+                        Text('Danh sách',
+                            style: TextStyle(
+                                color: primaryBlue,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -640,12 +694,19 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                   child: Text(
                     'Báo cáo ca dịch',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: gray900),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: gray900),
                   ),
                 ),
                 TextButton(
                   onPressed: _submit,
-                  child: const Text('Gửi', style: TextStyle(color: accentRed, fontWeight: FontWeight.w700, fontSize: 13)),
+                  child: const Text('Gửi',
+                      style: TextStyle(
+                          color: accentRed,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
                 ),
               ],
             ),
@@ -688,14 +749,21 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                       label: 'CHỌN THÔN BẢN CƯ TRÚ *',
                       child: DropdownButtonHideUnderline(
                         child: DropdownButtonFormField<String>(
-                          value: _selectedVillage,
-                          hint: const Text('-- Chọn thôn bản --', style: TextStyle(color: gray500, fontSize: 13.5)),
+                          initialValue: _selectedVillage,
+                          hint: const Text('-- Chọn thôn bản --',
+                              style: TextStyle(color: gray500, fontSize: 13.5)),
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.zero,
                             border: InputBorder.none,
                           ),
-                          items: communeVillages.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 13.5)))).toList(),
-                          onChanged: (val) => setState(() => _selectedVillage = val),
+                          items: communeVillages
+                              .map((v) => DropdownMenuItem(
+                                  value: v,
+                                  child: Text(v,
+                                      style: const TextStyle(fontSize: 13.5))))
+                              .toList(),
+                          onChanged: (val) =>
+                              setState(() => _selectedVillage = val),
                         ),
                       ),
                     ),
@@ -733,14 +801,21 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                       label: 'THÔN BẢN XẢY RA Ổ DỊCH *',
                       child: DropdownButtonHideUnderline(
                         child: DropdownButtonFormField<String>(
-                          value: _emergencyVillage,
-                          hint: const Text('-- Chọn thôn bản --', style: TextStyle(color: gray500, fontSize: 13.5)),
+                          initialValue: _emergencyVillage,
+                          hint: const Text('-- Chọn thôn bản --',
+                              style: TextStyle(color: gray500, fontSize: 13.5)),
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.zero,
                             border: InputBorder.none,
                           ),
-                          items: communeVillages.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 13.5)))).toList(),
-                          onChanged: (val) => setState(() => _emergencyVillage = val),
+                          items: communeVillages
+                              .map((v) => DropdownMenuItem(
+                                  value: v,
+                                  child: Text(v,
+                                      style: const TextStyle(fontSize: 13.5))))
+                              .toList(),
+                          onChanged: (val) =>
+                              setState(() => _emergencyVillage = val),
                         ),
                       ),
                     ),
@@ -752,14 +827,21 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                     label: 'BỆNH TRUYỀN NHIỄM NGHI NGỜ *',
                     child: DropdownButtonHideUnderline(
                       child: DropdownButtonFormField<String>(
-                        value: _selectedDisease,
-                        hint: const Text('-- Chọn bệnh truyền nhiễm --', style: TextStyle(color: gray500, fontSize: 13.5)),
+                        initialValue: _selectedDisease,
+                        hint: const Text('-- Chọn bệnh truyền nhiễm --',
+                            style: TextStyle(color: gray500, fontSize: 13.5)),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.zero,
                           border: InputBorder.none,
                         ),
-                        items: _diseases.map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 13.5)))).toList(),
-                        onChanged: (val) => setState(() => _selectedDisease = val),
+                        items: _diseases
+                            .map((d) => DropdownMenuItem(
+                                value: d,
+                                child: Text(d,
+                                    style: const TextStyle(fontSize: 13.5))))
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => _selectedDisease = val),
                       ),
                     ),
                   ),
@@ -773,7 +855,8 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                       maxLines: 4,
                       style: const TextStyle(fontSize: 13.5),
                       decoration: const InputDecoration(
-                        hintText: 'Mô tả các triệu chứng lâm sàng quan sát được...',
+                        hintText:
+                            'Mô tả các triệu chứng lâm sàng quan sát được...',
                         hintStyle: TextStyle(color: gray400, fontSize: 13),
                         contentPadding: EdgeInsets.symmetric(vertical: 4),
                         border: InputBorder.none,
@@ -798,11 +881,15 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
             onPressed: _submit,
             style: FilledButton.styleFrom(
               backgroundColor: accentRed, // Red color instead of green
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text(
               'Gửi báo cáo về xã',
-              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: Colors.white),
+              style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white),
             ),
           ),
         ),
@@ -823,7 +910,7 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     )
@@ -854,7 +941,7 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
         border: Border.all(color: gray200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.01),
+            color: Colors.black.withValues(alpha: 0.01),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -889,7 +976,7 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
         border: Border.all(color: gray200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.01),
+            color: Colors.black.withValues(alpha: 0.01),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -899,7 +986,8 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
         children: [
           // Dashed blue camera scanner boundary box
           CustomPaint(
-            painter: DashedRectPainter(color: primaryBlue, strokeWidth: 1.5, gap: 5),
+            painter:
+                DashedRectPainter(color: primaryBlue, strokeWidth: 1.5, gap: 5),
             child: Container(
               width: 140,
               height: 140,
@@ -908,7 +996,8 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                   ? const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle_rounded, color: primaryBlue, size: 40),
+                        Icon(Icons.check_circle_rounded,
+                            color: primaryBlue, size: 40),
                         SizedBox(height: 8),
                         Text(
                           'ĐÃ QUÉT',
@@ -931,14 +1020,19 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
           // Quét QR Sổ Tiêm button
           OutlinedButton.icon(
             onPressed: _scanQrCode,
-            icon: const Icon(Icons.photo_camera_back_outlined, color: gray900, size: 16),
+            icon: const Icon(Icons.photo_camera_back_outlined,
+                color: gray900, size: 16),
             label: Text(
-              _scannedChildName != null ? 'Quét lại Sổ Tiêm' : 'Quét QR Sổ Tiêm',
-              style: const TextStyle(color: gray900, fontSize: 13, fontWeight: FontWeight.w700),
+              _scannedChildName != null
+                  ? 'Quét lại Sổ Tiêm'
+                  : 'Quét QR Sổ Tiêm',
+              style: const TextStyle(
+                  color: gray900, fontSize: 13, fontWeight: FontWeight.w700),
             ),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: gray900, width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
               backgroundColor: gray100,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
@@ -995,12 +1089,15 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.camera_alt_outlined, color: gray500, size: 16),
+                  const Icon(Icons.camera_alt_outlined,
+                      color: gray500, size: 16),
                   const SizedBox(width: 6),
                   Text(
                     _isCapturing
                         ? 'Đang chụp...'
-                        : (_capturedImagePath != null ? 'Đã chụp ảnh danh sách' : 'Chụp ảnh danh sách'),
+                        : (_capturedImagePath != null
+                            ? 'Đã chụp ảnh danh sách'
+                            : 'Chụp ảnh danh sách'),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -1026,7 +1123,7 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
         border: Border.all(color: gray200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.01),
+            color: Colors.black.withValues(alpha: 0.01),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1051,7 +1148,8 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                 onTap: _getGpsLocation,
                 child: Row(
                   children: [
-                    const Icon(Icons.gps_fixed_rounded, color: primaryBlue, size: 12),
+                    const Icon(Icons.gps_fixed_rounded,
+                        color: primaryBlue, size: 12),
                     const SizedBox(width: 4),
                     Text(
                       _isLocating ? 'ĐANG LẤY...' : 'LẤY GPS THIẾT BỊ',
@@ -1082,7 +1180,9 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
                     Icon(
                       Icons.circle,
                       size: 8,
-                      color: _gpsCoordinates != null ? Colors.green : Colors.orange,
+                      color: _gpsCoordinates != null
+                          ? Colors.green
+                          : Colors.orange,
                     ),
                     const SizedBox(width: 6),
                     Text(

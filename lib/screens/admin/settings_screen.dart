@@ -294,7 +294,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: const Text('Đồng bộ tự động Cloud', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           subtitle: const Text('Tự động đồng bộ lịch tiêm chủng, danh sách trẻ em và ca bệnh lên máy chủ Firestore.', style: TextStyle(fontSize: 12)),
           value: _isAutoSync,
-          activeColor: Colors.purple.shade700,
+          activeThumbColor: Colors.purple.shade700,
           onChanged: (val) {
             setState(() => _isAutoSync = val);
           },
@@ -363,7 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.teal.shade50.withOpacity(0.4),
+            color: Colors.teal.shade50.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.teal.shade100),
           ),

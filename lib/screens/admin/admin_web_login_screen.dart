@@ -37,42 +37,49 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu Quản trị!')),
+        const SnackBar(
+            content: Text(
+                'Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu Quản trị!')),
       );
       return;
     }
 
     setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-
     final store = AppScope.of(context);
-    final user = store.users.where((u) => u.username.toLowerCase() == username).firstOrNull;
+    final response = await store.authenticate(
+      username: username,
+      password: password,
+    );
+    if (!mounted) return;
 
     setState(() => _isLoading = false);
 
-    if (user == null || user.role != UserRole.admin) {
+    if (!response.success || response.data == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⛔ Tài khoản không tồn tại hoặc không có quyền Quản trị viên Web!'),
+        SnackBar(
+          content: Text(response.error ?? 'Không thể đăng nhập.'),
           backgroundColor: accentRed,
         ),
       );
       return;
     }
 
-    if (user.password != null && user.password!.isNotEmpty && user.password != password) {
+    if (response.data!.role != UserRole.admin) {
+      await store.logout();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Mật khẩu quản trị không chính xác!'),
+          content: Text('⛔ Tài khoản không có quyền Quản trị viên Web!'),
           backgroundColor: accentRed,
         ),
       );
       return;
     }
 
-    store.currentUser = user;
-    store.addAuditLog('Đăng nhập Web Admin', 'Đăng nhập vào Cổng Quản trị Web thành công');
+    await store.addAuditLog(
+      'Đăng nhập Web Admin',
+      'Đăng nhập vào Cổng Quản trị Web thành công',
+    );
     widget.onLoginSuccess();
   }
 
@@ -81,34 +88,28 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
     final isDesktop = MediaQuery.sizeOf(context).width >= 900;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Dark slate blue web backdrop
+      backgroundColor: pageBackground,
       body: Column(
         children: [
           // ── Web Portal Top Bar ──────────────────────────────
           Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            color: const Color(0xFF1E293B),
+            height: 68,
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: gray200)),
+            ),
             child: Row(
               children: [
-                const Icon(Icons.health_and_safety_rounded, color: primaryBlue, size: 24),
-                const SizedBox(width: 10),
-                const Text(
-                  'HỆ THỐNG Y TẾ DỰ PHÒNG · CỔNG QUẢN TRỊ TRUNG TÂM (WEB ADMIN)',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.04,
-                  ),
-                ),
+                const AppLogo(size: 38),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: widget.onSwitchToMobileLogin,
-                  icon: const Icon(Icons.smartphone_rounded, size: 16, color: Color(0xFF94A3B8)),
+                  icon: const Icon(Icons.smartphone_rounded,
+                      size: 16, color: gray500),
                   label: const Text(
                     'Chuyển sang Ứng dụng Di động',
-                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                    style: TextStyle(color: gray600, fontSize: 12),
                   ),
                 ),
               ],
@@ -121,16 +122,13 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Container(
-                  constraints: BoxConstraints(maxWidth: isDesktop ? 960 : 440),
+                  constraints: BoxConstraints(maxWidth: isDesktop ? 980 : 460),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
-                      ),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: gray200),
+                    boxShadow: const [
+                      appSurfaceShadow,
                     ],
                   ),
                   child: ClipRRect(
@@ -155,8 +153,8 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: const Text(
-              '© 2026 Trung tâm Y tế huyện Sa Pa · Bản quyền thuộc Bộ Y tế Việt Nam',
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
+              '© 2026 CommunityHealth · Trung tâm Y tế thị xã Sa Pa',
+              style: TextStyle(color: gray500, fontSize: 11.5),
             ),
           ),
         ],
@@ -168,11 +166,7 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
     return Container(
       padding: const EdgeInsets.all(40),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Color(0xFF123C3A),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -185,24 +179,32 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
               color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 30),
+            child: const Icon(Icons.admin_panel_settings_rounded,
+                color: Colors.white, size: 30),
           ),
           const SizedBox(height: 24),
           const Text(
             'Hệ thống Quản trị & Giám sát Tiêm chủng',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, height: 1.3),
+            style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.3),
           ),
           const SizedBox(height: 12),
           const Text(
             'Báo cáo dịch tễ thời gian thực, quản lý bao phủ vắc-xin, điều phối lực lượng y tế lưu động toàn huyện Sa Pa.',
-            style: TextStyle(fontSize: 13, color: Color(0xFFBFDBFE), height: 1.5),
+            style:
+                TextStyle(fontSize: 13, color: Color(0xFFB9D8D2), height: 1.5),
           ),
           const SizedBox(height: 32),
-          _featureRow(Icons.verified_user_outlined, 'Phân quyền tài khoản y tế xã/bản'),
+          _featureRow(
+              Icons.verified_user_outlined, 'Phân quyền tài khoản y tế xã/bản'),
           const SizedBox(height: 10),
           _featureRow(Icons.map_outlined, 'Bản đồ giám sát ca bệnh nghi ngờ'),
           const SizedBox(height: 10),
-          _featureRow(Icons.cloud_sync_outlined, 'Đồng bộ dữ liệu Firebase Cloud'),
+          _featureRow(
+              Icons.cloud_sync_outlined, 'Đồng bộ dữ liệu Firebase Cloud'),
         ],
       ),
     );
@@ -211,9 +213,13 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
   Widget _featureRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF93C5FD), size: 18),
+        Icon(icon, color: const Color(0xFF8FD3C7), size: 18),
         const SizedBox(width: 10),
-        Text(text, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w500)),
+        Text(text,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -230,15 +236,20 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: blueLight, borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.security_rounded, color: primaryBlue, size: 20),
+                decoration: BoxDecoration(
+                    color: blueLight, borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.security_rounded,
+                    color: primaryBlue, size: 20),
               ),
               const SizedBox(width: 12),
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Đăng nhập Web Admin',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: gray900)),
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: gray900)),
                   Text('Dành cho Quản trị viên Trung tâm Y tế',
                       style: TextStyle(fontSize: 11.5, color: gray500)),
                 ],
@@ -249,20 +260,29 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
 
           // Form fields
           const Text('TÀI KHOẢN QUẢN TRỊ',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: gray600, letterSpacing: 0.04)),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: gray600,
+                  letterSpacing: 0.04)),
           const SizedBox(height: 6),
           TextField(
             controller: _usernameController,
             style: const TextStyle(fontSize: 13.5, color: gray900),
             decoration: const InputDecoration(
               hintText: 'Nhập tên đăng nhập admin',
-              prefixIcon: Icon(Icons.person_outline_rounded, size: 18, color: gray400),
+              prefixIcon:
+                  Icon(Icons.person_outline_rounded, size: 18, color: gray400),
             ),
           ),
           const SizedBox(height: 16),
 
           const Text('MẬT KHẨU',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: gray600, letterSpacing: 0.04)),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: gray600,
+                  letterSpacing: 0.04)),
           const SizedBox(height: 6),
           TextField(
             controller: _passwordController,
@@ -270,11 +290,16 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
             style: const TextStyle(fontSize: 13.5, color: gray900),
             decoration: InputDecoration(
               hintText: 'Nhập mật khẩu',
-              prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, color: gray400),
+              prefixIcon: const Icon(Icons.lock_outline_rounded,
+                  size: 18, color: gray400),
               suffixIcon: GestureDetector(
                 onTap: () => setState(() => _obscure = !_obscure),
-                child: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    size: 18, color: gray500),
+                child: Icon(
+                    _obscure
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 18,
+                    color: gray500),
               ),
             ),
           ),
@@ -287,21 +312,27 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
               onPressed: _isLoading ? null : _handleAdminLogin,
               style: FilledButton.styleFrom(
                 backgroundColor: primaryBlue,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
               child: _isLoading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
                     )
                   : const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.login_rounded, size: 18, color: Colors.white),
+                        Icon(Icons.login_rounded,
+                            size: 18, color: Colors.white),
                         SizedBox(width: 8),
                         Text('Truy cập Cổng Quản trị',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
                       ],
                     ),
             ),
@@ -323,7 +354,10 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
                 Expanded(
                   child: Text(
                     'Tài khoản mặc định: admin.demo / 123456',
-                    style: TextStyle(fontSize: 11.5, color: gray600, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        color: gray600,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

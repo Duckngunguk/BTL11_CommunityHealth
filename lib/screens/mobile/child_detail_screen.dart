@@ -92,7 +92,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: gray200),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8)],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8)],
             ),
             child: Column(
               children: [
@@ -143,7 +143,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
               decoration: BoxDecoration(
                 color: redLight,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: accentRed.withOpacity(0.3)),
+                border: Border.all(color: accentRed.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [

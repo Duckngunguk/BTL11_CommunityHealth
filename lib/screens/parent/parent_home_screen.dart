@@ -24,15 +24,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
     final parentName = user?.fullName ?? 'Mẹ Nguyễn Thị Lan';
 
-    // Get children for this parent or default demo children
-    final children = store.children.where((child) {
-      if (user == null) return true;
-      if (user.username == 'parent.demo') return true;
-      final pName = user.fullName.toLowerCase().trim();
-      final mName = child.motherName.toLowerCase().trim();
-      return (pName.isNotEmpty && mName.contains(pName)) ||
-          (user.phone.isNotEmpty && child.motherPhone == user.phone);
-    }).toList();
+    final children = store.currentUserChildren;
 
     final lateChildren = children.where((c) => c.lateDays > 0).toList();
     final hasLateChild = lateChildren.isNotEmpty;
@@ -54,29 +46,42 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         children: [
           // ── 1. Top Offline Alert Banner (Brown/Orange) ────────
           Container(
-            color: const Color(0xFFB06000),
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: gray200)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              MediaQuery.paddingOf(context).top + 9,
+              16,
+              9,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: store.isOnline ? primaryDark : accentYellow,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  store.isOnline
-                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ĐÃ ĐỒNG BỘ'
-                      : 'CHẾ ĐỘ NGOẠI TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "Sẵn sàng xem dữ liệu"}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.02,
+                Expanded(
+                  child: Text(
+                    store.isOnline
+                        ? 'CHẾ ĐỘ TRỰC TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "ĐÃ ĐỒNG BỘ"}'
+                        : 'CHẾ ĐỘ NGOẠI TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "Sẵn sàng xem dữ liệu"}',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: gray600,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: .25,
+                    ),
                   ),
                 ),
               ],
@@ -95,17 +100,22 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.notification_important_rounded, color: Color(0xFFDC2626), size: 20),
+                  const Icon(Icons.notification_important_rounded,
+                      color: Color(0xFFDC2626), size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '⚠️ ${lateChildren.length} trẻ trễ lịch tiêm! Vui lòng đưa trẻ đến trạm y tế sớm nhất.',
-                      style: const TextStyle(fontSize: 12.5, color: Color(0xFFDC2626), fontWeight: FontWeight.w600),
+                      '${lateChildren.length} trẻ trễ lịch tiêm. Vui lòng đưa trẻ đến trạm y tế sớm nhất.',
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Color(0xFFDC2626),
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                   GestureDetector(
                     onTap: () => setState(() => _notifBannerDismissed = true),
-                    child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFFDC2626)),
+                    child: const Icon(Icons.close_rounded,
+                        size: 16, color: Color(0xFFDC2626)),
                   ),
                 ],
               ),
@@ -114,7 +124,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
           // ── 2. Header Title Bar ──────────────────────────────
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.only(top: 40, bottom: 12, left: 16, right: 16),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
             child: Row(
               children: [
                 Container(
@@ -124,13 +134,17 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                     color: primaryLight,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.person_outline_rounded, color: primaryDark, size: 20),
+                  child: const Icon(Icons.person_outline_rounded,
+                      color: primaryDark, size: 20),
                 ),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
-                    'Sổ Gia Đình Sổ sức khỏe',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: gray900),
+                    'Sức khỏe gia đình',
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: gray900),
                   ),
                 ),
                 // Notification bell icon
@@ -138,10 +152,11 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: blueLight,
+                    color: primaryLight,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.notifications_none_rounded, color: primaryBlue, size: 20),
+                  child: const Icon(Icons.notifications_none_rounded,
+                      color: primaryDark, size: 20),
                 ),
               ],
             ),
@@ -157,15 +172,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF059669), // Dark Emerald Green
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF059669).withValues(alpha: 0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    color: const Color(0xFF123C3A),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [appSurfaceShadow],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,9 +190,14 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        parentName.startsWith('Mẹ') || parentName.startsWith('Bố') || parentName.startsWith('Phụ huynh')
+                        parentName.startsWith('Mẹ') ||
+                                parentName.startsWith('Bố') ||
+                                parentName.startsWith('Phụ huynh')
                             ? parentName
-                            : (parentName.toLowerCase().contains('bính') || parentName.toLowerCase().contains('sáng') || parentName.toLowerCase().contains('đức') || parentName.toLowerCase().contains('bố')
+                            : (parentName.toLowerCase().contains('bính') ||
+                                    parentName.toLowerCase().contains('sáng') ||
+                                    parentName.toLowerCase().contains('đức') ||
+                                    parentName.toLowerCase().contains('bố')
                                 ? 'Bố $parentName'
                                 : 'Mẹ $parentName'),
                         style: const TextStyle(
@@ -208,22 +222,26 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                           if (children.isNotEmpty) {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (_) => ParentChildDetailScreen(childId: children.first.id),
+                                builder: (_) => ParentChildDetailScreen(
+                                    childId: children.first.id),
                               ),
                             );
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.6)),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.badge_outlined, color: Colors.white, size: 16),
+                              Icon(Icons.badge_outlined,
+                                  color: Colors.white, size: 16),
                               SizedBox(width: 6),
                               Text(
                                 'Hộ chiếu tiêm chủng (QR)',
@@ -246,10 +264,14 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: hasLateChild ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF),
+                    color: hasLateChild
+                        ? const Color(0xFFFEF2F2)
+                        : const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: hasLateChild ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                      color: hasLateChild
+                          ? const Color(0xFFFCA5A5)
+                          : const Color(0xFFBFDBFE),
                     ),
                   ),
                   child: Column(
@@ -258,8 +280,12 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                       Row(
                         children: [
                           Icon(
-                            hasLateChild ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
-                            color: hasLateChild ? const Color(0xFFDC2626) : primaryBlue,
+                            hasLateChild
+                                ? Icons.warning_amber_rounded
+                                : Icons.info_outline_rounded,
+                            color: hasLateChild
+                                ? const Color(0xFFDC2626)
+                                : primaryBlue,
                             size: 22,
                           ),
                           const SizedBox(width: 8),
@@ -271,7 +297,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w800,
-                                color: hasLateChild ? const Color(0xFFDC2626) : primaryBlue,
+                                color: hasLateChild
+                                    ? const Color(0xFFDC2626)
+                                    : primaryBlue,
                                 letterSpacing: 0.02,
                               ),
                             ),
@@ -283,7 +311,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: Text(
-                            '⚠️ Trẻ ${lateChild.fullName} đang bị trễ ${lateChild.lateDays} ngày mũi tiêm ${lateChild.nextVaccine}. Đề nghị phụ huynh mang theo sổ tiêm để tiêm bổ sung ngay!',
+                            'Trẻ ${lateChild.fullName} đang trễ ${lateChild.lateDays} ngày mũi tiêm ${lateChild.nextVaccine}. Đề nghị phụ huynh mang theo sổ tiêm để tiêm bổ sung sớm.',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF991B1B),
@@ -293,24 +321,31 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                           ),
                         ),
                       ],
-                      Container(height: 1, color: hasLateChild ? const Color(0xFFFECACA) : const Color(0xFFDBEAFE)),
+                      Container(
+                          height: 1,
+                          color: hasLateChild
+                              ? const Color(0xFFFECACA)
+                              : const Color(0xFFDBEAFE)),
                       const SizedBox(height: 10),
                       _guidanceRow(
                         icon: Icons.location_on_outlined,
                         title: 'Địa điểm tiêm:',
-                        content: 'Trạm Y tế xã Tả Phìn (hoặc Nhà văn hóa Bản Nậm Lùng đối với điểm tiêm lưu động)',
+                        content:
+                            'Trạm Y tế xã Tả Phìn (hoặc Nhà văn hóa Bản Nậm Lùng đối với điểm tiêm lưu động)',
                       ),
                       const SizedBox(height: 8),
                       _guidanceRow(
                         icon: Icons.access_time_rounded,
                         title: 'Thời gian tiêm:',
-                        content: 'Sáng thứ 2 đến thứ 6 (07h30 – 11h00). Lịch tiêm tập trung: Ngày 10 và 12 hàng tháng.',
+                        content:
+                            'Sáng thứ 2 đến thứ 6 (07h30 – 11h00). Lịch tiêm tập trung: Ngày 10 và 12 hàng tháng.',
                       ),
                       const SizedBox(height: 8),
                       _guidanceRow(
                         icon: Icons.assignment_outlined,
                         title: 'Giấy tờ mang theo:',
-                        content: 'Sổ tiêm chủng cá nhân của trẻ & Mã QR hồ sơ trên ứng dụng',
+                        content:
+                            'Sổ tiêm chủng cá nhân của trẻ & Mã QR hồ sơ trên ứng dụng',
                       ),
                     ],
                   ),
@@ -342,11 +377,13 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                       border: Border.all(color: gray200),
                     ),
                     child: const Center(
-                      child: Text('Không có dữ liệu con trong danh mục này.', style: TextStyle(color: gray500, fontSize: 13)),
+                      child: Text('Không có dữ liệu con trong danh mục này.',
+                          style: TextStyle(color: gray500, fontSize: 13)),
                     ),
                   )
                 else
-                  ...filteredChildren.map((child) => _buildChildCard(context, child)),
+                  ...filteredChildren
+                      .map((child) => _buildChildCard(context, child)),
 
                 const SizedBox(height: 16),
 
@@ -406,7 +443,10 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     );
   }
 
-  Widget _guidanceRow({required IconData icon, required String title, required String content}) {
+  Widget _guidanceRow(
+      {required IconData icon,
+      required String title,
+      required String content}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -414,7 +454,8 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         const SizedBox(width: 6),
         Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: gray900),
+          style: const TextStyle(
+              fontWeight: FontWeight.w800, fontSize: 12, color: gray900),
         ),
         const SizedBox(width: 4),
         Expanded(
@@ -466,7 +507,8 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => ParentChildDetailScreen(childId: child.id)),
+          MaterialPageRoute<void>(
+              builder: (_) => ParentChildDetailScreen(childId: child.id)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -497,7 +539,10 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                   children: [
                     Text(
                       child.fullName,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: gray900),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: gray900),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -509,14 +554,16 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: pillBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   pillText,
-                  style: TextStyle(color: pillFg, fontSize: 11, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                      color: pillFg, fontSize: 11, fontWeight: FontWeight.w800),
                 ),
               ),
             ],

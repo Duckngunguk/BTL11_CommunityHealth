@@ -1,11 +1,10 @@
-
 enum VaccinationSyncStatus { pending, synced }
 
 enum ChildVaccinationStatus { complete, dueSoon, late }
 
 enum UserRole { healthWorker, parent, admin }
 
-enum UserAccountStatus { active, pendingApproval, locked }
+enum UserAccountStatus { active, pendingApproval, rejected, locked }
 
 class UserModel {
   const UserModel({
@@ -19,7 +18,8 @@ class UserModel {
     required this.createdAt,
     this.token,
     this.assignedCommune,
-    this.password,
+    this.passwordHash,
+    this.linkedChildIds = const [],
   });
 
   final String id;
@@ -32,7 +32,8 @@ class UserModel {
   final DateTime createdAt;
   final String? token;
   final String? assignedCommune;
-  final String? password;
+  final String? passwordHash;
+  final List<String> linkedChildIds;
 
   bool get isActive => status == UserAccountStatus.active;
   bool get isPending => status == UserAccountStatus.pendingApproval;
@@ -41,7 +42,8 @@ class UserModel {
     UserAccountStatus? status,
     String? token,
     String? assignedCommune,
-    String? password,
+    String? passwordHash,
+    List<String>? linkedChildIds,
   }) {
     return UserModel(
       id: id,
@@ -54,7 +56,8 @@ class UserModel {
       createdAt: createdAt,
       token: token ?? this.token,
       assignedCommune: assignedCommune ?? this.assignedCommune,
-      password: password ?? this.password,
+      passwordHash: passwordHash ?? this.passwordHash,
+      linkedChildIds: linkedChildIds ?? this.linkedChildIds,
     );
   }
 
@@ -70,11 +73,19 @@ class UserModel {
       'createdAt': createdAt.toIso8601String(),
       'token': token,
       'assignedCommune': assignedCommune,
-      'password': password,
+      'passwordHash': passwordHash,
+      'linkedChildIds': linkedChildIds.join(','),
     };
   }
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
+    final linkedValue = map['linkedChildIds'];
+    var linkedChildIds = linkedValue is String
+        ? linkedValue.split(',').where((value) => value.isNotEmpty).toList()
+        : (linkedValue as List?)?.cast<String>() ?? const <String>[];
+    if (linkedChildIds.isEmpty && map['username'] == 'parent.demo') {
+      linkedChildIds = const ['CH002'];
+    }
     return UserModel(
       id: map['id'] as String,
       username: map['username'] as String,
@@ -82,11 +93,13 @@ class UserModel {
       email: map['email'] as String,
       phone: map['phone'] as String,
       role: UserRole.values.firstWhere((e) => e.name == map['role']),
-      status: UserAccountStatus.values.firstWhere((e) => e.name == map['status']),
+      status:
+          UserAccountStatus.values.firstWhere((e) => e.name == map['status']),
       createdAt: DateTime.parse(map['createdAt'] as String),
       token: map['token'] as String?,
       assignedCommune: map['assignedCommune'] as String?,
-      password: map['password'] as String?,
+      passwordHash: (map['passwordHash'] ?? map['password']) as String?,
+      linkedChildIds: linkedChildIds,
     );
   }
 }
@@ -197,7 +210,8 @@ class VaccinationRecord {
       administeredBy: map['administeredBy'] as String,
       reactions: map['reactions'] as String?,
       administeredAt: DateTime.parse(map['administeredAt'] as String),
-      syncStatus: VaccinationSyncStatus.values.firstWhere((e) => e.name == map['syncStatus']),
+      syncStatus: VaccinationSyncStatus.values
+          .firstWhere((e) => e.name == map['syncStatus']),
     );
   }
 }
@@ -262,7 +276,8 @@ class MedicationRecord {
       dosage: map['dosage'] as String,
       administeredBy: map['administeredBy'] as String,
       administeredAt: DateTime.parse(map['administeredAt'] as String),
-      syncStatus: VaccinationSyncStatus.values.firstWhere((e) => e.name == map['syncStatus']),
+      syncStatus: VaccinationSyncStatus.values
+          .firstWhere((e) => e.name == map['syncStatus']),
       notes: map['notes'] as String?,
     );
   }
@@ -366,6 +381,19 @@ class ChildProfile {
     };
   }
 
+  /// Full representation used by platform-independent local storage.
+  ///
+  /// [toMap] intentionally contains only columns from the `children` SQLite
+  /// table. Vaccinations and medications live in separate SQLite tables, so a
+  /// web/local snapshot must include them explicitly to survive an app reload.
+  Map<String, dynamic> toStorageMap() {
+    return {
+      ...toMap(),
+      'vaccinations': vaccinations.map((record) => record.toMap()).toList(),
+      'medications': medications.map((record) => record.toMap()).toList(),
+    };
+  }
+
   factory ChildProfile.fromMap(
     Map<String, dynamic> map, {
     List<VaccinationRecord> vaccinations = const [],
@@ -382,13 +410,34 @@ class ChildProfile {
       village: map['village'] as String,
       commune: map['commune'] as String,
       district: map['district'] as String,
-      status: ChildVaccinationStatus.values.firstWhere((e) => e.name == map['status']),
+      status: ChildVaccinationStatus.values
+          .firstWhere((e) => e.name == map['status']),
       nextVaccine: map['nextVaccine'] as String,
       nextDue: DateTime.parse(map['nextDue'] as String),
       lateDays: map['lateDays'] as int,
       vaccinations: vaccinations,
       medications: medications,
-      lastSyncAt: map['lastSyncAt'] != null ? DateTime.parse(map['lastSyncAt'] as String) : null,
+      lastSyncAt: map['lastSyncAt'] != null
+          ? DateTime.parse(map['lastSyncAt'] as String)
+          : null,
+    );
+  }
+
+  factory ChildProfile.fromStorageMap(Map<String, dynamic> map) {
+    final vaccinationMaps = (map['vaccinations'] as List?) ?? const [];
+    final medicationMaps = (map['medications'] as List?) ?? const [];
+    return ChildProfile.fromMap(
+      map,
+      vaccinations: vaccinationMaps
+          .map((item) => VaccinationRecord.fromMap(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(),
+      medications: medicationMaps
+          .map((item) => MedicationRecord.fromMap(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(),
     );
   }
 }
@@ -633,16 +682,24 @@ class DiseaseReport {
       reportedAt: DateTime.parse(map['reportedAt'] as String),
       reportedBy: map['reportedBy'] as String,
       symptoms: map['symptoms'] as String,
-      syncStatus: VaccinationSyncStatus.values.firstWhere((e) => e.name == map['syncStatus']),
+      syncStatus: VaccinationSyncStatus.values
+          .firstWhere((e) => e.name == map['syncStatus']),
       status: map['status'] as String,
-      severity: DiseaseSeverity.values.firstWhere((e) => e.name == map['severity']),
+      severity:
+          DiseaseSeverity.values.firstWhere((e) => e.name == map['severity']),
       notes: map['notes'] as String?,
     );
   }
 }
 
 const Map<String, List<String>> kVillagesByCommune = {
-  'Tả Phìn': ['Bản Nậm Lùng', 'Bản Tả Phìn 1', 'Bản Tả Phìn 2', 'Bản Sả Séng', 'Bản Lếch'],
+  'Tả Phìn': [
+    'Bản Nậm Lùng',
+    'Bản Tả Phìn 1',
+    'Bản Tả Phìn 2',
+    'Bản Sả Séng',
+    'Bản Lếch'
+  ],
   'Hầu Thào': ['Bản Hầu Thào', 'Bản Hang Đá', 'Bản Lý Lao Chải'],
   'San Sả Hồ': ['Bản Sín Chải', 'Bản Cát Cát', 'Bản Ý Lình Hồ'],
   'Tả Van': ['Bản Séo Mý Tỷ', 'Bản Tả Van Giáy', 'Bản Tả Van Mông'],

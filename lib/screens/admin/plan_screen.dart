@@ -303,7 +303,7 @@ class _PlanForm extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              value: communesList.any((c) => c.name == communeName) ? communeName : (communesList.isNotEmpty ? communesList.first.name : null),
+              initialValue: communesList.any((c) => c.name == communeName) ? communeName : (communesList.isNotEmpty ? communesList.first.name : null),
               decoration: const InputDecoration(
                 labelText: 'Xã mục tiêu',
                 prefixIcon: Icon(Icons.location_on_outlined),
@@ -345,7 +345,7 @@ class _PlanForm extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: healthWorkers.any((w) => w.id == selectedWorkerId) ? selectedWorkerId : (healthWorkers.isNotEmpty ? healthWorkers.first.id : null),
+              initialValue: healthWorkers.any((w) => w.id == selectedWorkerId) ? selectedWorkerId : (healthWorkers.isNotEmpty ? healthWorkers.first.id : null),
               decoration: const InputDecoration(
                 labelText: 'Cán bộ Y tế phụ trách',
                 prefixIcon: Icon(Icons.badge_outlined),

@@ -2,35 +2,329 @@ import 'package:flutter/material.dart';
 
 import '../models/models.dart';
 
-// ============================================================
-// COLOR SYSTEM — Theo thiết kế nhom10_CSE441_final.html
-// ============================================================
-const primaryGreen = Color(0xFF10B981);       // --primary
-const primaryDark = Color(0xFF059669);         // --primary-dark
-const primaryLight = Color(0xFFE6F4EA);        // --primary-light
+// Hệ màu chung: trung tính, tiết chế và đủ tương phản cho sản phẩm y tế.
+const primaryGreen = Color(0xFF0F766E);
+const primaryDark = Color(0xFF0B625A);
+const primaryLight = Color(0xFFE8F5F2);
 
-const primaryBlue = Color(0xFF1A73E8);         // --blue (màu chính nav, buttons)
-const blueLight = Color(0xFFE6F0FA);           // --blue-light
+const primaryBlue = Color(0xFF2563EB);
+const blueLight = Color(0xFFEEF4FF);
 
-const accentRed = Color(0xFFC5221F);           // --red
-const redLight = Color(0xFFFCE8E6);            // --red-light
+const accentRed = Color(0xFFB42318);
+const redLight = Color(0xFFFDF0EF);
 
-const accentYellow = Color(0xFFB06000);        // --yellow
-const yellowLight = Color(0xFFFEF7E0);         // --yellow-light
+const accentYellow = Color(0xFF9A5B13);
+const yellowLight = Color(0xFFFFF7E8);
 
-const gray900 = Color(0xFF0F172A);             // --gray-900
-const gray800 = Color(0xFF1E293B);             // --gray-800
-const gray700 = Color(0xFF334155);             // --gray-700
-const gray600 = Color(0xFF4A5D6E);             // --gray-600
-const gray500 = Color(0xFF7D8C9D);             // --gray-500
-const gray400 = Color(0xFFA3B3C2);             // --gray-400
-const gray200 = Color(0xFFE5EBF4);             // --gray-200
-const gray100 = Color(0xFFF4F7FA);             // --gray-100
+const gray900 = Color(0xFF172033);
+const gray800 = Color(0xFF253148);
+const gray700 = Color(0xFF3F4D63);
+const gray600 = Color(0xFF5E6B7E);
+const gray500 = Color(0xFF7B8798);
+const gray400 = Color(0xFFA8B2C1);
+const gray200 = Color(0xFFE3E8EF);
+const gray100 = Color(0xFFF6F8FB);
 
 // Legacy (backward compatibility)
 const softGreen = primaryLight;
 const pageBackground = gray100;
 
+const appSurfaceShadow = BoxShadow(
+  color: Color(0x0F172033),
+  blurRadius: 24,
+  offset: Offset(0, 8),
+);
+
+ThemeData buildCommunityHealthTheme() {
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: primaryDark,
+      brightness: Brightness.light,
+      surface: Colors.white,
+      error: accentRed,
+    ),
+  );
+
+  return base.copyWith(
+    scaffoldBackgroundColor: pageBackground,
+    colorScheme: base.colorScheme.copyWith(
+      primary: primaryDark,
+      onPrimary: Colors.white,
+      primaryContainer: primaryLight,
+      onPrimaryContainer: primaryDark,
+      secondary: primaryBlue,
+      onSecondary: Colors.white,
+      secondaryContainer: blueLight,
+      onSecondaryContainer: gray900,
+      surface: Colors.white,
+      onSurface: gray900,
+      outline: gray200,
+      error: accentRed,
+    ),
+    textTheme: base.textTheme.copyWith(
+      headlineLarge: const TextStyle(
+        color: gray900,
+        fontSize: 32,
+        height: 1.15,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.8,
+      ),
+      headlineMedium: const TextStyle(
+        color: gray900,
+        fontSize: 26,
+        height: 1.2,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
+      ),
+      titleLarge: const TextStyle(
+        color: gray900,
+        fontSize: 20,
+        height: 1.25,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.2,
+      ),
+      titleMedium: const TextStyle(
+        color: gray900,
+        fontSize: 16,
+        height: 1.35,
+        fontWeight: FontWeight.w700,
+      ),
+      bodyLarge: const TextStyle(
+        color: gray700,
+        fontSize: 15,
+        height: 1.5,
+      ),
+      bodyMedium: const TextStyle(
+        color: gray700,
+        fontSize: 14,
+        height: 1.45,
+      ),
+      bodySmall: const TextStyle(
+        color: gray500,
+        fontSize: 12,
+        height: 1.4,
+      ),
+      labelLarge: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    cardTheme: CardThemeData(
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: gray200),
+      ),
+    ),
+    appBarTheme: const AppBarThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      foregroundColor: gray900,
+      centerTitle: false,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      titleTextStyle: TextStyle(
+        color: gray900,
+        fontSize: 17,
+        fontWeight: FontWeight.w700,
+      ),
+      iconTheme: IconThemeData(color: gray700, size: 22),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFFF9FAFC),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: gray200),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: gray200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: primaryDark, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: accentRed),
+      ),
+      prefixIconColor: gray500,
+      suffixIconColor: gray500,
+      hintStyle: const TextStyle(color: gray400, fontSize: 14),
+      labelStyle: const TextStyle(color: gray600, fontSize: 14),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: primaryDark,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: gray200,
+        disabledForegroundColor: gray500,
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: gray800,
+        backgroundColor: Colors.white,
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+        side: const BorderSide(color: gray200),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: primaryDark,
+        textStyle: const TextStyle(fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      height: 68,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: primaryLight,
+      elevation: 0,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return TextStyle(
+          color: selected ? primaryDark : gray500,
+          fontSize: 11,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+        );
+      }),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return IconThemeData(
+          color: selected ? primaryDark : gray500,
+          size: 22,
+        );
+      }),
+    ),
+    dividerTheme: const DividerThemeData(color: gray200, thickness: 1),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: gray900,
+      contentTextStyle: const TextStyle(color: Colors.white),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    ),
+  );
+}
+
+class AppLogo extends StatelessWidget {
+  const AppLogo({super.key, this.size = 44, this.compact = false});
+
+  final double size;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: primaryDark,
+            borderRadius: BorderRadius.circular(size * .28),
+          ),
+          child: Icon(
+            Icons.health_and_safety_rounded,
+            color: Colors.white,
+            size: size * .55,
+          ),
+        ),
+        if (!compact) ...[
+          const SizedBox(width: 12),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CommunityHealth',
+                style: TextStyle(
+                  color: gray900,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class AppSurface extends StatelessWidget {
+  const AppSurface({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+    this.borderRadius = 16,
+    this.shadow = false,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+  final bool shadow;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: gray200),
+        boxShadow: shadow ? const [appSurfaceShadow] : null,
+      ),
+      child: child,
+    );
+  }
+}
+
+class AppPageWidth extends StatelessWidget {
+  const AppPageWidth({
+    super.key,
+    required this.child,
+    this.maxWidth = 1200,
+    this.padding = const EdgeInsets.all(24),
+  });
+
+  final Widget child;
+  final double maxWidth;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: Padding(padding: padding, child: child),
+      ),
+    );
+  }
+}
 
 // ============================================================
 // HELPER FUNCTIONS
@@ -144,7 +438,8 @@ class StatusPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+        style:
+            TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -193,7 +488,7 @@ class ChildCard extends StatelessWidget {
           border: Border.all(color: gray200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -205,7 +500,7 @@ class ChildCard extends StatelessWidget {
             Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: blueLight,
                 shape: BoxShape.circle,
               ),
@@ -410,7 +705,9 @@ class TimelineItem extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: gray200),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.015), blurRadius: 4)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.015), blurRadius: 4)
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,7 +717,10 @@ class TimelineItem extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: gray900),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: gray900),
                 ),
               ),
               Container(
@@ -441,7 +741,9 @@ class TimelineItem extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
-          Text(subtitle, style: const TextStyle(color: gray500, fontSize: 11.5, height: 1.4)),
+          Text(subtitle,
+              style:
+                  const TextStyle(color: gray500, fontSize: 11.5, height: 1.4)),
         ],
       ),
     );

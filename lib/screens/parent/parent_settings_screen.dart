@@ -45,7 +45,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                 const SizedBox(width: 6),
                 Text(
                   store.isOnline
-                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ĐÃ ĐỒNG BỘ'
+                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "ĐÃ ĐỒNG BỘ"}'
                       : 'CHẾ ĐỘ NGOẠI TUYẾN • ${store.pendingCount > 0 ? "${store.pendingCount} bản ghi chờ đồng bộ" : "Sẵn sàng xem dữ liệu"}',
                   style: const TextStyle(
                     color: Colors.white,

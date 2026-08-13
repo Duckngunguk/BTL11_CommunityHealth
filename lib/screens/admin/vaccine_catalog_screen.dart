@@ -219,7 +219,7 @@ class _AddVaccineDialogState extends State<_AddVaccineDialog> {
       description: _descriptionController.text.trim(),
     );
 
-    widget.store.addVaccineSchedule(newSchedule);
+    await widget.store.addVaccineSchedule(newSchedule);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -270,7 +270,7 @@ class _AddVaccineDialogState extends State<_AddVaccineDialog> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: _selectedDose,
+                        initialValue: _selectedDose,
                         decoration: const InputDecoration(
                           labelText: 'Số mũi *',
                           prefixIcon: Icon(Icons.pin_outlined),
@@ -286,7 +286,7 @@ class _AddVaccineDialogState extends State<_AddVaccineDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: _selectedAgeMonths,
+                        initialValue: _selectedAgeMonths,
                         decoration: const InputDecoration(
                           labelText: 'Tuổi tiêm *',
                           prefixIcon: Icon(Icons.child_care_outlined),
@@ -306,7 +306,7 @@ class _AddVaccineDialogState extends State<_AddVaccineDialog> {
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<int>(
-                  value: _selectedToleranceDays,
+                  initialValue: _selectedToleranceDays,
                   decoration: const InputDecoration(
                     labelText: 'Dung sai (ngày) *',
                     prefixIcon: Icon(Icons.timelapse_outlined),
@@ -438,7 +438,7 @@ class _AddMedicationDialogState extends State<_AddMedicationDialog> {
       description: _descriptionController.text.trim(),
     );
 
-    widget.store.addMedicationSchedule(newSchedule);
+    await widget.store.addMedicationSchedule(newSchedule);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -486,7 +486,7 @@ class _AddMedicationDialogState extends State<_AddMedicationDialog> {
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  value: _selectedAge,
+                  initialValue: _selectedAge,
                   decoration: const InputDecoration(
                     labelText: 'Độ tuổi khuyến nghị *',
                     prefixIcon: Icon(Icons.child_care_outlined),
@@ -498,7 +498,7 @@ class _AddMedicationDialogState extends State<_AddMedicationDialog> {
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  value: _selectedDosage,
+                  initialValue: _selectedDosage,
                   decoration: const InputDecoration(
                     labelText: 'Liều dùng chuẩn *',
                     prefixIcon: Icon(Icons.numbers_outlined),

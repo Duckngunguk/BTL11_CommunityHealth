@@ -143,7 +143,7 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
             const SizedBox(height: 18),
 
             DropdownButtonFormField<MedicationSchedule>(
-              value: _medicationSchedule,
+              initialValue: _medicationSchedule,
               decoration: const InputDecoration(labelText: 'Loại Vitamin / Dược chất bổ sung *'),
               items: store.medicationSchedules
                   .map((item) => DropdownMenuItem(

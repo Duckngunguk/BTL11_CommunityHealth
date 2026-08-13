@@ -11,8 +11,10 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final total = store.communeCoverage.fold<int>(0, (sum, item) => sum + item.total);
-    final fully = store.communeCoverage.fold<int>(0, (sum, item) => sum + item.fully);
+    final total =
+        store.communeCoverage.fold<int>(0, (sum, item) => sum + item.total);
+    final fully =
+        store.communeCoverage.fold<int>(0, (sum, item) => sum + item.fully);
     final coverage = total > 0 ? (fully / total * 100.0) : 0.0;
 
     return LayoutBuilder(
@@ -34,7 +36,8 @@ class AdminDashboardScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     _buildExportActions(context, store),
                     const SizedBox(height: 20),
-                    _buildMetricsGrid(store, total, fully, coverage, columnsCount: 4),
+                    _buildMetricsGrid(store, total, fully, coverage,
+                        columnsCount: 4),
                     const SizedBox(height: 20),
                     _buildStatusBanner(context, store.lateCount),
                     const SizedBox(height: 20),
@@ -137,9 +140,11 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          _buildPillBadge('Đã xác thực', const Color(0xFF18794E), const Color(0xFFE5F5EC)),
+          _buildPillBadge(
+              'Đã xác thực', const Color(0xFF18794E), const Color(0xFFE5F5EC)),
           const SizedBox(width: 8),
-          _buildPillBadge('Cổng Huyện', const Color(0xFFB06000), const Color(0xFFFEF7E0)),
+          _buildPillBadge(
+              'Cổng Huyện', const Color(0xFFB06000), const Color(0xFFFEF7E0)),
         ],
       ),
     );
@@ -152,22 +157,29 @@ class AdminDashboardScreen extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: () async {
               final children = store.children;
-              final result = await ReportExportService.instance.exportChildrenToCsv(children);
+              final result = await ReportExportService.instance
+                  .exportChildrenToCsv(children);
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(result != null ? '✅ Xuất dữ liệu Excel/CSV thành công!' : '❌ Không có dữ liệu để xuất'),
-                  backgroundColor: result != null ? Colors.green.shade700 : Colors.red.shade700,
+                  content: Text(result != null
+                      ? 'Đã tải file "$result". Kiểm tra thư mục Downloads.'
+                      : 'Không thể xuất file CSV.'),
+                  backgroundColor: result != null
+                      ? Colors.green.shade700
+                      : Colors.red.shade700,
                 ),
               );
             },
             icon: const Icon(Icons.table_chart_rounded, size: 18),
-            label: const Text('Xuất Excel/CSV', style: TextStyle(fontWeight: FontWeight.w700)),
+            label: const Text('Xuất Excel/CSV',
+                style: TextStyle(fontWeight: FontWeight.w700)),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF059669),
               side: const BorderSide(color: Color(0xFF059669)),
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
           ),
         ),
@@ -176,20 +188,31 @@ class AdminDashboardScreen extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: () async {
               final children = store.children;
-              await ReportExportService.instance.exportLatePdfReport(
+              final result =
+                  await ReportExportService.instance.exportLatePdfReport(
                 children: children,
                 reporterName: store.currentUser?.fullName ?? 'Admin',
                 commune: 'Toàn huyện',
               );
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(result != null
+                      ? 'Đã mở bản xem trước "$result". Chọn Save để lưu file.'
+                      : 'Đã hủy xuất PDF.'),
+                ),
+              );
             },
             icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-            label: const Text('Xuất PDF Báo cáo', style: TextStyle(fontWeight: FontWeight.w700)),
+            label: const Text('Xuất PDF Báo cáo',
+                style: TextStyle(fontWeight: FontWeight.w700)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
           ),
         ),
@@ -197,7 +220,9 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricsGrid(AppStore store, int total, int fully, double coverage, {required int columnsCount}) {
+  Widget _buildMetricsGrid(
+      AppStore store, int total, int fully, double coverage,
+      {required int columnsCount}) {
     return GridView.count(
       crossAxisCount: columnsCount,
       crossAxisSpacing: 14,
@@ -258,10 +283,15 @@ class AdminDashboardScreen extends StatelessWidget {
 
   Widget _buildStatusBanner(BuildContext context, int lateCount) {
     final hasAlert = lateCount > 0;
-    final Color bgColor = hasAlert ? const Color(0xFFFFE9E7) : const Color(0xFFE6F4EA);
-    final Color borderColor = hasAlert ? const Color(0xFFFCA5A5) : const Color(0xFFA7F3D0);
-    final Color textColor = hasAlert ? const Color(0xFF991B1B) : const Color(0xFF065F46);
-    final IconData icon = hasAlert ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded;
+    final Color bgColor =
+        hasAlert ? const Color(0xFFFFE9E7) : const Color(0xFFE6F4EA);
+    final Color borderColor =
+        hasAlert ? const Color(0xFFFCA5A5) : const Color(0xFFA7F3D0);
+    final Color textColor =
+        hasAlert ? const Color(0xFF991B1B) : const Color(0xFF065F46);
+    final IconData icon = hasAlert
+        ? Icons.warning_amber_rounded
+        : Icons.check_circle_outline_rounded;
 
     return Container(
       width: double.infinity,
@@ -407,13 +437,21 @@ class _CoverageOverviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Tỷ lệ phủ theo xã', subtitle: 'Xanh ≥ 80%, vàng 60–79%, đỏ < 60%.'),
+          const SectionHeader(
+              title: 'Tỷ lệ phủ theo xã',
+              subtitle: 'Xanh ≥ 80%, vàng 60–79%, đỏ < 60%.'),
           const SizedBox(height: 20),
           ...store.communeCoverage.map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: 15),
                 child: Row(
                   children: [
-                    SizedBox(width: 100, child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: gray800))),
+                    SizedBox(
+                        width: 100,
+                        child: Text(item.name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: gray800))),
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(99),
@@ -421,12 +459,23 @@ class _CoverageOverviewCard extends StatelessWidget {
                           value: item.coverage / 100,
                           minHeight: 11,
                           backgroundColor: const Color(0xFFE8ECEA),
-                          color: item.coverage >= 80 ? const Color(0xFF27AE60) : item.coverage >= 60 ? const Color(0xFFF2C94C) : const Color(0xFFEB5757),
+                          color: item.coverage >= 80
+                              ? const Color(0xFF27AE60)
+                              : item.coverage >= 60
+                                  ? const Color(0xFFF2C94C)
+                                  : const Color(0xFFEB5757),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    SizedBox(width: 52, child: Text('${item.coverage.toStringAsFixed(1)}%', textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: gray900))),
+                    SizedBox(
+                        width: 52,
+                        child: Text('${item.coverage.toStringAsFixed(1)}%',
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: gray900))),
                   ],
                 ),
               )),
@@ -438,7 +487,7 @@ class _CoverageOverviewCard extends StatelessWidget {
 
 class _RecentActivitiesCard extends StatelessWidget {
   const _RecentActivitiesCard({required this.store});
-  
+
   final AppStore store;
 
   @override
@@ -470,12 +519,16 @@ class _RecentActivitiesCard extends StatelessWidget {
                   color: Colors.purple.shade50,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(Icons.history_rounded, color: Colors.purple.shade700, size: 16),
+                child: Icon(Icons.history_rounded,
+                    color: Colors.purple.shade700, size: 16),
               ),
               const SizedBox(width: 10),
               const Text(
                 'HOẠT ĐỘNG GẦN ĐÂY',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.purple),
               ),
             ],
           ),
@@ -484,12 +537,14 @@ class _RecentActivitiesCard extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Center(
-                child: Text('Chưa có hoạt động nào.', style: TextStyle(color: gray500, fontSize: 13)),
+                child: Text('Chưa có hoạt động nào.',
+                    style: TextStyle(color: gray500, fontSize: 13)),
               ),
             )
           else
             ...recentLogs.map((log) {
-              final formattedTime = '${log.timestamp.hour.toString().padLeft(2, '0')}:${log.timestamp.minute.toString().padLeft(2, '0')}';
+              final formattedTime =
+                  '${log.timestamp.hour.toString().padLeft(2, '0')}:${log.timestamp.minute.toString().padLeft(2, '0')}';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
@@ -497,7 +552,10 @@ class _RecentActivitiesCard extends StatelessWidget {
                   children: [
                     Text(
                       formattedTime,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade500),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: Colors.grey.shade500),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -506,17 +564,24 @@ class _RecentActivitiesCard extends StatelessWidget {
                         children: [
                           Text(
                             log.action,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Colors.black87),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             log.details,
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade600),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Bởi: ${log.performedBy} (${log.userRole})',
-                            style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade500,
+                                fontStyle: FontStyle.italic),
                           ),
                         ],
                       ),
@@ -568,12 +633,16 @@ class _OutbreaksAlertCard extends StatelessWidget {
                   color: Colors.red.shade50,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(Icons.crisis_alert_rounded, color: Colors.red.shade700, size: 16),
+                child: Icon(Icons.crisis_alert_rounded,
+                    color: Colors.red.shade700, size: 16),
               ),
               const SizedBox(width: 10),
               const Text(
                 'CẢNH BÁO DỊCH TỄ',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.red),
               ),
             ],
           ),
@@ -582,14 +651,17 @@ class _OutbreaksAlertCard extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Center(
-                child: Text('Không ghi nhận ổ dịch hoạt động.', style: TextStyle(color: gray500, fontSize: 13)),
+                child: Text('Không ghi nhận ổ dịch hoạt động.',
+                    style: TextStyle(color: gray500, fontSize: 13)),
               ),
             )
           else
             ...activeOutbreaks.map((report) {
               final color = report.severity == DiseaseSeverity.severe
                   ? Colors.red
-                  : (report.severity == DiseaseSeverity.moderate ? Colors.orange : Colors.blue);
+                  : (report.severity == DiseaseSeverity.moderate
+                      ? Colors.orange
+                      : Colors.blue);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Container(
@@ -606,18 +678,25 @@ class _OutbreaksAlertCard extends StatelessWidget {
                         children: [
                           Text(
                             report.diseaseType,
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: color),
                           ),
                           const Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: color.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               report.status,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: color),
                             ),
                           ),
                         ],
@@ -625,11 +704,15 @@ class _OutbreaksAlertCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         'Địa điểm: ${report.village}, Xã ${report.commune}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500),
                       ),
                       Text(
                         'Bệnh nhân: ${report.patientName}',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade600),
                       ),
                     ],
                   ),
@@ -675,12 +758,16 @@ class _AlertCard extends StatelessWidget {
                   color: Colors.orange.shade50,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 16),
+                child: Icon(Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700, size: 16),
               ),
               const SizedBox(width: 10),
               const Text(
                 'CẢNH BÁO TRỄ LỊCH',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.orange),
               ),
             ],
           ),
@@ -698,10 +785,22 @@ class _AlertCard extends StatelessWidget {
           else
             ...late.take(3).map((child) => ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(backgroundColor: Color(0xFFFFE9E7), child: Icon(Icons.warning_amber_rounded, color: Color(0xFFB42318), size: 18)),
-                  title: Text(child.fullName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: gray900)),
-                  subtitle: Text('${child.commune} • ${child.nextVaccine}', style: const TextStyle(fontSize: 11.5, color: gray500)),
-                  trailing: Text('${child.lateDays} ngày', style: const TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w800, fontSize: 12.5)),
+                  leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFFFE9E7),
+                      child: Icon(Icons.warning_amber_rounded,
+                          color: Color(0xFFB42318), size: 18)),
+                  title: Text(child.fullName,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: gray900)),
+                  subtitle: Text('${child.commune} • ${child.nextVaccine}',
+                      style: const TextStyle(fontSize: 11.5, color: gray500)),
+                  trailing: Text('${child.lateDays} ngày',
+                      style: const TextStyle(
+                          color: Color(0xFFB42318),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12.5)),
                 )),
         ],
       ),

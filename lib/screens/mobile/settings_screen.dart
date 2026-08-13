@@ -31,22 +31,25 @@ class SettingsScreen extends StatelessWidget {
         Container(
           color: Colors.white,
           padding: const EdgeInsets.only(top: 48, bottom: 0),
-          child: Column(
+          child: const Column(
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
                         'Cài đặt',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: gray900),
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: gray900),
                       ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, color: gray200),
+              Divider(height: 1, color: gray200),
             ],
           ),
         ),
@@ -61,15 +64,20 @@ class SettingsScreen extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: gray200),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6)],
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02), blurRadius: 6)
+            ],
           ),
           child: Row(
             children: [
               Container(
                 width: 42,
                 height: 42,
-                decoration: const BoxDecoration(color: blueLight, shape: BoxShape.circle),
-                child: const Icon(Icons.person_rounded, color: primaryBlue, size: 22),
+                decoration: const BoxDecoration(
+                    color: blueLight, shape: BoxShape.circle),
+                child: const Icon(Icons.person_rounded,
+                    color: primaryBlue, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -78,7 +86,10 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     Text(
                       user?.fullName ?? 'Y sĩ Lê Thu',
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: gray900),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          color: gray900),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -95,12 +106,15 @@ class SettingsScreen extends StatelessWidget {
         const SizedBox(height: 16),
 
         // ── Cài đặt chung ─────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'CÀI ĐẶT CHUNG',
-            style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700, color: gray500, letterSpacing: 0.05,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: gray500,
+              letterSpacing: 0.05,
             ),
           ),
         ),
@@ -112,7 +126,10 @@ class SettingsScreen extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: gray200),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6)],
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02), blurRadius: 6)
+            ],
           ),
           child: Column(
             children: [
@@ -121,7 +138,7 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: 'Khi thiết bị có Wi-Fi hoặc dữ liệu di động',
                 trailing: Switch.adaptive(
                   value: true,
-                  activeColor: primaryDark,
+                  activeThumbColor: primaryDark,
                   onChanged: (_) {},
                 ),
               ),
@@ -131,7 +148,7 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: 'Hiển thị nhắc lịch trên thiết bị',
                 trailing: Switch.adaptive(
                   value: true,
-                  activeColor: primaryDark,
+                  activeThumbColor: primaryDark,
                   onChanged: (_) {},
                 ),
               ),
@@ -139,7 +156,8 @@ class SettingsScreen extends StatelessWidget {
               _buildSettingRow(
                 title: 'Mã hóa dữ liệu cục bộ',
                 subtitle: 'Bảo vệ dữ liệu bằng AES-256',
-                trailing: const Icon(Icons.check_circle_rounded, color: primaryDark, size: 20),
+                trailing: const Icon(Icons.check_circle_rounded,
+                    color: primaryDark, size: 20),
               ),
             ],
           ),
@@ -148,12 +166,15 @@ class SettingsScreen extends StatelessWidget {
         const SizedBox(height: 16),
 
         // ── Thông tin hệ thống ────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'THÔNG TIN HỆ THỐNG',
-            style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700, color: gray500, letterSpacing: 0.05,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: gray500,
+              letterSpacing: 0.05,
             ),
           ),
         ),
@@ -165,30 +186,42 @@ class SettingsScreen extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: gray200),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6)],
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02), blurRadius: 6)
+            ],
           ),
           child: Column(
             children: [
               _buildSettingRow(
                 title: 'Phiên bản',
-                trailing: const Text('1.0.0 Demo', style: TextStyle(color: gray500, fontSize: 12.5)),
+                trailing: const Text('1.0.0 Demo',
+                    style: TextStyle(color: gray500, fontSize: 12.5)),
               ),
               _divider(),
               _buildSettingRow(
                 title: 'Mã thiết bị',
-                trailing: const Text('CH-DEV-001', style: TextStyle(color: gray500, fontSize: 12.5, fontFamily: 'monospace')),
+                trailing: const Text('CH-DEV-001',
+                    style: TextStyle(
+                        color: gray500,
+                        fontSize: 12.5,
+                        fontFamily: 'monospace')),
               ),
               _divider(),
               // Đăng xuất
               GestureDetector(
                 onTap: onLogout,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                   child: Row(
-                    children: const [
+                    children: [
                       Icon(Icons.logout_rounded, color: accentRed, size: 18),
                       SizedBox(width: 10),
-                      Text('Đăng xuất', style: TextStyle(color: accentRed, fontWeight: FontWeight.w700, fontSize: 13.5)),
+                      Text('Đăng xuất',
+                          style: TextStyle(
+                              color: accentRed,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5)),
                     ],
                   ),
                 ),
@@ -200,7 +233,8 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _divider() => Container(height: 1, color: gray100, margin: const EdgeInsets.only(left: 14));
+  Widget _divider() => Container(
+      height: 1, color: gray100, margin: const EdgeInsets.only(left: 14));
 
   Widget _buildSettingRow({
     required String title,
@@ -216,10 +250,15 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: gray900)),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: gray900)),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 11.5, color: gray500)),
+                  Text(subtitle,
+                      style: const TextStyle(fontSize: 11.5, color: gray500)),
                 ],
               ],
             ),

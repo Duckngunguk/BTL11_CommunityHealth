@@ -11,13 +11,21 @@ class EpidemicMapScreen extends StatefulWidget {
   State<EpidemicMapScreen> createState() => _EpidemicMapScreenState();
 }
 
-class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTickerProviderStateMixin {
+class _EpidemicMapScreenState extends State<EpidemicMapScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _activeTab = 0;
 
   String _selectedDisease = 'Tất cả';
   String? _selectedCommune;
-  final _diseases = ['Tất cả', 'Sởi', 'Tả', 'Sốt xuất huyết', 'Thuỷ đậu', 'Khác'];
+  final _diseases = [
+    'Tất cả',
+    'Sởi',
+    'Tả',
+    'Sốt xuất huyết',
+    'Thuỷ đậu',
+    'Khác'
+  ];
 
   @override
   void initState() {
@@ -47,23 +55,37 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Tỷ lệ vaccine chi tiết: Xã ${item.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('Tỷ lệ vaccine chi tiết: Xã ${item.name}',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         content: SizedBox(
           width: 460,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _VaccineProgressRow(label: 'BCG (Mũi sơ sinh)', value: item.bcg, color: Colors.blue),
-              _VaccineProgressRow(label: 'DPT Mũi 1 (2 tháng)', value: item.dpt1, color: Colors.green),
-              _VaccineProgressRow(label: 'DPT Mũi 2 (3 tháng)', value: item.dpt2, color: Colors.orange),
-              _VaccineProgressRow(label: 'DPT Mũi 3 (4 tháng)', value: item.dpt3, color: Colors.purple),
+              _VaccineProgressRow(
+                  label: 'BCG (Mũi sơ sinh)',
+                  value: item.bcg,
+                  color: Colors.blue),
+              _VaccineProgressRow(
+                  label: 'DPT Mũi 1 (2 tháng)',
+                  value: item.dpt1,
+                  color: Colors.green),
+              _VaccineProgressRow(
+                  label: 'DPT Mũi 2 (3 tháng)',
+                  value: item.dpt2,
+                  color: Colors.orange),
+              _VaccineProgressRow(
+                  label: 'DPT Mũi 3 (4 tháng)',
+                  value: item.dpt3,
+                  color: Colors.purple),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Đóng',
+                style: TextStyle(fontWeight: FontWeight.bold)),
           )
         ],
       ),
@@ -78,22 +100,38 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
 
     // Filter reports
     final filteredReports = allReports.where((r) {
-      if (_selectedDisease != 'Tất cả' && r.diseaseType != _selectedDisease) return false;
-      if (_selectedCommune != null && r.commune != _selectedCommune) return false;
+      if (_selectedDisease != 'Tất cả' && r.diseaseType != _selectedDisease) {
+        return false;
+      }
+      if (_selectedCommune != null && r.commune != _selectedCommune) {
+        return false;
+      }
       return true;
     }).toList();
 
     // Stats
     final measleCount = allReports.where((r) => r.diseaseType == 'Sởi').length;
     final choleraCount = allReports.where((r) => r.diseaseType == 'Tả').length;
-    final dengueCount = allReports.where((r) => r.diseaseType == 'Sốt xuất huyết').length;
-    final pendingSync = allReports.where((r) => r.syncStatus == VaccinationSyncStatus.pending).length;
-    final communes = ['Tả Phìn', 'Hầu Thào', 'San Sả Hồ', 'Tả Van', 'Lao Chải', 'Bản Hồ'];
+    final dengueCount =
+        allReports.where((r) => r.diseaseType == 'Sốt xuất huyết').length;
+    final pendingSync = allReports
+        .where((r) => r.syncStatus == VaccinationSyncStatus.pending)
+        .length;
+    final communes = [
+      'Tả Phìn',
+      'Hầu Thào',
+      'San Sả Hồ',
+      'Tả Van',
+      'Lao Chải',
+      'Bản Hồ'
+    ];
 
     // Overall District Stats
     final totalChildren = coverageList.fold<int>(0, (sum, c) => sum + c.total);
-    final fullyVaccinated = coverageList.fold<int>(0, (sum, c) => sum + c.fully);
-    final overallCoverage = totalChildren > 0 ? (fullyVaccinated / totalChildren * 100) : 0.0;
+    final fullyVaccinated =
+        coverageList.fold<int>(0, (sum, c) => sum + c.fully);
+    final overallCoverage =
+        totalChildren > 0 ? (fullyVaccinated / totalChildren * 100) : 0.0;
 
     return Column(
       children: [
@@ -113,7 +151,8 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                         color: const Color(0xFFFFE9E7),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.crisis_alert_rounded, color: Color(0xFFB42318), size: 24),
+                      child: const Icon(Icons.crisis_alert_rounded,
+                          color: Color(0xFFB42318), size: 24),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -121,14 +160,20 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _activeTab == 0 ? 'Bản đồ cảnh báo dịch tễ' : 'Thống kê phủ Vaccine',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: gray900),
+                            _activeTab == 0
+                                ? 'Bản đồ cảnh báo dịch tễ'
+                                : 'Thống kê phủ Vaccine',
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: gray900),
                           ),
                           Text(
-                            _activeTab == 0 
-                              ? 'Giám sát ca bệnh nghi ngờ báo cáo từ cán bộ y tế thực địa.' 
-                              : 'Tỷ lệ trẻ được tiêm chủng đầy đủ theo từng địa bàn xã.',
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                            _activeTab == 0
+                                ? 'Giám sát ca bệnh nghi ngờ báo cáo từ cán bộ y tế thực địa.'
+                                : 'Tỷ lệ trẻ được tiêm chủng đầy đủ theo từng địa bàn xã.',
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 12),
                           ),
                         ],
                       ),
@@ -147,8 +192,12 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                   indicatorColor: primaryBlue,
                   indicatorWeight: 3,
                   tabs: const [
-                    Tab(child: Text('Sơ đồ vùng dịch', style: TextStyle(fontWeight: FontWeight.bold))),
-                    Tab(child: Text('Tỷ lệ bao phủ vắc-xin', style: TextStyle(fontWeight: FontWeight.bold))),
+                    Tab(
+                        child: Text('Sơ đồ vùng dịch',
+                            style: TextStyle(fontWeight: FontWeight.bold))),
+                    Tab(
+                        child: Text('Tỷ lệ bao phủ vắc-xin',
+                            style: TextStyle(fontWeight: FontWeight.bold))),
                   ],
                 ),
               ),
@@ -170,7 +219,9 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                       child: _KpiCard(
                         title: 'Tổng ca nghi ngờ',
                         value: '${allReports.length}',
-                        subText: pendingSync > 0 ? '$pendingSync ca chờ đồng bộ' : 'Dữ liệu thời gian thực',
+                        subText: pendingSync > 0
+                            ? '$pendingSync ca chờ đồng bộ'
+                            : 'Dữ liệu thời gian thực',
                         icon: Icons.coronavirus_rounded,
                         color: const Color(0xFFB42318),
                         bgColor: const Color(0xFFFFE9E7),
@@ -224,9 +275,11 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        const Icon(Icons.filter_alt_outlined, color: Colors.black54),
+                        const Icon(Icons.filter_alt_outlined,
+                            color: Colors.black54),
                         const SizedBox(width: 8),
-                        const Text('Lọc loại bệnh: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('Lọc loại bệnh: ',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(width: 8),
                         Wrap(
                           spacing: 8,
@@ -236,7 +289,9 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                               label: Text(d),
                               selected: isSelected,
                               onSelected: (selected) {
-                                if (selected) setState(() => _selectedDisease = d);
+                                if (selected) {
+                                  setState(() => _selectedDisease = d);
+                                }
                               },
                             );
                           }).toList(),
@@ -246,7 +301,8 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                           ActionChip(
                             avatar: const Icon(Icons.clear_rounded, size: 14),
                             label: Text('Xã $_selectedCommune'),
-                            onPressed: () => setState(() => _selectedCommune = null),
+                            onPressed: () =>
+                                setState(() => _selectedCommune = null),
                             backgroundColor: const Color(0xFFFEF3C7),
                           ),
                       ],
@@ -258,7 +314,10 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                 // Grid mapping
                 const Text(
                   'Bản đồ khu vực dịch tễ huyện Sa Pa',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -279,7 +338,9 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                   itemCount: communes.length,
                   itemBuilder: (context, index) {
                     final communeName = communes[index];
-                    final communeReports = allReports.where((r) => r.commune == communeName).toList();
+                    final communeReports = allReports
+                        .where((r) => r.commune == communeName)
+                        .toList();
                     final isSelected = _selectedCommune == communeName;
 
                     return _CommuneMapTile(
@@ -310,7 +371,8 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                         padding: const EdgeInsets.all(18),
                         child: Text(
                           'Danh sách ca bệnh báo cáo (${filteredReports.length})',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                       ),
                       const Divider(height: 1),
@@ -329,9 +391,11 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: filteredReports.length,
-                          separatorBuilder: (context, i) => const Divider(height: 1),
+                          separatorBuilder: (context, i) =>
+                              const Divider(height: 1),
                           itemBuilder: (context, idx) {
-                            return _DiseaseReportItem(report: filteredReports[idx], store: store);
+                            return _DiseaseReportItem(
+                                report: filteredReports[idx], store: store);
                           },
                         ),
                     ],
@@ -355,7 +419,11 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                           padding: const EdgeInsets.all(24),
                           child: Column(
                             children: [
-                              const Text('TỶ LỆ PHỦ TOÀN HUYỆN SA PA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                              const Text('TỶ LỆ PHỦ TOÀN HUYỆN SA PA',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Colors.grey)),
                               const SizedBox(height: 18),
                               Stack(
                                 alignment: Alignment.center,
@@ -375,12 +443,18 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                                     children: [
                                       Text(
                                         '${overallCoverage.toStringAsFixed(1)}%',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.black87),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 22,
+                                            color: Colors.black87),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         '$fullyVaccinated/$totalChildren trẻ',
-                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w500),
                                       ),
                                     ],
                                   ),
@@ -388,15 +462,16 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                overallCoverage >= 80 
-                                  ? 'Đạt chỉ tiêu tiêm chủng mở rộng' 
-                                  : 'Cần tăng cường các buổi tiêm chủng lưu động',
+                                overallCoverage >= 80
+                                    ? 'Đạt chỉ tiêu tiêm chủng mở rộng'
+                                    : 'Cần tăng cường các buổi tiêm chủng lưu động',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold, 
-                                  fontSize: 13, 
-                                  color: overallCoverage >= 80 ? Colors.green.shade800 : Colors.orange.shade800
-                                ),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: overallCoverage >= 80
+                                        ? Colors.green.shade800
+                                        : Colors.orange.shade800),
                               ),
                             ],
                           ),
@@ -419,7 +494,11 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('SO SÁNH TỶ LỆ BAO PHỦ GIỮA CÁC XÃ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                              const Text('SO SÁNH TỶ LỆ BAO PHỦ GIỮA CÁC XÃ',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Colors.grey)),
                               const SizedBox(height: 18),
                               ...coverageList.map((item) {
                                 final color = _statusColor(item.coverage);
@@ -427,14 +506,21 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: Row(
                                     children: [
-                                      SizedBox(width: 80, child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                                      SizedBox(
+                                          width: 80,
+                                          child: Text(item.name,
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13))),
                                       Expanded(
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           child: LinearProgressIndicator(
                                             value: item.coverage / 100,
                                             minHeight: 10,
-                                            backgroundColor: Colors.grey.shade100,
+                                            backgroundColor:
+                                                Colors.grey.shade100,
                                             color: color,
                                           ),
                                         ),
@@ -442,7 +528,10 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                                       const SizedBox(width: 14),
                                       Text(
                                         '${item.coverage.toStringAsFixed(1)}%',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color),
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: color),
                                       ),
                                     ],
                                   ),
@@ -471,7 +560,10 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                       children: [
                         const Text(
                           'Chi tiết số liệu tiêm chủng',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87),
                         ),
                         const SizedBox(height: 2),
                         const Text(
@@ -482,31 +574,68 @@ class _EpidemicMapScreenState extends State<EpidemicMapScreen> with SingleTicker
                         DataTable(
                           showCheckboxColumn: false,
                           columns: const [
-                            DataColumn(label: Text('Xã', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Tổng trẻ', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                            DataColumn(label: Text('Đã tiêm đủ', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                            DataColumn(label: Text('Còn thiếu', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                            DataColumn(label: Text('Tỷ lệ phủ', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Mức ưu tiên', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(
+                                label: Text('Xã',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold))),
+                            DataColumn(
+                                label: Text('Tổng trẻ',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                numeric: true),
+                            DataColumn(
+                                label: Text('Đã tiêm đủ',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                numeric: true),
+                            DataColumn(
+                                label: Text('Còn thiếu',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                numeric: true),
+                            DataColumn(
+                                label: Text('Tỷ lệ phủ',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold))),
+                            DataColumn(
+                                label: Text('Mức ưu tiên',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold))),
                           ],
                           rows: coverageList.map((item) {
                             final color = _statusColor(item.coverage);
-                            final priority = item.coverage < 60 ? 'Rất cao' : item.coverage < 80 ? 'Cần theo dõi' : 'Ổn định';
+                            final priority = item.coverage < 60
+                                ? 'Rất cao'
+                                : item.coverage < 80
+                                    ? 'Cần theo dõi'
+                                    : 'Ổn định';
                             return DataRow(
-                              onSelectChanged: (_) => _showCoverageDetail(context, item),
+                              onSelectChanged: (_) =>
+                                  _showCoverageDetail(context, item),
                               cells: [
-                                DataCell(Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                DataCell(Text(item.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold))),
                                 DataCell(Text('${item.total}')),
                                 DataCell(Text('${item.fully}')),
                                 DataCell(Text('${item.missing}')),
-                                DataCell(Text('${item.coverage.toStringAsFixed(1)}%', style: TextStyle(fontWeight: FontWeight.bold, color: color))),
+                                DataCell(Text(
+                                    '${item.coverage.toStringAsFixed(1)}%',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: color))),
                                 DataCell(Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: color.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Text(priority, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  child: Text(priority,
+                                      style: TextStyle(
+                                          color: color,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12)),
                                 )),
                               ],
                             );
@@ -557,7 +686,8 @@ class _KpiCard extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                  color: bgColor, borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(width: 16),
@@ -565,11 +695,21 @@ class _KpiCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold)),
+                  Text(title,
+                      style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  Text(value,
+                      style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87)),
                   const SizedBox(height: 2),
-                  Text(subText, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                  Text(subText,
+                      style:
+                          TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                 ],
               ),
             ),
@@ -595,10 +735,13 @@ class _CommuneMapTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasWarning = reports.any((r) => r.status != 'Đã khỏi');
     final activeCount = reports.where((r) => r.status != 'Đã khỏi').length;
-    final color = activeCount > 2 ? Colors.red : (activeCount > 0 ? Colors.orange : Colors.green);
-    final statusText = activeCount > 2 ? 'BÁO ĐỘNG ĐỎ' : (activeCount > 0 ? 'CẢNH BÁO' : 'BÌNH THƯỜNG');
+    final color = activeCount > 2
+        ? Colors.red
+        : (activeCount > 0 ? Colors.orange : Colors.green);
+    final statusText = activeCount > 2
+        ? 'BÁO ĐỘNG ĐỎ'
+        : (activeCount > 0 ? 'CẢNH BÁO' : 'BÌNH THƯỜNG');
 
     return InkWell(
       onTap: onTap,
@@ -629,18 +772,21 @@ class _CommuneMapTile extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   'Xã $communeName',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     statusText,
-                    style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: color, fontSize: 9, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -649,14 +795,16 @@ class _CommuneMapTile extends StatelessWidget {
             Text(
               activeCount > 0 ? '$activeCount ca dịch' : 'An toàn dịch tễ',
               style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.bold, 
-                color: activeCount > 0 ? Colors.black87 : Colors.green.shade800
-              ),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      activeCount > 0 ? Colors.black87 : Colors.green.shade800),
             ),
             const SizedBox(height: 2),
             Text(
-              activeCount > 0 ? 'Phát hiện ca bệnh hoạt động' : 'Không có ca bệnh nghi ngờ',
+              activeCount > 0
+                  ? 'Phát hiện ca bệnh hoạt động'
+                  : 'Không có ca bệnh nghi ngờ',
               style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
             ),
           ],
@@ -686,7 +834,8 @@ class _DiseaseReportItem extends StatelessWidget {
               color: const Color(0xFFFFE9E7),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.coronavirus_rounded, color: Color(0xFFB42318), size: 22),
+            child: const Icon(Icons.coronavirus_rounded,
+                color: Color(0xFFB42318), size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -697,29 +846,39 @@ class _DiseaseReportItem extends StatelessWidget {
                   children: [
                     Text(
                       report.patientName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFE9E7),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         report.diseaseType,
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFB42318), fontSize: 11),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFB42318),
+                            fontSize: 11),
                       ),
                     ),
                     const SizedBox(width: 8),
                     if (isPending)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF3CD),
                           borderRadius: BorderRadius.circular(99),
                         ),
-                        child: const Text('Chờ đồng bộ', style: TextStyle(fontSize: 10, color: Color(0xFF8A5D00), fontWeight: FontWeight.bold)),
+                        child: const Text('Chờ đồng bộ',
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF8A5D00),
+                                fontWeight: FontWeight.bold)),
                       ),
                   ],
                 ),
@@ -738,7 +897,10 @@ class _DiseaseReportItem extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       'Xử lý: ${report.notes}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontStyle: FontStyle.italic),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                          fontStyle: FontStyle.italic),
                     ),
                   ),
               ],
@@ -748,15 +910,26 @@ class _DiseaseReportItem extends StatelessWidget {
           DropdownButton<String>(
             value: report.status,
             underline: const SizedBox(),
-            items: const ['Nghi ngờ', 'Đã xác minh', 'Đã khoanh vùng', 'Đã khỏi']
-                .map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))))
+            items: const [
+              'Nghi ngờ',
+              'Đã xác minh',
+              'Đã khoanh vùng',
+              'Đã khỏi'
+            ]
+                .map((s) => DropdownMenuItem(
+                    value: s,
+                    child: Text(s,
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.bold))))
                 .toList(),
-            onChanged: (newVal) {
+            onChanged: (newVal) async {
               if (newVal != null) {
-                store.updateDiseaseReportStatus(report.id, newVal);
+                await store.updateDiseaseReportStatus(report.id, newVal);
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Đã cập nhật trạng thái ca bệnh thành "$newVal"'),
+                    content:
+                        Text('Đã cập nhật trạng thái ca bệnh thành "$newVal"'),
                     backgroundColor: Colors.blue.shade700,
                   ),
                 );
@@ -770,7 +943,8 @@ class _DiseaseReportItem extends StatelessWidget {
 }
 
 class _VaccineProgressRow extends StatelessWidget {
-  const _VaccineProgressRow({required this.label, required this.value, required this.color});
+  const _VaccineProgressRow(
+      {required this.label, required this.value, required this.color});
 
   final String label;
   final int value;
@@ -785,8 +959,13 @@ class _VaccineProgressRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-              Text('$value%', style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13)),
+              Expanded(
+                  child: Text(label,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13))),
+              Text('$value%',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: color, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 6),

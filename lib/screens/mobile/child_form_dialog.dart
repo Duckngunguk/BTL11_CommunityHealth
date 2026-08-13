@@ -62,7 +62,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final store = AppScope.of(context);
@@ -75,6 +75,20 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     String qrCode = _qrCodeController.text.trim();
 
     if (_isEditing) {
+      final effectiveQrCode =
+          qrCode.isEmpty ? widget.childToEdit!.qrCode : qrCode;
+      final qrCodeExists = store.children.any(
+        (child) =>
+            child.id != widget.childToEdit!.id &&
+            child.qrCode.toLowerCase() == effectiveQrCode.toLowerCase(),
+      );
+      if (qrCodeExists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mã QR đã được dùng cho hồ sơ khác.')),
+        );
+        return;
+      }
+
       final updated = widget.childToEdit!.copyWith(
         fullName: fullName,
         dateOfBirth: _dob,
@@ -84,17 +98,32 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         village: village,
         commune: commune,
         district: district,
-        qrCode: qrCode.isEmpty ? widget.childToEdit!.qrCode : qrCode,
+        qrCode: effectiveQrCode,
       );
-      store.updateChild(updated);
+      await store.updateChild(updated);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã cập nhật thông tin trẻ thành công.')),
       );
     } else {
-      final newIndex = (store.children.length + 1).toString().padLeft(3, '0');
+      final maxExistingIndex = store.children.fold<int>(0, (currentMax, child) {
+        final match = RegExp(r'^CH(\d+)$').firstMatch(child.id);
+        final value = match == null ? null : int.tryParse(match.group(1)!);
+        return value != null && value > currentMax ? value : currentMax;
+      });
+      final newIndex = (maxExistingIndex + 1).toString().padLeft(3, '0');
       final newId = 'CH$newIndex';
       if (qrCode.isEmpty) {
         qrCode = 'CH-QR-$newIndex';
+      }
+      final qrCodeExists = store.children.any(
+        (child) => child.qrCode.toLowerCase() == qrCode.toLowerCase(),
+      );
+      if (qrCodeExists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mã QR đã tồn tại trong hệ thống.')),
+        );
+        return;
       }
 
       final newChild = ChildProfile(
@@ -116,7 +145,8 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         medications: [],
       );
 
-      store.addChild(newChild);
+      await store.addChild(newChild);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã thêm trẻ mới vào sổ theo dõi.')),
       );
@@ -200,7 +230,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _gender,
+                    initialValue: _gender,
                     decoration: const InputDecoration(
                       labelText: 'Giới tính *',
                     ),
@@ -221,7 +251,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     key: ValueKey('commune-$_selectedCommune'),
-                    value: _selectedCommune,
+                    initialValue: _selectedCommune,
                     decoration: const InputDecoration(
                       labelText: 'Xã cư trú *',
                     ),
@@ -243,7 +273,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     key: ValueKey('village-$_selectedCommune-$_selectedVillage'),
-                    value: _selectedVillage,
+                    initialValue: _selectedVillage,
                     decoration: const InputDecoration(
                       labelText: 'Địa bàn cư trú (Thôn bản) *',
                     ),

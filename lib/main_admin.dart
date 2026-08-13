@@ -1,8 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'screens/admin/admin_shell.dart';
 import 'screens/admin/admin_web_login_screen.dart';
@@ -12,11 +9,6 @@ import 'models/models.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  }
 
   runApp(
     const ProviderScope(
@@ -35,19 +27,7 @@ class AdminWebHealthApp extends StatelessWidget {
     return MaterialApp(
       title: 'CommunityHealth Web Admin',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryBlue,
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
-        fontFamily: 'Roboto',
-        appBarTheme: const AppBarThemeData(
-          backgroundColor: Colors.white,
-          elevation: 0,
-        ),
-      ),
+      theme: buildCommunityHealthTheme(),
       home: const _AdminAppRouter(),
     );
   }
@@ -66,15 +46,21 @@ class _AdminAppRouterState extends State<_AdminAppRouter> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final isLoggedIn = _isLoggedIn || (store.currentUser != null && store.currentUser!.role == UserRole.admin);
+    if (store.isInitializing) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final isLoggedIn = _isLoggedIn ||
+        (store.currentUser != null &&
+            store.currentUser!.role == UserRole.admin);
 
     if (isLoggedIn) {
       return AdminShell(
-        onLogout: () {
-          setState(() {
-            _isLoggedIn = false;
-            store.currentUser = null;
-          });
+        onLogout: () async {
+          await store.logout();
+          if (!mounted) return;
+          setState(() => _isLoggedIn = false);
         },
       );
     }
@@ -84,7 +70,8 @@ class _AdminAppRouterState extends State<_AdminAppRouter> {
       onSwitchToMobileLogin: () {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Đây là Cổng Web Quản trị độc lập. Để vào Mobile App, hãy mở main.dart.'),
+            content: Text(
+                'Đây là Cổng Web Quản trị độc lập. Để vào Mobile App, hãy mở main.dart.'),
           ),
         );
       },

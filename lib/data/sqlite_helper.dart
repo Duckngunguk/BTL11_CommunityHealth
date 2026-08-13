@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import '../models/models.dart';
 import 'master_data.dart';
@@ -17,14 +15,11 @@ class SqliteHelper {
     if (kIsWeb) return null;
     if (_database != null) return _database!;
     try {
-      if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-        sqfliteFfiInit();
-        databaseFactory = databaseFactoryFfi;
-      }
       _database = await _initDatabase();
       return _database;
     } catch (e) {
-      debugPrint('⚠️ SQLite database not available on this platform ($e). Falling back to memory/demo data.');
+      debugPrint(
+          '⚠️ SQLite database not available on this platform ($e). Falling back to memory/demo data.');
       return null;
     }
   }
@@ -35,7 +30,7 @@ class SqliteHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -43,7 +38,7 @@ class SqliteHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     debugPrint('Creating SQLite tables...');
-    
+
     // 1. Table users
     await db.execute('''
       CREATE TABLE users (
@@ -57,7 +52,9 @@ class SqliteHelper {
         createdAt TEXT,
         token TEXT,
         assignedCommune TEXT,
-        password TEXT
+        password TEXT,
+        passwordHash TEXT,
+        linkedChildIds TEXT
       )
     ''');
 
@@ -95,7 +92,8 @@ class SqliteHelper {
       _ftsSupported = true;
     } catch (e) {
       _ftsSupported = false;
-      debugPrint('ℹ️ FTS5 virtual table not supported on this platform SQLite build ($e). Skipping FTS5 table.');
+      debugPrint(
+          'ℹ️ FTS5 virtual table not supported on this platform SQLite build ($e). Skipping FTS5 table.');
     }
 
     // 4. Table vaccinations
@@ -187,7 +185,7 @@ class SqliteHelper {
       } catch (e) {
         debugPrint('Column lastSyncAt already exists or error adding: $e');
       }
-      
+
       // 2. Create children_fts table
       try {
         await db.execute('DROP TABLE IF EXISTS children_fts;');
@@ -223,14 +221,66 @@ class SqliteHelper {
         )
       ''');
     }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE users ADD COLUMN passwordHash TEXT;');
+      await db.execute('ALTER TABLE users ADD COLUMN linkedChildIds TEXT;');
+      await db.update(
+        'users',
+        {'linkedChildIds': 'CH002'},
+        where: 'username = ?',
+        whereArgs: ['parent.demo'],
+      );
+      final childCount = Sqflite.firstIntValue(
+            await db.rawQuery('SELECT COUNT(*) FROM children'),
+          ) ??
+          0;
+      if (childCount == 0) await _seedDemoChildren(db);
+    }
   }
 
   Future<void> _seedDemoData(Database db) async {
     debugPrint('Seeding initial login accounts to SQLite...');
-    
+
     // Seed only the default login users so we can log in
     for (var u in demoUsers) {
       await db.insert('users', u.toMap());
+    }
+    await _seedDemoChildren(db);
+  }
+
+  Future<void> _seedDemoChildren(Database db) async {
+    for (final child in demoChildren) {
+      await db.insert(
+        'children',
+        child.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+      if (_ftsSupported) {
+        await db.insert(
+          'children_fts',
+          {
+            'id': child.id,
+            'fullName': child.fullName,
+            'qrCode': child.qrCode,
+            'motherName': child.motherName,
+          },
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+      for (final record in child.vaccinations) {
+        await db.insert(
+          'vaccinations',
+          record.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+      for (final record in child.medications) {
+        await db.insert(
+          'medications',
+          record.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
     }
   }
 
@@ -239,18 +289,19 @@ class SqliteHelper {
     final db = await database;
     if (db == null) return [];
     final List<Map<String, dynamic>> maps = await db.query('children');
-    
+
     List<ChildProfile> list = [];
     for (var map in maps) {
       final childId = map['id'] as String;
-      
+
       // Get vaccinations
       final List<Map<String, dynamic>> vMaps = await db.query(
         'vaccinations',
         where: 'childId = ?',
         whereArgs: [childId],
       );
-      final vaccinations = vMaps.map((v) => VaccinationRecord.fromMap(v)).toList();
+      final vaccinations =
+          vMaps.map((v) => VaccinationRecord.fromMap(v)).toList();
 
       // Get medications
       final List<Map<String, dynamic>> mMaps = await db.query(
@@ -258,9 +309,11 @@ class SqliteHelper {
         where: 'childId = ?',
         whereArgs: [childId],
       );
-      final medications = mMaps.map((m) => MedicationRecord.fromMap(m)).toList();
+      final medications =
+          mMaps.map((m) => MedicationRecord.fromMap(m)).toList();
 
-      list.add(ChildProfile.fromMap(map, vaccinations: vaccinations, medications: medications));
+      list.add(ChildProfile.fromMap(map,
+          vaccinations: vaccinations, medications: medications));
     }
     return list;
   }
@@ -272,7 +325,7 @@ class SqliteHelper {
     if (query.trim().isEmpty) {
       return getChildren();
     }
-    
+
     List<Map<String, dynamic>> maps = [];
     if (_ftsSupported) {
       try {
@@ -286,12 +339,13 @@ class SqliteHelper {
         maps = [];
       }
     }
-    
+
     if (maps.isEmpty) {
       final term = '%${query.trim()}%';
       maps = await db.query(
         'children',
-        where: 'fullName LIKE ? OR motherName LIKE ? OR qrCode LIKE ? OR village LIKE ?',
+        where:
+            'fullName LIKE ? OR motherName LIKE ? OR qrCode LIKE ? OR village LIKE ?',
         whereArgs: [term, term, term, term],
       );
     }
@@ -299,14 +353,15 @@ class SqliteHelper {
     List<ChildProfile> list = [];
     for (var map in maps) {
       final childId = map['id'] as String;
-      
+
       // Get vaccinations
       final List<Map<String, dynamic>> vMaps = await db.query(
         'vaccinations',
         where: 'childId = ?',
         whereArgs: [childId],
       );
-      final vaccinations = vMaps.map((v) => VaccinationRecord.fromMap(v)).toList();
+      final vaccinations =
+          vMaps.map((v) => VaccinationRecord.fromMap(v)).toList();
 
       // Get medications
       final List<Map<String, dynamic>> mMaps = await db.query(
@@ -314,9 +369,11 @@ class SqliteHelper {
         where: 'childId = ?',
         whereArgs: [childId],
       );
-      final medications = mMaps.map((m) => MedicationRecord.fromMap(m)).toList();
+      final medications =
+          mMaps.map((m) => MedicationRecord.fromMap(m)).toList();
 
-      list.add(ChildProfile.fromMap(map, vaccinations: vaccinations, medications: medications));
+      list.add(ChildProfile.fromMap(map,
+          vaccinations: vaccinations, medications: medications));
     }
     return list;
   }
@@ -324,15 +381,19 @@ class SqliteHelper {
   Future<void> insertChild(ChildProfile child) async {
     final db = await database;
     if (db == null) return;
-    await db.insert('children', child.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('children', child.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
     if (_ftsSupported) {
       try {
-        await db.insert('children_fts', {
-          'id': child.id,
-          'fullName': child.fullName,
-          'qrCode': child.qrCode,
-          'motherName': child.motherName,
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
+        await db.insert(
+            'children_fts',
+            {
+              'id': child.id,
+              'fullName': child.fullName,
+              'qrCode': child.qrCode,
+              'motherName': child.motherName,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace);
       } catch (_) {}
     }
   }
@@ -348,12 +409,15 @@ class SqliteHelper {
     );
     if (_ftsSupported) {
       try {
-        await db.insert('children_fts', {
-          'id': child.id,
-          'fullName': child.fullName,
-          'qrCode': child.qrCode,
-          'motherName': child.motherName,
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
+        await db.insert(
+            'children_fts',
+            {
+              'id': child.id,
+              'fullName': child.fullName,
+              'qrCode': child.qrCode,
+              'motherName': child.motherName,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace);
       } catch (_) {}
     }
   }
@@ -375,7 +439,8 @@ class SqliteHelper {
   Future<void> insertVaccination(VaccinationRecord record) async {
     final db = await database;
     if (db == null) return;
-    await db.insert('vaccinations', record.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('vaccinations', record.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateVaccinationSyncStatus(String id, String syncStatus) async {
@@ -393,7 +458,8 @@ class SqliteHelper {
   Future<void> insertMedication(MedicationRecord record) async {
     final db = await database;
     if (db == null) return;
-    await db.insert('medications', record.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('medications', record.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateMedicationSyncStatus(String id, String syncStatus) async {
@@ -418,7 +484,8 @@ class SqliteHelper {
   Future<void> insertDiseaseReport(DiseaseReport report) async {
     final db = await database;
     if (db == null) return;
-    await db.insert('disease_reports', report.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('disease_reports', report.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateDiseaseReportStatus(String id, String status) async {
@@ -432,7 +499,8 @@ class SqliteHelper {
     );
   }
 
-  Future<void> updateDiseaseReportSyncStatus(String id, String syncStatus) async {
+  Future<void> updateDiseaseReportSyncStatus(
+      String id, String syncStatus) async {
     final db = await database;
     if (db == null) return;
     await db.update(
@@ -454,7 +522,8 @@ class SqliteHelper {
   Future<void> insertUser(UserModel user) async {
     final db = await database;
     if (db == null) return;
-    await db.insert('users', user.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('users', user.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateUserStatus(String id, String status) async {
@@ -468,6 +537,22 @@ class SqliteHelper {
     );
   }
 
+  Future<void> updateUserSession(UserModel user) async {
+    final db = await database;
+    if (db == null) return;
+    await db.update(
+      'users',
+        {
+          'token': user.token,
+          'password': null,
+          'passwordHash': user.passwordHash,
+          'linkedChildIds': user.linkedChildIds.join(','),
+        },
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+  }
+
   Future<void> deleteUser(String id) async {
     final db = await database;
     if (db == null) return;
@@ -478,28 +563,32 @@ class SqliteHelper {
   Future<List<SystemAuditLog>> getAuditLogs() async {
     final db = await database;
     if (db == null) return [];
-    final List<Map<String, dynamic>> maps = await db.query('audit_logs', orderBy: 'timestamp DESC');
+    final List<Map<String, dynamic>> maps =
+        await db.query('audit_logs', orderBy: 'timestamp DESC');
     return maps.map((log) => SystemAuditLog.fromMap(log)).toList();
   }
 
   Future<void> insertAuditLog(SystemAuditLog log) async {
     final db = await database;
     if (db == null) return;
-    await db.insert('audit_logs', log.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('audit_logs', log.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   // --- Sync Batch Methods ---
   Future<List<SyncBatch>> getSyncBatches() async {
     final db = await database;
     if (db == null) return [];
-    final List<Map<String, dynamic>> maps = await db.query('sync_batches', orderBy: 'uploadedAt DESC');
+    final List<Map<String, dynamic>> maps =
+        await db.query('sync_batches', orderBy: 'uploadedAt DESC');
     return maps.map((b) => SyncBatch.fromMap(b)).toList();
   }
 
   Future<void> insertSyncBatch(SyncBatch batch) async {
     final db = await database;
     if (db == null) return;
-    await db.insert('sync_batches', batch.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('sync_batches', batch.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> updateSyncBatch(SyncBatch batch) async {

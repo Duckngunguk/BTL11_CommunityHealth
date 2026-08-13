@@ -14,6 +14,39 @@ class SyncScreen extends StatefulWidget {
 class _SyncScreenState extends State<SyncScreen> {
   bool _conflictSimulated = false;
 
+  Future<void> _runSync(AppStore store) async {
+    if (!store.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không có kết nối mạng. Dữ liệu vẫn được giữ ở trạng thái chờ.'),
+          backgroundColor: Color(0xFFB06000),
+        ),
+      );
+      return;
+    }
+    if (store.pendingCount == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không có dữ liệu mới cần đồng bộ.')),
+      );
+      return;
+    }
+
+    final success = await store.syncPending();
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Đồng bộ dữ liệu lên Firestore thành công.'
+              : 'Đồng bộ thất bại. Hãy kiểm tra cấu hình Firebase, quyền Firestore và kết nối mạng.',
+        ),
+        backgroundColor:
+            success ? const Color(0xFF059669) : const Color(0xFFB42318),
+      ),
+    );
+  }
+
   void _triggerSimulatedConflict() {
     setState(() => _conflictSimulated = true);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -52,7 +85,7 @@ class _SyncScreenState extends State<SyncScreen> {
       }
     }
 
-    final count = pendingItems.isNotEmpty ? pendingItems.length : store.pendingCount;
+    final count = store.pendingCount;
 
     return Scaffold(
       backgroundColor: gray100,
@@ -76,7 +109,7 @@ class _SyncScreenState extends State<SyncScreen> {
                 const SizedBox(width: 6),
                 Text(
                   store.isOnline
-                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ĐÃ ĐỒNG BỘ'
+                      ? 'CHẾ ĐỘ TRỰC TUYẾN • ${count > 0 ? "$count bản ghi chờ đồng bộ" : "ĐÃ ĐỒNG BỘ"}'
                       : 'CHẾ ĐỘ NGOẠI TUYẾN • ${count > 0 ? "$count bản ghi chờ đồng bộ" : "Sẵn sàng đồng bộ"}',
                   style: const TextStyle(
                     color: Colors.white,
@@ -107,14 +140,7 @@ class _SyncScreenState extends State<SyncScreen> {
                       ),
                       // Refresh / sync trigger icon button
                       GestureDetector(
-                        onTap: () async {
-                          if (store.isOnline && count > 0) {
-                            await store.syncPending();
-                            setState(() {});
-                          } else {
-                            store.setOnline(!store.isOnline);
-                          }
-                        },
+                        onTap: store.isSyncing ? null : () => _runSync(store),
                         child: Container(
                           width: 36,
                           height: 36,
@@ -170,42 +196,15 @@ class _SyncScreenState extends State<SyncScreen> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: gray200),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      'Tiêm vắc-xin DPT Mũi 3',
-                                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: gray900),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFEF3C7),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Text(
-                                      'Chờ đẩy',
-                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFD97706)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Trẻ: Nguyễn Minh An • Người thực hiện: Y sĩ Lê Thu',
-                                style: TextStyle(color: gray500, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      count > 0
+                          ? '$count thay đổi cục bộ đang chờ đẩy lên Firestore.'
+                          : 'Không có bản ghi nào chờ đồng bộ.',
+                      style: const TextStyle(
+                        color: gray600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   )
                 else
@@ -264,18 +263,7 @@ class _SyncScreenState extends State<SyncScreen> {
                   child: FilledButton.icon(
                     onPressed: store.isSyncing
                         ? null
-                        : () async {
-                            await store.syncPending();
-                            setState(() {});
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('✅ Đồng bộ dữ liệu thành công!'),
-                                  backgroundColor: Color(0xFF059669),
-                                ),
-                              );
-                            }
-                          },
+                        : () => _runSync(store),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF059669), // Solid green
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

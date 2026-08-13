@@ -5,13 +5,15 @@ import '../../state/app_store.dart';
 import '../../widgets/common_widgets.dart';
 
 class ParentChildDetailScreen extends StatefulWidget {
-  const ParentChildDetailScreen({super.key, required this.childId, this.showAppBar = true});
+  const ParentChildDetailScreen(
+      {super.key, required this.childId, this.showAppBar = true});
 
   final String childId;
   final bool showAppBar;
 
   @override
-  State<ParentChildDetailScreen> createState() => _ParentChildDetailScreenState();
+  State<ParentChildDetailScreen> createState() =>
+      _ParentChildDetailScreenState();
 }
 
 class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
@@ -20,16 +22,21 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final childExists = store.children.any((item) => item.id == widget.childId);
+    final accessibleChildren = store.currentUserChildren;
+    final childExists =
+        accessibleChildren.any((item) => item.id == widget.childId);
 
     if (!childExists) {
       return Scaffold(
-        appBar: widget.showAppBar ? AppBar(title: const Text('Sổ tiêm của con')) : null,
+        appBar: widget.showAppBar
+            ? AppBar(title: const Text('Sổ tiêm của con'))
+            : null,
         body: const Center(child: Text('Không tìm thấy thông tin trẻ.')),
       );
     }
 
-    final child = store.children.firstWhere((item) => item.id == widget.childId);
+    final child =
+        accessibleChildren.firstWhere((item) => item.id == widget.childId);
     final isLate = child.lateDays > 0;
 
     final mainContent = ListView(
@@ -42,7 +49,10 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: gray200),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8)],
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02), blurRadius: 8)
+            ],
           ),
           child: Column(
             children: [
@@ -50,35 +60,43 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
               Container(
                 width: 48,
                 height: 48,
-                decoration: const BoxDecoration(color: blueLight, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                    color: blueLight, shape: BoxShape.circle),
                 child: Center(
                   child: Text(
                     child.fullName.characters.first,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: primaryBlue),
+                    style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: primaryBlue),
                   ),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 child.fullName,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: gray900),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700, color: gray900),
               ),
               const SizedBox(height: 2),
               Text(
                 isLate ? 'Trễ lịch tiêm chủng' : 'Đủ lịch tiêm chủng',
                 style: TextStyle(
-                  fontSize: 11.5, fontWeight: FontWeight.w700,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
                   color: isLate ? accentRed : primaryDark,
                 ),
               ),
               const SizedBox(height: 12),
               Container(height: 1, color: gray200),
               const SizedBox(height: 10),
-              _infoRow('Ngày sinh', '${formatDate(child.dateOfBirth)} · ${child.gender}'),
+              _infoRow('Ngày sinh',
+                  '${formatDate(child.dateOfBirth)} · ${child.gender}'),
               const SizedBox(height: 5),
               _infoRow('Thôn bản', '${child.village}, xã ${child.commune}'),
               const SizedBox(height: 5),
-              _infoRow('Phụ huynh', '${child.motherName} · ${child.motherPhone}'),
+              _infoRow(
+                  'Phụ huynh', '${child.motherName} · ${child.motherPhone}'),
             ],
           ),
         ),
@@ -98,7 +116,8 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
               const SizedBox(height: 6),
               Text(
                 'Mã hồ sơ: ${child.qrCode}',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: gray600),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 12, color: gray600),
               ),
               const SizedBox(height: 2),
               const Text(
@@ -132,10 +151,17 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
               Expanded(
                 child: RichText(
                   text: TextSpan(
-                    style: TextStyle(fontSize: 12, color: isLate ? accentRed : gray700, height: 1.4),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: isLate ? accentRed : gray700,
+                        height: 1.4),
                     children: [
-                      const TextSpan(text: 'Mũi tiếp theo: ', style: TextStyle(fontWeight: FontWeight.w700)),
-                      TextSpan(text: '${child.nextVaccine}\n', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      const TextSpan(
+                          text: 'Mũi tiếp theo: ',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      TextSpan(
+                          text: '${child.nextVaccine}\n',
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
                       TextSpan(
                         text: isLate
                             ? 'Đã trễ ${child.lateDays} ngày (Dự kiến: ${formatDate(child.nextDue)})'
@@ -219,9 +245,13 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.chevron_left_rounded, color: primaryBlue, size: 22),
+                        Icon(Icons.chevron_left_rounded,
+                            color: primaryBlue, size: 22),
                         Text('Trở về',
-                            style: TextStyle(color: primaryBlue, fontSize: 13, fontWeight: FontWeight.w600)),
+                            style: TextStyle(
+                                color: primaryBlue,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -230,20 +260,27 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
                   child: Text(
                     'Sổ tiêm của con',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: gray900),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: gray900),
                   ),
                 ),
                 // Role badge
                 Container(
                   margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: primaryLight,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     'Phụ huynh',
-                    style: TextStyle(color: primaryDark, fontSize: 11, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        color: primaryDark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -266,7 +303,12 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
             color: isActive ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             boxShadow: isActive
-                ? [const BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(0, 1))]
+                ? [
+                    const BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 3,
+                        offset: Offset(0, 1))
+                  ]
                 : null,
           ),
           child: Text(
@@ -288,12 +330,14 @@ class _ParentChildDetailScreenState extends State<ParentChildDetailScreen> {
       children: [
         SizedBox(
           width: 72,
-          child: Text(label, style: const TextStyle(color: gray500, fontSize: 11.5)),
+          child: Text(label,
+              style: const TextStyle(color: gray500, fontSize: 11.5)),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(color: gray900, fontSize: 11.5, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                color: gray900, fontSize: 11.5, fontWeight: FontWeight.w600),
             textAlign: TextAlign.right,
           ),
         ),

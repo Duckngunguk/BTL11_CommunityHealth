@@ -1,4 +1,5 @@
 import '../models/models.dart';
+import '../utils/password_hasher.dart';
 
 final demoSchedules = <VaccineSchedule>[
   const VaccineSchedule(
@@ -89,6 +90,86 @@ final demoMedicationSchedules = <MedicationSchedule>[
   ),
 ];
 
+final _demoNow = DateTime.now();
+
+final demoChildren = <ChildProfile>[
+  ChildProfile(
+    id: 'CH001',
+    qrCode: 'COMMUNITY-HEALTH-CH001',
+    fullName: 'Vàng Thị Mai',
+    dateOfBirth: DateTime(_demoNow.year - 1, 10, 12),
+    gender: 'Nữ',
+    motherName: 'Vàng Thị Hoa',
+    motherPhone: '0988 111 222',
+    village: 'Tả Chải',
+    commune: 'Tả Phìn',
+    district: 'Sa Pa',
+    status: ChildVaccinationStatus.late,
+    nextVaccine: 'DPT 3',
+    nextDue: _demoNow.subtract(const Duration(days: 12)),
+    lateDays: 12,
+    vaccinations: [
+      VaccinationRecord(
+        id: 'VAC-CH001-DPT2',
+        childId: 'CH001',
+        vaccineId: 'DPT-2',
+        vaccineName: 'DPT',
+        doseNumber: 2,
+        lotNumber: 'DPT2408',
+        administeredBy: 'healthworker.demo',
+        administeredAt: _demoNow.subtract(const Duration(days: 48)),
+        syncStatus: VaccinationSyncStatus.synced,
+      ),
+    ],
+  ),
+  ChildProfile(
+    id: 'CH002',
+    qrCode: 'COMMUNITY-HEALTH-CH002',
+    fullName: 'Giàng A Minh',
+    dateOfBirth: DateTime(_demoNow.year - 1, 12, 5),
+    gender: 'Nam',
+    motherName: 'Giàng A Sáng',
+    motherPhone: '0912 345 678',
+    village: 'Sả Xéng',
+    commune: 'Tả Phìn',
+    district: 'Sa Pa',
+    status: ChildVaccinationStatus.dueSoon,
+    nextVaccine: 'Sởi 1',
+    nextDue: _demoNow.add(const Duration(days: 7)),
+    lateDays: 0,
+    vaccinations: [
+      VaccinationRecord(
+        id: 'VAC-CH002-DPT3',
+        childId: 'CH002',
+        vaccineId: 'DPT-3',
+        vaccineName: 'DPT',
+        doseNumber: 3,
+        lotNumber: 'DPT2410',
+        administeredBy: 'healthworker.demo',
+        administeredAt: _demoNow.subtract(const Duration(days: 70)),
+        syncStatus: VaccinationSyncStatus.synced,
+      ),
+    ],
+  ),
+  ChildProfile(
+    id: 'CH003',
+    qrCode: 'COMMUNITY-HEALTH-CH003',
+    fullName: 'Lý Thị An',
+    dateOfBirth: DateTime(_demoNow.year - 2, 4, 20),
+    gender: 'Nữ',
+    motherName: 'Lý Thị Lan',
+    motherPhone: '0977 456 789',
+    village: 'Hầu Chư Ngài',
+    commune: 'Hầu Thào',
+    district: 'Sa Pa',
+    status: ChildVaccinationStatus.complete,
+    nextVaccine: 'Viêm não Nhật Bản',
+    nextDue: _demoNow.add(const Duration(days: 40)),
+    lateDays: 0,
+    vaccinations: const [],
+  ),
+];
+
 final demoUsers = <UserModel>[
   UserModel(
     id: 'USR-001',
@@ -100,7 +181,7 @@ final demoUsers = <UserModel>[
     status: UserAccountStatus.active,
     createdAt: DateTime(2026, 1, 15),
     assignedCommune: 'Tả Phìn',
-    password: '123456',
+    passwordHash: PasswordHasher.hash('123456'),
   ),
   UserModel(
     id: 'USR-002',
@@ -111,7 +192,8 @@ final demoUsers = <UserModel>[
     role: UserRole.parent,
     status: UserAccountStatus.active,
     createdAt: DateTime(2026, 3, 10),
-    password: '123456',
+    passwordHash: PasswordHasher.hash('123456'),
+    linkedChildIds: const ['CH002'],
   ),
   UserModel(
     id: 'USR-003',
@@ -122,7 +204,7 @@ final demoUsers = <UserModel>[
     role: UserRole.admin,
     status: UserAccountStatus.active,
     createdAt: DateTime(2025, 11, 1),
-    password: '123456',
+    passwordHash: PasswordHasher.hash('123456'),
   ),
   UserModel(
     id: 'USR-004',
@@ -134,7 +216,7 @@ final demoUsers = <UserModel>[
     status: UserAccountStatus.pendingApproval,
     createdAt: DateTime(2026, 8, 11),
     assignedCommune: 'Hầu Thào',
-    password: '123456',
+    passwordHash: PasswordHasher.hash('123456'),
   ),
   UserModel(
     id: 'USR-005',
@@ -146,6 +228,6 @@ final demoUsers = <UserModel>[
     status: UserAccountStatus.pendingApproval,
     createdAt: DateTime(2026, 8, 11),
     assignedCommune: 'San Sả Hồ',
-    password: '123456',
+    passwordHash: PasswordHasher.hash('123456'),
   ),
 ];

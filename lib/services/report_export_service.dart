@@ -1,11 +1,14 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/models.dart';
+import '../utils/file_download.dart';
 
 class ReportExportService {
   ReportExportService._internal();
@@ -23,16 +26,30 @@ class ReportExportService {
     final List<List<dynamic>> rows = [
       // Header
       [
-        'Mã trẻ', 'Họ và tên', 'Ngày sinh', 'Giới tính',
-        'Tên mẹ', 'SĐT mẹ', 'Thôn bản', 'Xã', 'Huyện',
-        'Trạng thái tiêm', 'Mũi tiêm tiếp theo', 'Hạn tiêm', 'Trễ (ngày)',
+        'Mã trẻ',
+        'Họ và tên',
+        'Ngày sinh',
+        'Giới tính',
+        'Tên mẹ',
+        'SĐT mẹ',
+        'Thôn bản',
+        'Xã',
+        'Huyện',
+        'Trạng thái tiêm',
+        'Mũi tiêm tiếp theo',
+        'Hạn tiêm',
+        'Trễ (ngày)',
       ],
     ];
 
     final filtered = filterStatus != null
         ? children.where((c) {
-            if (filterStatus == 'late') return c.status == ChildVaccinationStatus.late;
-            if (filterStatus == 'dueSoon') return c.status == ChildVaccinationStatus.dueSoon;
+            if (filterStatus == 'late') {
+              return c.status == ChildVaccinationStatus.late;
+            }
+            if (filterStatus == 'dueSoon') {
+              return c.status == ChildVaccinationStatus.dueSoon;
+            }
             return true;
           }).toList()
         : children;
@@ -55,16 +72,22 @@ class ReportExportService {
       ]);
     }
 
-    final csv = const ListToCsvConverter().convert(rows);
+    // BOM giúp Excel trên Windows nhận đúng UTF-8 và dấu tiếng Việt.
+    final csv = '\uFEFF${const ListToCsvConverter().convert(rows)}';
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = 'bao_cao_tiem_chung_$timestamp.csv';
 
     if (kIsWeb) {
-      // Trên Web: dùng Printing để tải file trực tiếp
-      debugPrint('📥 [Export CSV - Web] Xuất ${filtered.length} bản ghi');
-      return csv;
+      downloadBytes(
+        Uint8List.fromList(utf8.encode(csv)),
+        fileName,
+        'text/csv;charset=utf-8',
+      );
+      debugPrint('📥 [Export CSV - Web] Đã tải $fileName');
+      return fileName;
     } else {
       final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final file = File('${dir.path}/bao_cao_tiem_chung_$timestamp.csv');
+      final file = File('${dir.path}/$fileName');
       await file.writeAsString(csv);
       debugPrint('📥 [Export CSV] Đã lưu: ${file.path}');
       return file.path;
@@ -76,21 +99,22 @@ class ReportExportService {
   // ─────────────────────────────────────────────────────────────────
 
   /// Xuất báo cáo danh sách trẻ trễ tiêm ra PDF
-  Future<void> exportLatePdfReport({
+  Future<String?> exportLatePdfReport({
     required List<ChildProfile> children,
     required String reporterName,
     required String commune,
   }) async {
     final pdf = pw.Document();
-    final lateChildren = children
-        .where((c) => c.status == ChildVaccinationStatus.late)
-        .toList();
+    final theme = await _loadVietnamesePdfTheme();
+    final lateChildren =
+        children.where((c) => c.status == ChildVaccinationStatus.late).toList();
     final dueSoonChildren = children
         .where((c) => c.status == ChildVaccinationStatus.dueSoon)
         .toList();
 
     pdf.addPage(
       pw.MultiPage(
+        theme: theme,
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
         header: (context) => _buildPdfHeader(commune, reporterName),
@@ -106,9 +130,12 @@ class ReportExportService {
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
               children: [
-                _summaryCell('Tổng số trẻ', '${children.length}', PdfColors.blue700),
-                _summaryCell('Trễ tiêm (Đỏ)', '${lateChildren.length}', PdfColors.red700),
-                _summaryCell('Sắp tiêm (Vàng)', '${dueSoonChildren.length}', PdfColors.orange700),
+                _summaryCell(
+                    'Tổng số trẻ', '${children.length}', PdfColors.blue700),
+                _summaryCell('Trễ tiêm (Đỏ)', '${lateChildren.length}',
+                    PdfColors.red700),
+                _summaryCell('Sắp tiêm (Vàng)', '${dueSoonChildren.length}',
+                    PdfColors.orange700),
               ],
             ),
           ),
@@ -117,7 +144,7 @@ class ReportExportService {
           // Bảng trẻ TRỄ tiêm
           if (lateChildren.isNotEmpty) ...[
             pw.Text(
-              '⚠️ DANH SÁCH TRẺ TRỄ LỊCH TIÊM CHỦNG (${lateChildren.length} trẻ)',
+              'DANH SÁCH TRẺ TRỄ LỊCH TIÊM CHỦNG (${lateChildren.length} trẻ)',
               style: pw.TextStyle(
                 fontWeight: pw.FontWeight.bold,
                 fontSize: 13,
@@ -132,7 +159,7 @@ class ReportExportService {
           // Bảng trẻ SẮP tiêm
           if (dueSoonChildren.isNotEmpty) ...[
             pw.Text(
-              '🔔 DANH SÁCH TRẺ SẮP ĐẾN LỊCH TIÊM (${dueSoonChildren.length} trẻ)',
+              'DANH SÁCH TRẺ SẮP ĐẾN LỊCH TIÊM (${dueSoonChildren.length} trẻ)',
               style: pw.TextStyle(
                 fontWeight: pw.FontWeight.bold,
                 fontSize: 13,
@@ -154,10 +181,12 @@ class ReportExportService {
       ),
     );
 
-    await Printing.layoutPdf(
+    final fileName = 'BaoCaoTiemChung_${_safeFileName(commune)}.pdf';
+    final completed = await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'BaoCaoTiemChung_$commune.pdf',
+      name: fileName,
     );
+    return completed ? fileName : null;
   }
 
   /// Xuất báo cáo tình hình dịch bệnh PDF
@@ -167,12 +196,15 @@ class ReportExportService {
     required String reporterName,
   }) async {
     final pdf = pw.Document();
+    final theme = await _loadVietnamesePdfTheme();
 
     pdf.addPage(
       pw.MultiPage(
+        theme: theme,
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
-        header: (context) => _buildPdfHeader(commune, reporterName, title: 'Báo cáo Giám sát Dịch bệnh'),
+        header: (context) => _buildPdfHeader(commune, reporterName,
+            title: 'Báo cáo Giám sát Dịch bệnh'),
         footer: (context) => _buildPdfFooter(context),
         build: (context) => [
           pw.Text(
@@ -181,7 +213,15 @@ class ReportExportService {
           ),
           pw.SizedBox(height: 10),
           pw.TableHelper.fromTextArray(
-            headers: ['STT', 'Bệnh nhân', 'Loại bệnh', 'Thôn/Xã', 'Ngày báo', 'Trạng thái', 'Mức độ'],
+            headers: [
+              'STT',
+              'Bệnh nhân',
+              'Loại bệnh',
+              'Thôn/Xã',
+              'Ngày báo',
+              'Trạng thái',
+              'Mức độ'
+            ],
             data: List.generate(reports.length, (i) {
               final r = reports[i];
               return [
@@ -195,7 +235,8 @@ class ReportExportService {
               ];
             }),
             border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            headerStyle:
+                pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
             cellStyle: const pw.TextStyle(fontSize: 9),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.red50),
           ),
@@ -280,7 +321,16 @@ class ReportExportService {
 
   pw.Widget _buildChildTable(List<ChildProfile> children) {
     return pw.TableHelper.fromTextArray(
-      headers: ['STT', 'Họ và tên', 'Ngày sinh', 'Thôn bản', 'Tên mẹ', 'SĐT mẹ', 'Mũi tiêm cần', 'Trễ (ngày)'],
+      headers: [
+        'STT',
+        'Họ và tên',
+        'Ngày sinh',
+        'Thôn bản',
+        'Tên mẹ',
+        'SĐT mẹ',
+        'Mũi tiêm cần',
+        'Trễ (ngày)'
+      ],
       data: List.generate(children.length, (i) {
         final c = children[i];
         return [
@@ -290,7 +340,7 @@ class ReportExportService {
           c.village,
           c.motherName,
           c.motherPhone,
-          c.nextVaccine ?? '—',
+          c.nextVaccine,
           c.lateDays > 0 ? '${c.lateDays} ngày' : 'Sắp đến',
         ];
       }),
@@ -305,10 +355,12 @@ class ReportExportService {
   pw.Widget _summaryCell(String label, String value, PdfColor color) {
     return pw.Column(
       children: [
-        pw.Text(label, style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+        pw.Text(label,
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
         pw.Text(
           value,
-          style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: color),
+          style: pw.TextStyle(
+              fontSize: 20, fontWeight: pw.FontWeight.bold, color: color),
         ),
       ],
     );
@@ -332,26 +384,37 @@ class ReportExportService {
     required String reporterName,
   }) async {
     final pdf = pw.Document();
-    final lateChildren = children.where((c) => c.status == ChildVaccinationStatus.late).toList();
-    final dueSoonChildren = children.where((c) => c.status == ChildVaccinationStatus.dueSoon).toList();
+    final theme = await _loadVietnamesePdfTheme();
+    final lateChildren =
+        children.where((c) => c.status == ChildVaccinationStatus.late).toList();
+    final dueSoonChildren = children
+        .where((c) => c.status == ChildVaccinationStatus.dueSoon)
+        .toList();
 
     pdf.addPage(
       pw.MultiPage(
+        theme: theme,
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
         header: (ctx) => _buildPdfHeader(commune, reporterName),
         footer: (ctx) => _buildPdfFooter(ctx),
         build: (ctx) => [
           if (lateChildren.isNotEmpty) ...[
-            pw.Text('⚠️ DANH SÁCH TRẺ TRỄ LỊCH TIÊM CHỦNG',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13, color: PdfColors.red700)),
+            pw.Text('DANH SÁCH TRẺ TRỄ LỊCH TIÊM CHỦNG',
+                style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 13,
+                    color: PdfColors.red700)),
             pw.SizedBox(height: 8),
             _buildChildTable(lateChildren),
             pw.SizedBox(height: 16),
           ],
           if (dueSoonChildren.isNotEmpty) ...[
-            pw.Text('🔔 DANH SÁCH TRẺ SẮP ĐẾN LỊCH TIÊM',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13, color: PdfColors.orange700)),
+            pw.Text('DANH SÁCH TRẺ SẮP ĐẾN LỊCH TIÊM',
+                style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 13,
+                    color: PdfColors.orange700)),
             pw.SizedBox(height: 8),
             _buildChildTable(dueSoonChildren),
           ],
@@ -359,5 +422,19 @@ class ReportExportService {
       ),
     );
     return pdf.save();
+  }
+
+  String _safeFileName(String value) {
+    return value.trim().replaceAll(RegExp(r'[^a-zA-Z0-9_-]+'), '_');
+  }
+
+  Future<pw.ThemeData> _loadVietnamesePdfTheme() async {
+    final regularData =
+        await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+    final boldData = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
+    return pw.ThemeData.withFont(
+      base: pw.Font.ttf(regularData),
+      bold: pw.Font.ttf(boldData),
+    );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../firebase_options.dart';
 import '../models/models.dart';
 
 class FirebaseSyncService {
@@ -8,21 +9,33 @@ class FirebaseSyncService {
   static final FirebaseSyncService instance = FirebaseSyncService._internal();
 
   bool _isInitialized = false;
+  bool _initializationAttempted = false;
+  String? _lastError;
 
   bool get isInitialized => _isInitialized;
+  String? get lastError => _lastError;
 
   // Initialize Firebase core and catch failures gracefully to avoid startup crash
-  Future<void> initialize() async {
-    if (_isInitialized) return;
+  Future<bool> initialize() async {
+    if (_isInitialized) return true;
+    if (_initializationAttempted) return false;
+    _initializationAttempted = true;
     try {
       debugPrint('Attempting to initialize Firebase Core...');
-      await Firebase.initializeApp();
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
       _isInitialized = true;
-      debugPrint('✅ Firebase Core successfully initialized.');
+      _lastError = null;
+      debugPrint('Firebase Core successfully initialized.');
+      return true;
     } catch (e) {
       _isInitialized = false;
-      debugPrint('⚠️ Firebase Core failed to initialize (google-services.json likely missing).');
-      debugPrint('Sync engine will operate in SIMULATED Mode. Error: $e');
+      _lastError = e.toString();
+      debugPrint('Firebase unavailable; data remains pending: $e');
+      return false;
     }
   }
 
@@ -30,30 +43,26 @@ class FirebaseSyncService {
   Future<bool> syncVaccinationRecord(VaccinationRecord record) async {
     await initialize();
 
-    if (!_isInitialized) {
-      // Simulated cloud sync delay
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      debugPrint('☁️ [Simulated Cloud Sync] Synced Vaccination Record: ${record.id}');
-      return true;
-    }
+    if (!_isInitialized) return false;
 
     try {
-      debugPrint('🔥 [Firestore Sync] Syncing Vaccination Record: ${record.id}');
+      debugPrint(
+          '🔥 [Firestore Sync] Syncing Vaccination Record: ${record.id}');
       await FirebaseFirestore.instance
           .collection('vaccinations')
           .doc(record.id)
           .set({
-            'id': record.id,
-            'childId': record.childId,
-            'vaccineId': record.vaccineId,
-            'vaccineName': record.vaccineName,
-            'doseNumber': record.doseNumber,
-            'lotNumber': record.lotNumber,
-            'administeredBy': record.administeredBy,
-            'reactions': record.reactions,
-            'administeredAt': record.administeredAt.toIso8601String(),
-            'syncStatus': 'synced',
-          });
+        'id': record.id,
+        'childId': record.childId,
+        'vaccineId': record.vaccineId,
+        'vaccineName': record.vaccineName,
+        'doseNumber': record.doseNumber,
+        'lotNumber': record.lotNumber,
+        'administeredBy': record.administeredBy,
+        'reactions': record.reactions,
+        'administeredAt': record.administeredAt.toIso8601String(),
+        'syncStatus': 'synced',
+      });
       return true;
     } catch (e) {
       debugPrint('❌ [Firestore Sync Error]: $e');
@@ -65,12 +74,7 @@ class FirebaseSyncService {
   Future<bool> syncDiseaseReport(DiseaseReport report) async {
     await initialize();
 
-    if (!_isInitialized) {
-      // Simulated cloud sync delay
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      debugPrint('☁️ [Simulated Cloud Sync] Synced Disease Report: ${report.id}');
-      return true;
-    }
+    if (!_isInitialized) return false;
 
     try {
       debugPrint('🔥 [Firestore Sync] Syncing Disease Report: ${report.id}');
@@ -78,21 +82,21 @@ class FirebaseSyncService {
           .collection('disease_reports')
           .doc(report.id)
           .set({
-            'id': report.id,
-            'childId': report.childId,
-            'patientName': report.patientName,
-            'diseaseType': report.diseaseType,
-            'village': report.village,
-            'commune': report.commune,
-            'district': report.district,
-            'reportedAt': report.reportedAt.toIso8601String(),
-            'reportedBy': report.reportedBy,
-            'symptoms': report.symptoms,
-            'status': report.status,
-            'severity': report.severity.name,
-            'notes': report.notes,
-            'syncStatus': 'synced',
-          });
+        'id': report.id,
+        'childId': report.childId,
+        'patientName': report.patientName,
+        'diseaseType': report.diseaseType,
+        'village': report.village,
+        'commune': report.commune,
+        'district': report.district,
+        'reportedAt': report.reportedAt.toIso8601String(),
+        'reportedBy': report.reportedBy,
+        'symptoms': report.symptoms,
+        'status': report.status,
+        'severity': report.severity.name,
+        'notes': report.notes,
+        'syncStatus': 'synced',
+      });
       return true;
     } catch (e) {
       debugPrint('❌ [Firestore Sync Error]: $e');
@@ -100,16 +104,77 @@ class FirebaseSyncService {
     }
   }
 
+  Future<bool> syncMedicationRecord(MedicationRecord record) async {
+    await initialize();
+    if (!_isInitialized) return false;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('medications')
+          .doc(record.id)
+          .set({...record.toMap(), 'syncStatus': 'synced'});
+      return true;
+    } catch (e) {
+      debugPrint('❌ [Firestore Medication Sync Error]: $e');
+      return false;
+    }
+  }
+
+  /// Creates or updates the child profile stored in Firestore.
+  /// Vaccination and medication records remain in their own collections.
+  Future<bool> syncChild(ChildProfile child) async {
+    await initialize();
+    if (!_isInitialized) return false;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('children')
+          .doc(child.id)
+          .set(child.toMap());
+      return true;
+    } catch (e) {
+      debugPrint('❌ [Firestore Child Sync Error]: $e');
+      return false;
+    }
+  }
+
+  /// Deletes a child and all records belonging to that child atomically.
+  Future<bool> deleteChild(String childId) async {
+    await initialize();
+    if (!_isInitialized) return false;
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final vaccinations = await firestore
+          .collection('vaccinations')
+          .where('childId', isEqualTo: childId)
+          .get();
+      final medications = await firestore
+          .collection('medications')
+          .where('childId', isEqualTo: childId)
+          .get();
+      final batch = firestore.batch();
+      batch.delete(firestore.collection('children').doc(childId));
+      for (final document in vaccinations.docs) {
+        batch.delete(document.reference);
+      }
+      for (final document in medications.docs) {
+        batch.delete(document.reference);
+      }
+      await batch.commit();
+      return true;
+    } catch (e) {
+      debugPrint('❌ [Firestore Child Delete Error]: $e');
+      return false;
+    }
+  }
+
   // Upload all vaccination records in a SyncBatch using Firestore WriteBatch for atomicity
-  Future<bool> syncBatchUpload(SyncBatch batch, List<VaccinationRecord> records) async {
+  Future<bool> syncBatchUpload(
+      SyncBatch batch, List<VaccinationRecord> records) async {
     await initialize();
 
-    if (!_isInitialized) {
-      // Simulated cloud sync delay
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-      debugPrint('☁️ [Simulated Cloud Batch Sync] Uploaded Batch: ${batch.id} with ${records.length} records');
-      return true;
-    }
+    if (!_isInitialized) return false;
 
     try {
       debugPrint('🔥 [Firestore Batch Sync] Syncing Batch: ${batch.id}');
@@ -139,7 +204,8 @@ class FirebaseSyncService {
 
       // Commit the batch transaction
       await firestoreBatch.commit();
-      debugPrint('🔥 [Firestore Batch Sync] Batch ${batch.id} committed successfully.');
+      debugPrint(
+          '🔥 [Firestore Batch Sync] Batch ${batch.id} committed successfully.');
       return true;
     } catch (e) {
       debugPrint('❌ [Firestore Batch Sync Error]: $e');
@@ -151,19 +217,15 @@ class FirebaseSyncService {
   Future<bool> syncUser(UserModel user) async {
     await initialize();
 
-    if (!_isInitialized) {
-      // Simulated cloud sync delay
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      debugPrint('☁️ [Simulated Cloud Sync] Synced User: ${user.username}');
-      return true;
-    }
+    if (!_isInitialized) return false;
 
     try {
       debugPrint('🔥 [Firestore Sync] Syncing User: ${user.username}');
+      final cloudData = user.toMap()..remove('token');
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.id)
-          .set(user.toMap());
+          .set(cloudData);
       return true;
     } catch (e) {
       debugPrint('❌ [Firestore Sync User Error]: $e');
@@ -175,11 +237,7 @@ class FirebaseSyncService {
   Future<bool> syncAuditLog(SystemAuditLog log) async {
     await initialize();
 
-    if (!_isInitialized) {
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      debugPrint('☁️ [Simulated Cloud Sync] Synced Audit Log: ${log.id}');
-      return true;
-    }
+    if (!_isInitialized) return false;
 
     try {
       debugPrint('🔥 [Firestore Sync] Syncing Audit Log: ${log.id}');
@@ -201,7 +259,8 @@ class FirebaseSyncService {
 
     try {
       debugPrint('🔥 [Firestore Fetch] Fetching Users...');
-      final snapshot = await FirebaseFirestore.instance.collection('users').get();
+      final snapshot =
+          await FirebaseFirestore.instance.collection('users').get();
       return snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList();
     } catch (e) {
       debugPrint('❌ [Firestore Fetch Users Error]: $e');
@@ -216,12 +275,19 @@ class FirebaseSyncService {
 
     try {
       debugPrint('🔥 [Firestore Fetch] Fetching Children & Records...');
-      final snapshot = await FirebaseFirestore.instance.collection('children').get();
-      final vacsSnapshot = await FirebaseFirestore.instance.collection('vaccinations').get();
-      final medsSnapshot = await FirebaseFirestore.instance.collection('medications').get();
+      final snapshot =
+          await FirebaseFirestore.instance.collection('children').get();
+      final vacsSnapshot =
+          await FirebaseFirestore.instance.collection('vaccinations').get();
+      final medsSnapshot =
+          await FirebaseFirestore.instance.collection('medications').get();
 
-      final allVacs = vacsSnapshot.docs.map((doc) => VaccinationRecord.fromMap(doc.data())).toList();
-      final allMeds = medsSnapshot.docs.map((doc) => MedicationRecord.fromMap(doc.data())).toList();
+      final allVacs = vacsSnapshot.docs
+          .map((doc) => VaccinationRecord.fromMap(doc.data()))
+          .toList();
+      final allMeds = medsSnapshot.docs
+          .map((doc) => MedicationRecord.fromMap(doc.data()))
+          .toList();
 
       final List<ChildProfile> list = [];
       for (var doc in snapshot.docs) {
@@ -231,7 +297,8 @@ class FirebaseSyncService {
         final childVacs = allVacs.where((v) => v.childId == childId).toList();
         final childMeds = allMeds.where((m) => m.childId == childId).toList();
 
-        list.add(ChildProfile.fromMap(data, vaccinations: childVacs, medications: childMeds));
+        list.add(ChildProfile.fromMap(data,
+            vaccinations: childVacs, medications: childMeds));
       }
       return list;
     } catch (e) {
@@ -247,8 +314,11 @@ class FirebaseSyncService {
 
     try {
       debugPrint('🔥 [Firestore Fetch] Fetching Disease Reports...');
-      final snapshot = await FirebaseFirestore.instance.collection('disease_reports').get();
-      return snapshot.docs.map((doc) => DiseaseReport.fromMap(doc.data())).toList();
+      final snapshot =
+          await FirebaseFirestore.instance.collection('disease_reports').get();
+      return snapshot.docs
+          .map((doc) => DiseaseReport.fromMap(doc.data()))
+          .toList();
     } catch (e) {
       debugPrint('❌ [Firestore Fetch Disease Reports Error]: $e');
       return [];
@@ -262,8 +332,11 @@ class FirebaseSyncService {
 
     try {
       debugPrint('🔥 [Firestore Fetch] Fetching Audit Logs...');
-      final snapshot = await FirebaseFirestore.instance.collection('audit_logs').get();
-      return snapshot.docs.map((doc) => SystemAuditLog.fromMap(doc.data())).toList();
+      final snapshot =
+          await FirebaseFirestore.instance.collection('audit_logs').get();
+      return snapshot.docs
+          .map((doc) => SystemAuditLog.fromMap(doc.data()))
+          .toList();
     } catch (e) {
       debugPrint('❌ [Firestore Fetch Logs Error]: $e');
       return [];
@@ -273,7 +346,7 @@ class FirebaseSyncService {
   // Delete a user from Firestore
   Future<bool> deleteUser(String userId) async {
     await initialize();
-    if (!_isInitialized) return true;
+    if (!_isInitialized) return false;
 
     try {
       debugPrint('🔥 [Firestore Delete] Deleting User: $userId');
@@ -288,9 +361,10 @@ class FirebaseSyncService {
   // Sync vaccine catalog to Firestore
   Future<bool> syncVaccineSchedule(VaccineSchedule schedule) async {
     await initialize();
-    if (!_isInitialized) return true;
+    if (!_isInitialized) return false;
     try {
-      debugPrint('🔥 [Firestore Sync] Syncing Vaccine Schedule: ${schedule.id}');
+      debugPrint(
+          '🔥 [Firestore Sync] Syncing Vaccine Schedule: ${schedule.id}');
       await FirebaseFirestore.instance
           .collection('vaccine_schedules')
           .doc(schedule.id)
@@ -305,9 +379,10 @@ class FirebaseSyncService {
   // Sync medication catalog to Firestore
   Future<bool> syncMedicationSchedule(MedicationSchedule schedule) async {
     await initialize();
-    if (!_isInitialized) return true;
+    if (!_isInitialized) return false;
     try {
-      debugPrint('🔥 [Firestore Sync] Syncing Medication Schedule: ${schedule.id}');
+      debugPrint(
+          '🔥 [Firestore Sync] Syncing Medication Schedule: ${schedule.id}');
       await FirebaseFirestore.instance
           .collection('medication_schedules')
           .doc(schedule.id)
@@ -325,8 +400,12 @@ class FirebaseSyncService {
     if (!_isInitialized) return [];
     try {
       debugPrint('🔥 [Firestore Fetch] Fetching Vaccine Schedules...');
-      final snapshot = await FirebaseFirestore.instance.collection('vaccine_schedules').get();
-      return snapshot.docs.map((doc) => VaccineSchedule.fromMap(doc.data())).toList();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('vaccine_schedules')
+          .get();
+      return snapshot.docs
+          .map((doc) => VaccineSchedule.fromMap(doc.data()))
+          .toList();
     } catch (e) {
       debugPrint('❌ [Firestore Fetch Vaccines Error]: $e');
       return [];
@@ -339,8 +418,12 @@ class FirebaseSyncService {
     if (!_isInitialized) return [];
     try {
       debugPrint('🔥 [Firestore Fetch] Fetching Medication Schedules...');
-      final snapshot = await FirebaseFirestore.instance.collection('medication_schedules').get();
-      return snapshot.docs.map((doc) => MedicationSchedule.fromMap(doc.data())).toList();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('medication_schedules')
+          .get();
+      return snapshot.docs
+          .map((doc) => MedicationSchedule.fromMap(doc.data()))
+          .toList();
     } catch (e) {
       debugPrint('❌ [Firestore Fetch Medications Error]: $e');
       return [];

@@ -89,5 +89,56 @@ void main() {
       expect(step2.gender, 'Nữ');
       expect(step2.status, ChildVaccinationStatus.late);
     });
+
+    test('local storage round-trip keeps nested vaccination and medication data', () {
+      final child = ChildProfile(
+        id: 'CH-PERSIST',
+        qrCode: 'QR-PERSIST',
+        fullName: 'Persistent Child',
+        dateOfBirth: DateTime(2024, 1, 15),
+        gender: 'Nam',
+        motherName: 'Persistent Parent',
+        motherPhone: '0986123456',
+        village: 'Village',
+        commune: 'Commune',
+        district: 'District',
+        status: ChildVaccinationStatus.dueSoon,
+        nextVaccine: 'DPT 1',
+        nextDue: DateTime(2026, 8, 20),
+        lateDays: 0,
+        vaccinations: [
+          VaccinationRecord(
+            id: 'VAC-PERSIST',
+            childId: 'CH-PERSIST',
+            vaccineId: 'DPT-1',
+            vaccineName: 'DPT',
+            doseNumber: 1,
+            lotNumber: 'LOT-01',
+            administeredBy: 'Worker',
+            administeredAt: DateTime(2026, 8, 14),
+            syncStatus: VaccinationSyncStatus.pending,
+          ),
+        ],
+        medications: [
+          MedicationRecord(
+            id: 'MED-PERSIST',
+            childId: 'CH-PERSIST',
+            medicationId: 'VIT-A',
+            medicationName: 'Vitamin A',
+            dosage: '1 dose',
+            administeredBy: 'Worker',
+            administeredAt: DateTime(2026, 8, 14),
+            syncStatus: VaccinationSyncStatus.pending,
+          ),
+        ],
+      );
+
+      final restored = ChildProfile.fromStorageMap(child.toStorageMap());
+
+      expect(restored.id, child.id);
+      expect(restored.fullName, child.fullName);
+      expect(restored.vaccinations.single.id, 'VAC-PERSIST');
+      expect(restored.medications.single.id, 'MED-PERSIST');
+    });
   });
 }

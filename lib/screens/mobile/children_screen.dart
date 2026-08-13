@@ -68,7 +68,7 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
     );
 
     if (confirm == true) {
-      store.deleteChild(child.id);
+      await store.deleteChild(child.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đã xóa trẻ "${child.fullName}".')),
@@ -289,7 +289,7 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: gray200),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
