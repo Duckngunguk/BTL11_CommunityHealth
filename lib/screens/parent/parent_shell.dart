@@ -20,6 +20,18 @@ class ParentShell extends StatefulWidget {
 
 class _ParentShellState extends State<ParentShell> {
   int _index = 0;
+  bool _initialCloudRefreshRequested = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialCloudRefreshRequested) return;
+    _initialCloudRefreshRequested = true;
+    Future<void>.microtask(() async {
+      if (!mounted) return;
+      await AppScope.of(context).refreshFromCloud();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

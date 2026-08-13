@@ -17,6 +17,20 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   String _selectedFilter = 'all'; // 'all', 'late', 'complete'
   bool _notifBannerDismissed = false;
 
+  Future<void> _refreshFromCloud(AppStore store) async {
+    final success = await store.refreshFromCloud();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Đã tải dữ liệu mới nhất từ cán bộ y tế.'
+              : 'Chưa tải được dữ liệu. Hãy kiểm tra mạng và quyền Firestore.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
@@ -147,6 +161,20 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                         color: gray900),
                   ),
                 ),
+                IconButton(
+                  tooltip: 'Tải dữ liệu mới nhất',
+                  onPressed: store.isRefreshingFromCloud
+                      ? null
+                      : () => _refreshFromCloud(store),
+                  icon: store.isRefreshingFromCloud
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.sync_rounded,
+                          color: primaryDark, size: 21),
+                ),
                 // Notification bell icon
                 Container(
                   width: 36,
@@ -165,277 +193,285 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
           // ── Main Scrollable Body ────────────────────────────
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // ── 3. Green Parent Card ──────────────────────────
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF123C3A),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: const [appSurfaceShadow],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'PHỤ HUYNH BẢN',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFA7F3D0),
-                          letterSpacing: 0.05,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        parentName.startsWith('Mẹ') ||
-                                parentName.startsWith('Bố') ||
-                                parentName.startsWith('Phụ huynh')
-                            ? parentName
-                            : (parentName.toLowerCase().contains('bính') ||
-                                    parentName.toLowerCase().contains('sáng') ||
-                                    parentName.toLowerCase().contains('đức') ||
-                                    parentName.toLowerCase().contains('bố')
-                                ? 'Bố $parentName'
-                                : 'Mẹ $parentName'),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Gia đình đang theo dõi sổ tiêm của ${children.length} con',
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Passport QR pill button
-                      GestureDetector(
-                        onTap: () {
-                          if (children.isNotEmpty) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => ParentChildDetailScreen(
-                                    childId: children.first.id),
-                              ),
-                            );
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.6)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.badge_outlined,
-                                  color: Colors.white, size: 16),
-                              SizedBox(width: 6),
-                              Text(
-                                'Hộ chiếu tiêm chủng (QR)',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // ── 3.5. Detailed Vaccination Alert & Guidance Card (ĐỊA ĐIỂM & THỜI GIAN TIÊM) ──
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: hasLateChild
-                        ? const Color(0xFFFEF2F2)
-                        : const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: hasLateChild
-                          ? const Color(0xFFFCA5A5)
-                          : const Color(0xFFBFDBFE),
+            child: RefreshIndicator(
+              onRefresh: () => _refreshFromCloud(store),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // ── 3. Green Parent Card ──────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF123C3A),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [appSurfaceShadow],
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            hasLateChild
-                                ? Icons.warning_amber_rounded
-                                : Icons.info_outline_rounded,
-                            color: hasLateChild
-                                ? const Color(0xFFDC2626)
-                                : primaryBlue,
-                            size: 22,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'PHỤ HUYNH BẢN',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFA7F3D0),
+                            letterSpacing: 0.05,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              hasLateChild
-                                  ? 'CẢNH BÁO TRỄ TIÊM & HƯỚNG DẪN ĐI TIÊM'
-                                  : 'HƯỚNG DẪN ĐỊA ĐIỂM & THỜI GIAN TIÊM CHỦNG',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w800,
-                                color: hasLateChild
-                                    ? const Color(0xFFDC2626)
-                                    : primaryBlue,
-                                letterSpacing: 0.02,
-                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          parentName.startsWith('Mẹ') ||
+                                  parentName.startsWith('Bố') ||
+                                  parentName.startsWith('Phụ huynh')
+                              ? parentName
+                              : (parentName.toLowerCase().contains('bính') ||
+                                      parentName
+                                          .toLowerCase()
+                                          .contains('sáng') ||
+                                      parentName
+                                          .toLowerCase()
+                                          .contains('đức') ||
+                                      parentName.toLowerCase().contains('bố')
+                                  ? 'Bố $parentName'
+                                  : 'Mẹ $parentName'),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Gia đình đang theo dõi sổ tiêm của ${children.length} con',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Passport QR pill button
+                        GestureDetector(
+                          onTap: () {
+                            if (children.isNotEmpty) {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ParentChildDetailScreen(
+                                      childId: children.first.id),
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.6)),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      if (hasLateChild && lateChild != null) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Text(
-                            'Trẻ ${lateChild.fullName} đang trễ ${lateChild.lateDays} ngày mũi tiêm ${lateChild.nextVaccine}. Đề nghị phụ huynh mang theo sổ tiêm để tiêm bổ sung sớm.',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF991B1B),
-                              fontWeight: FontWeight.w700,
-                              height: 1.4,
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.badge_outlined,
+                                    color: Colors.white, size: 16),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Hộ chiếu tiêm chủng (QR)',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ],
-                      Container(
-                          height: 1,
-                          color: hasLateChild
-                              ? const Color(0xFFFECACA)
-                              : const Color(0xFFDBEAFE)),
-                      const SizedBox(height: 10),
-                      _guidanceRow(
-                        icon: Icons.location_on_outlined,
-                        title: 'Địa điểm tiêm:',
-                        content:
-                            'Trạm Y tế xã Tả Phìn (hoặc Nhà văn hóa Bản Nậm Lùng đối với điểm tiêm lưu động)',
-                      ),
-                      const SizedBox(height: 8),
-                      _guidanceRow(
-                        icon: Icons.access_time_rounded,
-                        title: 'Thời gian tiêm:',
-                        content:
-                            'Sáng thứ 2 đến thứ 6 (07h30 – 11h00). Lịch tiêm tập trung: Ngày 10 và 12 hàng tháng.',
-                      ),
-                      const SizedBox(height: 8),
-                      _guidanceRow(
-                        icon: Icons.assignment_outlined,
-                        title: 'Giấy tờ mang theo:',
-                        content:
-                            'Sổ tiêm chủng cá nhân của trẻ & Mã QR hồ sơ trên ứng dụng',
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 14),
 
-                // ── 4. SỔ TIÊM & LỊCH CỦA CÁC CON ───────────────
-                const SectionLabel('SỔ TIÊM & LỊCH CỦA CÁC CON'),
-
-                // Filter chips row
-                Row(
-                  children: [
-                    _buildFilterChip('Tất cả con', 'all'),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('Trễ hẹn', 'late'),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('Đã tiêm đủ', 'complete'),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Children Card List
-                if (filteredChildren.isEmpty)
+                  // ── 3.5. Detailed Vaccination Alert & Guidance Card (ĐỊA ĐIỂM & THỜI GIAN TIÊM) ──
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: gray200),
+                      color: hasLateChild
+                          ? const Color(0xFFFEF2F2)
+                          : const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: hasLateChild
+                            ? const Color(0xFFFCA5A5)
+                            : const Color(0xFFBFDBFE),
+                      ),
                     ),
-                    child: const Center(
-                      child: Text('Không có dữ liệu con trong danh mục này.',
-                          style: TextStyle(color: gray500, fontSize: 13)),
-                    ),
-                  )
-                else
-                  ...filteredChildren
-                      .map((child) => _buildChildCard(context, child)),
-
-                const SizedBox(height: 16),
-
-                // ── 5. Alert Box: CHƯA XÁC ĐỊNH - DỮ LIỆU CHƯA ĐỒNG BỘ ─────
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF94A3B8),
-                              shape: BoxShape.circle,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              hasLateChild
+                                  ? Icons.warning_amber_rounded
+                                  : Icons.info_outline_rounded,
+                              color: hasLateChild
+                                  ? const Color(0xFFDC2626)
+                                  : primaryBlue,
+                              size: 22,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Expanded(
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                hasLateChild
+                                    ? 'CẢNH BÁO TRỄ TIÊM & HƯỚNG DẪN ĐI TIÊM'
+                                    : 'HƯỚNG DẪN ĐỊA ĐIỂM & THỜI GIAN TIÊM CHỦNG',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: hasLateChild
+                                      ? const Color(0xFFDC2626)
+                                      : primaryBlue,
+                                  letterSpacing: 0.02,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (hasLateChild && lateChild != null) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
                             child: Text(
-                              'CHƯA XÁC ĐỊNH - DỮ LIỆU CHƯA ĐỒNG BỘ',
-                              style: TextStyle(
+                              'Trẻ ${lateChild.fullName} đang trễ ${lateChild.lateDays} ngày mũi tiêm ${lateChild.nextVaccine}. Đề nghị phụ huynh mang theo sổ tiêm để tiêm bổ sung sớm.',
+                              style: const TextStyle(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF475569),
-                                letterSpacing: 0.03,
+                                color: Color(0xFF991B1B),
+                                fontWeight: FontWeight.w700,
+                                height: 1.4,
                               ),
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Hệ thống phát hiện có dữ liệu tiêm chủng ngoại tuyến chưa được đồng bộ đầy đủ lên Cloud. Vui lòng bấm đồng bộ từ máy Cán bộ y tế để cập nhật trạng thái chính xác.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF475569),
-                          height: 1.45,
+                        Container(
+                            height: 1,
+                            color: hasLateChild
+                                ? const Color(0xFFFECACA)
+                                : const Color(0xFFDBEAFE)),
+                        const SizedBox(height: 10),
+                        _guidanceRow(
+                          icon: Icons.location_on_outlined,
+                          title: 'Địa điểm tiêm:',
+                          content:
+                              'Trạm Y tế xã Tả Phìn (hoặc Nhà văn hóa Bản Nậm Lùng đối với điểm tiêm lưu động)',
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        _guidanceRow(
+                          icon: Icons.access_time_rounded,
+                          title: 'Thời gian tiêm:',
+                          content:
+                              'Sáng thứ 2 đến thứ 6 (07h30 – 11h00). Lịch tiêm tập trung: Ngày 10 và 12 hàng tháng.',
+                        ),
+                        const SizedBox(height: 8),
+                        _guidanceRow(
+                          icon: Icons.assignment_outlined,
+                          title: 'Giấy tờ mang theo:',
+                          content:
+                              'Sổ tiêm chủng cá nhân của trẻ & Mã QR hồ sơ trên ứng dụng',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── 4. SỔ TIÊM & LỊCH CỦA CÁC CON ───────────────
+                  const SectionLabel('SỔ TIÊM & LỊCH CỦA CÁC CON'),
+
+                  // Filter chips row
+                  Row(
+                    children: [
+                      _buildFilterChip('Tất cả con', 'all'),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Trễ hẹn', 'late'),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Đã tiêm đủ', 'complete'),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-              ],
+                  const SizedBox(height: 12),
+
+                  // Children Card List
+                  if (filteredChildren.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: gray200),
+                      ),
+                      child: const Center(
+                        child: Text('Không có dữ liệu con trong danh mục này.',
+                            style: TextStyle(color: gray500, fontSize: 13)),
+                      ),
+                    )
+                  else
+                    ...filteredChildren
+                        .map((child) => _buildChildCard(context, child)),
+
+                  const SizedBox(height: 16),
+
+                  // ── 5. Alert Box: CHƯA XÁC ĐỊNH - DỮ LIỆU CHƯA ĐỒNG BỘ ─────
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF94A3B8),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'CHƯA XÁC ĐỊNH - DỮ LIỆU CHƯA ĐỒNG BỘ',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF475569),
+                                  letterSpacing: 0.03,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Hệ thống phát hiện có dữ liệu tiêm chủng ngoại tuyến chưa được đồng bộ đầy đủ lên Cloud. Vui lòng bấm đồng bộ từ máy Cán bộ y tế để cập nhật trạng thái chính xác.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF475569),
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ],

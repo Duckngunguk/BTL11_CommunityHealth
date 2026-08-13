@@ -18,7 +18,9 @@ class AppStore extends ChangeNotifier {
     ready = _initData().whenComplete(() {
       isInitializing = false;
       notifyListeners();
-      if (isOnline && pendingCount > 0) {
+      if (isOnline &&
+          pendingCount > 0 &&
+          currentUser?.role != UserRole.parent) {
         syncPending();
       }
     });
@@ -49,7 +51,10 @@ class AppStore extends ChangeNotifier {
       final initiallyOnline =
           initialResults.any((result) => result != ConnectivityResult.none);
       setOnline(initiallyOnline);
-      if (!isInitializing && initiallyOnline && pendingCount > 0) {
+      if (!isInitializing &&
+          initiallyOnline &&
+          pendingCount > 0 &&
+          currentUser?.role != UserRole.parent) {
         await syncPending();
       }
     } catch (e) {
@@ -60,7 +65,11 @@ class AppStore extends ChangeNotifier {
       final hasConnection =
           results.any((result) => result != ConnectivityResult.none);
       setOnline(hasConnection);
-      if (!isInitializing && hasConnection && pendingCount > 0) {
+      if (!isInitializing &&
+          hasConnection &&
+          currentUser?.role == UserRole.parent) {
+        refreshFromCloud();
+      } else if (!isInitializing && hasConnection && pendingCount > 0) {
         debugPrint('Connection restored; syncing pending data...');
         syncPending();
       }
@@ -85,11 +94,12 @@ class AppStore extends ChangeNotifier {
   static const _auditLogsStorageKey = 'storage_audit_logs';
   static const _syncStateStorageKey = 'storage_sync_state';
 
-  bool _cloudDataDirty = true;
+  bool _cloudDataDirty = false;
   final Set<String> _pendingDeletedChildIds = <String>{};
 
   bool get isCloudConnected => FirebaseSyncService.instance.isInitialized;
   String? get cloudSyncError => FirebaseSyncService.instance.lastError;
+  bool isRefreshingFromCloud = false;
 
   UserModel? _currentUser;
   UserModel? get currentUser => _currentUser;
@@ -116,15 +126,24 @@ class AppStore extends ChangeNotifier {
   List<ChildProfile> get currentUserChildren {
     if (currentUser?.role != UserRole.parent) return children;
     final linkedIds = currentUser!.linkedChildIds.toSet();
+    final parentPhone = _normalizePhone(currentUser!.phone);
     return children
-        .where((child) => linkedIds.contains(child.id))
+        .where(
+          (child) =>
+              linkedIds.contains(child.id) ||
+              (parentPhone.isNotEmpty &&
+                  _normalizePhone(child.motherPhone) == parentPhone),
+        )
         .toList(growable: false);
   }
 
   bool canCurrentUserAccessChild(String childId) {
     if (currentUser?.role != UserRole.parent) return true;
-    return currentUser!.linkedChildIds.contains(childId);
+    return currentUserChildren.any((child) => child.id == childId);
   }
+
+  static String _normalizePhone(String value) =>
+      value.replaceAll(RegExp(r'\D'), '');
 
   // Initialize data from SQLite, fallback to empty data if it fails
   Future<void> _initData() async {
@@ -145,67 +164,17 @@ class AppStore extends ChangeNotifier {
       diseaseReports = dbReports;
       auditLogs = dbLogs;
 
-      // If we are on Web or Online, fetch real data from Firestore
-      if (kIsWeb || isOnline) {
-        debugPrint('🌐 Fetching real data from Firestore on startup...');
-        try {
-          final firestoreUsers =
-              await FirebaseSyncService.instance.fetchUsers();
-          final firestoreChildren =
-              await FirebaseSyncService.instance.fetchChildren();
-          final firestoreReports =
-              await FirebaseSyncService.instance.fetchDiseaseReports();
-          final firestoreLogs =
-              await FirebaseSyncService.instance.fetchAuditLogs();
-
-          final firestoreVaccines =
-              await FirebaseSyncService.instance.fetchVaccineSchedules();
-          final firestoreMeds =
-              await FirebaseSyncService.instance.fetchMedicationSchedules();
-
-          if (firestoreUsers.isNotEmpty) {
-            users = firestoreUsers;
-          }
-          if (firestoreChildren.isNotEmpty) {
-            children = firestoreChildren;
-          }
-          if (firestoreReports.isNotEmpty) {
-            diseaseReports = firestoreReports;
-          }
-          if (firestoreLogs.isNotEmpty) {
-            auditLogs = firestoreLogs;
-          }
-
-          if (firestoreVaccines.isNotEmpty) {
-            vaccineSchedules = firestoreVaccines;
-          }
-          if (firestoreMeds.isNotEmpty) {
-            medicationSchedules = firestoreMeds;
-          }
-
-          // Save updated schedules to secure storage
-          await _saveSchedulesToStorage();
-        } catch (syncError) {
-          debugPrint(
-              '⚠️ Error fetching startup data from Firestore: $syncError');
-        }
-      }
-
-      // Local snapshots are the final source on this device. This is
-      // especially important on web, where SQLite is unavailable, and while
-      // offline, when Firestore cannot return the latest local edits.
+      // Local data is loaded first. Firestore is applied last so an old
+      // browser/device snapshot cannot overwrite a newly synchronized record.
       await _loadCoreDataFromStorage();
-
-      // Try loading cross-tab / web storage users
       await syncFromStorage();
       if (children.isEmpty) {
         children = List<ChildProfile>.from(demoChildren);
       }
 
-      // Seed/update the cross-platform snapshot after a successful startup.
-      await _saveCoreDataToStorage();
-
-      // Try loading securely stored token on startup
+      // Restore the session before deciding how cloud data should be merged.
+      // In particular, a parent device must pull instead of uploading an old
+      // local snapshot left by a previous application version.
       final storedToken = await _secureStorage.read(key: 'auth_token');
       if (storedToken != null) {
         debugPrint('🔒 Stored Token found in Secure Storage: $storedToken');
@@ -216,6 +185,13 @@ class AppStore extends ChangeNotifier {
           debugPrint('🔒 Auto-logged in user: ${_currentUser?.username}');
         }
       }
+
+      if (kIsWeb || isOnline) {
+        await refreshFromCloud(notify: false);
+      }
+
+      // Seed/update the cross-platform snapshot after a successful startup.
+      await _saveCoreDataToStorage();
 
       notifyListeners();
     } catch (e) {
@@ -307,7 +283,7 @@ class AppStore extends ChangeNotifier {
       final jsonStr = await _secureStorage.read(key: _syncStateStorageKey);
       if (jsonStr == null || jsonStr.isEmpty) return;
       final map = Map<String, dynamic>.from(jsonDecode(jsonStr) as Map);
-      _cloudDataDirty = map['cloudDataDirty'] as bool? ?? true;
+      _cloudDataDirty = map['cloudDataDirty'] as bool? ?? false;
       _pendingDeletedChildIds
         ..clear()
         ..addAll(
@@ -315,7 +291,7 @@ class AppStore extends ChangeNotifier {
               .map((id) => id.toString()),
         );
     } catch (e) {
-      _cloudDataDirty = true;
+      _cloudDataDirty = false;
       debugPrint('Error loading sync state: $e');
     }
   }
@@ -845,6 +821,7 @@ class AppStore extends ChangeNotifier {
   Future<void> addChild(ChildProfile child) async {
     _cloudDataDirty = true;
     children.insert(0, child);
+    await _linkChildToParentByPhone(child);
     notifyListeners();
     await _saveCoreDataToStorage();
     await _saveSyncState();
@@ -870,6 +847,7 @@ class AppStore extends ChangeNotifier {
     if (index == -1) return;
     _cloudDataDirty = true;
     children[index] = child;
+    await _linkChildToParentByPhone(child);
     notifyListeners();
     await _saveCoreDataToStorage();
     await _saveSyncState();
@@ -888,6 +866,34 @@ class AppStore extends ChangeNotifier {
 
     await addAuditLog(
         'Chỉnh sửa hồ sơ trẻ', 'Cập nhật thông tin trẻ "${child.fullName}"');
+  }
+
+  Future<void> _linkChildToParentByPhone(ChildProfile child) async {
+    final childContact = _normalizePhone(child.motherPhone);
+    if (childContact.isEmpty) return;
+
+    for (var index = 0; index < users.length; index++) {
+      final user = users[index];
+      if (user.role != UserRole.parent ||
+          _normalizePhone(user.phone) != childContact ||
+          user.linkedChildIds.contains(child.id)) {
+        continue;
+      }
+
+      final linkedUser = user.copyWith(
+        linkedChildIds: {...user.linkedChildIds, child.id}.toList(),
+      );
+      users[index] = linkedUser;
+      if (_currentUser?.id == linkedUser.id) {
+        _currentUser = linkedUser.copyWith(token: _currentUser?.token);
+      }
+
+      if (!_isTesting) {
+        await SqliteHelper.instance.insertUser(linkedUser);
+        await FirebaseSyncService.instance.syncUser(linkedUser);
+      }
+    }
+    if (!_isTesting) await _saveUsersToStorage();
   }
 
   Future<void> deleteChild(String childId) async {
@@ -1055,7 +1061,116 @@ class AppStore extends ChangeNotifier {
         'Chuyển trạng thái ca bệnh ${diseaseReports[index].diseaseType} sang "$newStatus"');
   }
 
+  /// Pulls the newest server data into the parent/device view.
+  ///
+  /// Cloud data is only applied after every required Firestore collection was
+  /// read successfully, so a temporary error never replaces usable local data.
+  Future<bool> refreshFromCloud({bool notify = true}) async {
+    if (_isTesting || isRefreshingFromCloud || (!kIsWeb && !isOnline)) {
+      return false;
+    }
+
+    isRefreshingFromCloud = true;
+    if (notify) notifyListeners();
+
+    try {
+      final snapshot = await FirebaseSyncService.instance.fetchCloudSnapshot();
+      if (snapshot == null) return false;
+
+      // A brand-new Firebase project has no documents yet. Keep the local demo
+      // accounts so a health worker can still sign in and seed Firestore.
+      if (!snapshot.hasAnyData) {
+        lastSyncAt = DateTime.now();
+        return true;
+      }
+
+      final localUsers = <String, UserModel>{
+        for (final user in users) user.id: user,
+      };
+      final sessionUser = _currentUser;
+      users = snapshot.users.map((remoteUser) {
+        final localUser = localUsers[remoteUser.id];
+        return remoteUser.copyWith(
+          token: localUser?.token,
+          passwordHash: remoteUser.passwordHash ?? localUser?.passwordHash,
+        );
+      }).toList();
+      children = snapshot.children;
+      diseaseReports = snapshot.diseaseReports;
+      auditLogs = snapshot.auditLogs;
+      vaccineSchedules = snapshot.vaccineSchedules;
+      medicationSchedules = snapshot.medicationSchedules;
+
+      if (sessionUser != null) {
+        final remoteIndex = users.indexWhere(
+          (user) =>
+              user.id == sessionUser.id ||
+              user.username == sessionUser.username,
+        );
+        if (remoteIndex != -1) {
+          final refreshedSession = users[remoteIndex].copyWith(
+            token: sessionUser.token,
+            passwordHash:
+                users[remoteIndex].passwordHash ?? sessionUser.passwordHash,
+          );
+          users[remoteIndex] = refreshedSession;
+          _currentUser = refreshedSession;
+        }
+      }
+
+      // Parent devices are read-only for clinical data. Clear a stale dirty
+      // marker from older builds so it cannot upload old data over Firestore.
+      if (_currentUser?.role == UserRole.parent) {
+        _cloudDataDirty = false;
+        _pendingDeletedChildIds.clear();
+      }
+
+      lastSyncAt = DateTime.now();
+      await _saveCoreDataToStorage();
+      await _saveUsersToStorage();
+      await _saveSchedulesToStorage();
+      await _saveSyncState();
+      await _cacheCloudSnapshotLocally(snapshot);
+      return true;
+    } catch (e) {
+      debugPrint('Error refreshing data from Firestore: $e');
+      return false;
+    } finally {
+      isRefreshingFromCloud = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _cacheCloudSnapshotLocally(
+      FirebaseCloudSnapshot snapshot) async {
+    try {
+      for (final user in users) {
+        await SqliteHelper.instance.insertUser(user);
+      }
+      for (final child in snapshot.children) {
+        await SqliteHelper.instance.insertChild(child);
+        for (final record in child.vaccinations) {
+          await SqliteHelper.instance.insertVaccination(record);
+        }
+        for (final record in child.medications) {
+          await SqliteHelper.instance.insertMedication(record);
+        }
+      }
+      for (final report in snapshot.diseaseReports) {
+        await SqliteHelper.instance.insertDiseaseReport(report);
+      }
+      for (final log in snapshot.auditLogs) {
+        await SqliteHelper.instance.insertAuditLog(log);
+      }
+    } catch (e) {
+      debugPrint('Error caching Firestore snapshot locally: $e');
+    }
+  }
+
   Future<bool> syncPending() async {
+    if (currentUser?.role == UserRole.parent) {
+      return refreshFromCloud();
+    }
     if (!isOnline || pendingCount == 0 || isSyncing) return false;
     isSyncing = true;
     notifyListeners();
@@ -1105,9 +1220,8 @@ class AppStore extends ChangeNotifier {
       final syncedMedicationIds = <String>{};
       final syncedDiseaseReportIds = <String>{};
       // 1. Gather all pending vaccination records across all children
-      final allVaccinations = children
-          .expand((child) => child.vaccinations)
-          .toList();
+      final allVaccinations =
+          children.expand((child) => child.vaccinations).toList();
       final pendingVaccinations = _cloudDataDirty
           ? allVaccinations
           : allVaccinations

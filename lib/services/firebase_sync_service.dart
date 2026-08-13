@@ -33,9 +33,79 @@ class FirebaseSyncService {
       return true;
     } catch (e) {
       _isInitialized = false;
+      // Allow a later refresh to retry after a temporary network/config error.
+      _initializationAttempted = false;
       _lastError = e.toString();
       debugPrint('Firebase unavailable; data remains pending: $e');
       return false;
+    }
+  }
+
+  /// Downloads a complete application snapshot directly from Firestore.
+  /// `null` represents a failed read; empty collections remain valid data.
+  Future<FirebaseCloudSnapshot?> fetchCloudSnapshot() async {
+    if (!await initialize()) return null;
+
+    try {
+      const server = GetOptions(source: Source.server);
+      final firestore = FirebaseFirestore.instance;
+      final usersSnapshot = await firestore.collection('users').get(server);
+      final childrenSnapshot =
+          await firestore.collection('children').get(server);
+      final vaccinationsSnapshot =
+          await firestore.collection('vaccinations').get(server);
+      final medicationsSnapshot =
+          await firestore.collection('medications').get(server);
+      final reportsSnapshot =
+          await firestore.collection('disease_reports').get(server);
+      final logsSnapshot = await firestore.collection('audit_logs').get(server);
+      final vaccinesSnapshot =
+          await firestore.collection('vaccine_schedules').get(server);
+      final medicationSchedulesSnapshot =
+          await firestore.collection('medication_schedules').get(server);
+
+      final vaccinations = vaccinationsSnapshot.docs
+          .map((doc) => VaccinationRecord.fromMap(doc.data()))
+          .toList();
+      final medications = medicationsSnapshot.docs
+          .map((doc) => MedicationRecord.fromMap(doc.data()))
+          .toList();
+      final children = childrenSnapshot.docs.map((doc) {
+        final data = doc.data();
+        final childId = (data['id'] ?? doc.id).toString();
+        return ChildProfile.fromMap(
+          {...data, 'id': childId},
+          vaccinations: vaccinations
+              .where((record) => record.childId == childId)
+              .toList(),
+          medications:
+              medications.where((record) => record.childId == childId).toList(),
+        );
+      }).toList();
+
+      _lastError = null;
+      return FirebaseCloudSnapshot(
+        users: usersSnapshot.docs
+            .map((doc) => UserModel.fromMap({...doc.data(), 'id': doc.id}))
+            .toList(),
+        children: children,
+        diseaseReports: reportsSnapshot.docs
+            .map((doc) => DiseaseReport.fromMap(doc.data()))
+            .toList(),
+        auditLogs: logsSnapshot.docs
+            .map((doc) => SystemAuditLog.fromMap(doc.data()))
+            .toList(),
+        vaccineSchedules: vaccinesSnapshot.docs
+            .map((doc) => VaccineSchedule.fromMap(doc.data()))
+            .toList(),
+        medicationSchedules: medicationSchedulesSnapshot.docs
+            .map((doc) => MedicationSchedule.fromMap(doc.data()))
+            .toList(),
+      );
+    } catch (e) {
+      _lastError = e.toString();
+      debugPrint('[Firestore Snapshot Fetch Error]: $e');
+      return null;
     }
   }
 
@@ -429,4 +499,30 @@ class FirebaseSyncService {
       return [];
     }
   }
+}
+
+class FirebaseCloudSnapshot {
+  const FirebaseCloudSnapshot({
+    required this.users,
+    required this.children,
+    required this.diseaseReports,
+    required this.auditLogs,
+    required this.vaccineSchedules,
+    required this.medicationSchedules,
+  });
+
+  final List<UserModel> users;
+  final List<ChildProfile> children;
+  final List<DiseaseReport> diseaseReports;
+  final List<SystemAuditLog> auditLogs;
+  final List<VaccineSchedule> vaccineSchedules;
+  final List<MedicationSchedule> medicationSchedules;
+
+  bool get hasAnyData =>
+      users.isNotEmpty ||
+      children.isNotEmpty ||
+      diseaseReports.isNotEmpty ||
+      auditLogs.isNotEmpty ||
+      vaccineSchedules.isNotEmpty ||
+      medicationSchedules.isNotEmpty;
 }

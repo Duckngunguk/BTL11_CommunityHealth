@@ -38,6 +38,23 @@ void main() {
     expect(store.canCurrentUserAccessChild('CH001'), isFalse);
   });
 
+  test('phụ huynh nhận hồ sơ mới khi số điện thoại liên hệ trùng khớp', () {
+    final parent = demoUsers.firstWhere(
+      (user) => user.username == 'parent.demo',
+    );
+    final newChild = demoChildren.first.copyWith(
+      motherPhone: '0912345678',
+    );
+    final store = AppStore.forTesting(
+      initialUsers: demoUsers,
+      initialChildren: [newChild],
+      initialCurrentUser: parent,
+    );
+
+    expect(store.currentUserChildren.map((child) => child.id), [newChild.id]);
+    expect(store.canCurrentUserAccessChild(newChild.id), isTrue);
+  });
+
   test('từ chối tài khoản cập nhật trạng thái và loại khỏi danh sách chờ',
       () async {
     final store = AppStore.forTesting(initialUsers: demoUsers);

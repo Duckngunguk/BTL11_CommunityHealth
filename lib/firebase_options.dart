@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 
 /// Temporary Firebase options contract.
 ///
@@ -6,6 +7,16 @@ import 'package:firebase_core/firebase_core.dart';
 /// the selected Firebase project. Until then, builds may provide the required
 /// values using `--dart-define` without committing project configuration.
 abstract final class DefaultFirebaseOptions {
+  static const web = FirebaseOptions(
+    apiKey: 'AIzaSyAu8tdPHrwa2zcHeHS3wBHVVAU4I7NQOEo',
+    appId: '1:584439895922:web:97eafe40c1b9ed9ae02feb',
+    messagingSenderId: '584439895922',
+    projectId: 'community-health-demo-c007e',
+    authDomain: 'community-health-demo-c007e.firebaseapp.com',
+    storageBucket: 'community-health-demo-c007e.firebasestorage.app',
+    measurementId: 'G-QDPTWP1QYK',
+  );
+
   static const _apiKey = String.fromEnvironment('FIREBASE_API_KEY');
   static const _appId = String.fromEnvironment('FIREBASE_APP_ID');
   static const _messagingSenderId =
@@ -18,15 +29,19 @@ abstract final class DefaultFirebaseOptions {
       String.fromEnvironment('FIREBASE_IOS_BUNDLE_ID');
 
   static bool get isConfigured =>
-      _apiKey.isNotEmpty &&
-      _appId.isNotEmpty &&
-      _messagingSenderId.isNotEmpty &&
-      _projectId.isNotEmpty;
+      kIsWeb ||
+      (_apiKey.isNotEmpty &&
+          _appId.isNotEmpty &&
+          _messagingSenderId.isNotEmpty &&
+          _projectId.isNotEmpty);
 
   static FirebaseOptions get currentPlatform {
+    if (kIsWeb) return web;
+
     if (!isConfigured) {
       throw StateError(
-        'Firebase is not configured. Run `flutterfire configure` or provide '
+        'Firebase is not configured for $defaultTargetPlatform. Run '
+        '`flutterfire configure` or provide '
         'FIREBASE_API_KEY, FIREBASE_APP_ID, FIREBASE_MESSAGING_SENDER_ID and '
         'FIREBASE_PROJECT_ID using --dart-define.',
       );
