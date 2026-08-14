@@ -52,7 +52,8 @@ class _MobileShellState extends State<MobileShell> {
               children: [
                 _DesktopRoleNavigation(
                   userName: store.currentUser?.fullName ?? 'Cán bộ y tế',
-                  subtitle: store.currentUser?.assignedCommune ?? 'Tả Phìn',
+                  subtitle:
+                      store.currentHealthWorkerCommune ?? 'Chưa phân công xã',
                   items: navigationItems,
                   selectedIndex: _index,
                   pendingCount: store.pendingCount,

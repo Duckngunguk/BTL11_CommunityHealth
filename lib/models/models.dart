@@ -20,6 +20,11 @@ class UserModel {
     this.assignedCommune,
     this.passwordHash,
     this.linkedChildIds = const [],
+    this.dateOfBirth,
+    this.gender,
+    this.staffCode,
+    this.healthFacility,
+    this.professionalTitle,
   });
 
   final String id;
@@ -34,22 +39,34 @@ class UserModel {
   final String? assignedCommune;
   final String? passwordHash;
   final List<String> linkedChildIds;
+  final DateTime? dateOfBirth;
+  final String? gender;
+  final String? staffCode;
+  final String? healthFacility;
+  final String? professionalTitle;
 
   bool get isActive => status == UserAccountStatus.active;
   bool get isPending => status == UserAccountStatus.pendingApproval;
 
   UserModel copyWith({
+    String? username,
+    String? email,
     UserAccountStatus? status,
     String? token,
     String? assignedCommune,
     String? passwordHash,
     List<String>? linkedChildIds,
+    DateTime? dateOfBirth,
+    String? gender,
+    String? staffCode,
+    String? healthFacility,
+    String? professionalTitle,
   }) {
     return UserModel(
       id: id,
-      username: username,
+      username: username ?? this.username,
       fullName: fullName,
-      email: email,
+      email: email ?? this.email,
       phone: phone,
       role: role,
       status: status ?? this.status,
@@ -58,6 +75,11 @@ class UserModel {
       assignedCommune: assignedCommune ?? this.assignedCommune,
       passwordHash: passwordHash ?? this.passwordHash,
       linkedChildIds: linkedChildIds ?? this.linkedChildIds,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      staffCode: staffCode ?? this.staffCode,
+      healthFacility: healthFacility ?? this.healthFacility,
+      professionalTitle: professionalTitle ?? this.professionalTitle,
     );
   }
 
@@ -75,6 +97,11 @@ class UserModel {
       'assignedCommune': assignedCommune,
       'passwordHash': passwordHash,
       'linkedChildIds': linkedChildIds.join(','),
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'gender': gender,
+      'staffCode': staffCode,
+      'healthFacility': healthFacility,
+      'professionalTitle': professionalTitle,
     };
   }
 
@@ -100,6 +127,13 @@ class UserModel {
       assignedCommune: map['assignedCommune'] as String?,
       passwordHash: (map['passwordHash'] ?? map['password']) as String?,
       linkedChildIds: linkedChildIds,
+      dateOfBirth: map['dateOfBirth'] == null || map['dateOfBirth'] == ''
+          ? null
+          : DateTime.tryParse(map['dateOfBirth'].toString()),
+      gender: map['gender'] as String?,
+      staffCode: map['staffCode'] as String?,
+      healthFacility: map['healthFacility'] as String?,
+      professionalTitle: map['professionalTitle'] as String?,
     );
   }
 }

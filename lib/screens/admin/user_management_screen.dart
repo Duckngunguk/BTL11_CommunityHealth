@@ -32,6 +32,23 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     }
   }
 
+  Future<void> _showCreateHealthStaffDialog(AppStore store) async {
+    final created = await showDialog<UserModel>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _CreateHealthStaffDialog(store: store),
+    );
+    if (!mounted || created == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Đã tạo tài khoản cán bộ "${created.fullName}". Cán bộ có thể đăng nhập ngay.',
+        ),
+        backgroundColor: const Color(0xFF18794E),
+      ),
+    );
+  }
+
   void _showApprovalDialog(
       BuildContext context, UserModel user, AppStore store) {
     showDialog<void>(
@@ -174,7 +191,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final pendingUsers = store.users
-        .where((u) => u.status == UserAccountStatus.pendingApproval)
+        .where((u) =>
+            u.role == UserRole.healthWorker &&
+            u.status == UserAccountStatus.pendingApproval)
         .toList();
     final users = store.users.where((u) {
       if (_selectedStatusFilter == 'Chờ duyệt' &&
@@ -209,77 +228,107 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           // Header
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.manage_accounts_rounded,
-                    color: primaryGreen, size: 28),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.manage_accounts_rounded,
+                        color: primaryGreen, size: 28),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Quản lý Người dùng & Phân quyền',
-                          style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(width: 10),
-                        if (store.pendingUserApprovals > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFE9E7),
-                              borderRadius: BorderRadius.circular(99),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            const Text(
+                              'Quản lý Người dùng & Phân quyền',
+                              style: TextStyle(
+                                  fontSize: 22, fontWeight: FontWeight.w800),
                             ),
-                            child: Text(
-                              '${store.pendingUserApprovals} tài khoản chờ duyệt',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFFB42318),
-                                fontWeight: FontWeight.w800,
+                            if (store.pendingUserApprovals > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFE9E7),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                child: Text(
+                                  '${store.pendingUserApprovals} tài khoản chờ duyệt',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFFB42318),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Admin tạo tài khoản Cán bộ Y tế, phân công xã và quản lý trạng thái truy cập.',
+                          style: TextStyle(color: Colors.black54, fontSize: 13),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Phê duyệt Cán bộ Y tế xã mới đăng ký, quản lý phân quyền và khóa/mở tài khoản.',
-                      style: TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () => _showCreateHealthStaffDialog(store),
+                      icon:
+                          const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                      label: const Text('Thêm cán bộ y tế'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primaryGreen,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await store.syncFromStorage();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  '🎉 Đã làm mới và đồng bộ danh sách tài khoản mới nhất!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('Đồng bộ dữ liệu'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                      ),
                     ),
                   ],
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await store.syncFromStorage();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            '🎉 Đã làm mới và đồng bộ danh sách tài khoản mới nhất!'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Đồng bộ dữ liệu'),
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 ),
               ),
             ],
@@ -671,6 +720,353 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CreateHealthStaffDialog extends StatefulWidget {
+  const _CreateHealthStaffDialog({required this.store});
+
+  final AppStore store;
+
+  @override
+  State<_CreateHealthStaffDialog> createState() =>
+      _CreateHealthStaffDialogState();
+}
+
+class _CreateHealthStaffDialogState extends State<_CreateHealthStaffDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _dateController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _staffCodeController = TextEditingController();
+  final _facilityController =
+      TextEditingController(text: 'Trạm Y tế xã Tả Phìn');
+  final _titleController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  static const _communes = [
+    'Tả Phìn',
+    'Hầu Thào',
+    'San Sả Hồ',
+    'Tả Van',
+    'Lao Chải',
+    'Bản Hồ',
+  ];
+
+  DateTime? _dateOfBirth;
+  String _gender = 'Nữ';
+  String _commune = _communes.first;
+  bool _obscurePassword = true;
+  bool _isSaving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _dateController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _staffCodeController.dispose();
+    _facilityController.dispose();
+    _titleController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  String? _required(String? value) =>
+      (value ?? '').trim().isEmpty ? 'Thông tin bắt buộc' : null;
+
+  Future<void> _pickDate() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: DateTime(1995),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+    );
+    if (selected == null) return;
+    setState(() {
+      _dateOfBirth = selected;
+      _dateController.text =
+          '${selected.day.toString().padLeft(2, '0')}/${selected.month.toString().padLeft(2, '0')}/${selected.year}';
+    });
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+    final response = await widget.store.createHealthStaffByAdmin(
+      username: _usernameController.text,
+      fullName: _fullNameController.text,
+      email: _emailController.text,
+      phone: _phoneController.text,
+      password: _passwordController.text,
+      assignedCommune: _commune,
+      staffCode: _staffCodeController.text,
+      healthFacility: _facilityController.text,
+      professionalTitle: _titleController.text,
+      dateOfBirth: _dateOfBirth,
+      gender: _gender,
+    );
+    if (!mounted) return;
+    if (response.success && response.data != null) {
+      Navigator.of(context).pop(response.data);
+      return;
+    }
+    setState(() {
+      _isSaving = false;
+      _error = response.error ?? 'Không thể tạo tài khoản cán bộ.';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.person_add_alt_1_rounded, color: primaryGreen),
+          SizedBox(width: 10),
+          Text('Thêm cán bộ y tế'),
+        ],
+      ),
+      content: SizedBox(
+        width: 620,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_error != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFE9E7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Color(0xFFB42318)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextFormField(
+                  controller: _fullNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Họ và tên *',
+                    prefixIcon: Icon(Icons.badge_outlined),
+                  ),
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _dateController,
+                        readOnly: true,
+                        onTap: _pickDate,
+                        decoration: const InputDecoration(
+                          labelText: 'Ngày sinh',
+                          prefixIcon: Icon(Icons.cake_outlined),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _gender,
+                        decoration: const InputDecoration(
+                          labelText: 'Giới tính',
+                          prefixIcon: Icon(Icons.wc_rounded),
+                        ),
+                        items: const ['Nữ', 'Nam', 'Khác']
+                            .map((value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) _gender = value;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Email *',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                        validator: (value) {
+                          if (_required(value) != null) return _required(value);
+                          return value!.contains('@')
+                              ? null
+                              : 'Email không hợp lệ';
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: 'Số điện thoại *',
+                          prefixIcon: Icon(Icons.phone_outlined),
+                        ),
+                        validator: _required,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _staffCodeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Mã cán bộ *',
+                          prefixIcon: Icon(Icons.numbers_rounded),
+                        ),
+                        validator: _required,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _commune,
+                        decoration: const InputDecoration(
+                          labelText: 'Xã phụ trách *',
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                        ),
+                        items: _communes
+                            .map((value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _commune = value;
+                            _facilityController.text = 'Trạm Y tế xã $value';
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _facilityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Cơ sở y tế *',
+                    prefixIcon: Icon(Icons.local_hospital_outlined),
+                  ),
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Chức vụ/chuyên môn *',
+                    prefixIcon: Icon(Icons.medical_services_outlined),
+                    hintText: 'Ví dụ: Y sĩ đa khoa',
+                  ),
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _usernameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Username *',
+                          prefixIcon: Icon(Icons.person_outline_rounded),
+                        ),
+                        validator: (value) => (value ?? '').trim().length < 4
+                            ? 'Tối thiểu 4 ký tự'
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: 'Mật khẩu *',
+                          prefixIcon: const Icon(Icons.lock_outline_rounded),
+                          suffixIcon: IconButton(
+                            onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword),
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined),
+                          ),
+                        ),
+                        validator: (value) => (value ?? '').length < 6
+                            ? 'Tối thiểu 6 ký tự'
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Vai trò: Cán bộ Y tế • Trạng thái: Hoạt động',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Hủy'),
+        ),
+        FilledButton.icon(
+          onPressed: _isSaving ? null : _submit,
+          icon: _isSaving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.save_rounded),
+          label: const Text('Tạo tài khoản'),
+          style: FilledButton.styleFrom(backgroundColor: primaryGreen),
+        ),
+      ],
     );
   }
 }

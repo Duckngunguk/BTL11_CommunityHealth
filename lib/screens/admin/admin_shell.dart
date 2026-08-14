@@ -285,6 +285,8 @@ class _AdminSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final adminEmail =
+        AppScope.of(context).currentUser?.email ?? 'admin123@gmail.com';
     final menuItems = [
       (Icons.dashboard_outlined, Icons.dashboard_rounded, 'Tổng quan'),
       (
@@ -445,19 +447,19 @@ class _AdminSidebar extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'admin.demo',
-                              style: TextStyle(
+                              adminEmail,
+                              style: const TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
                                   color: gray900),
                             ),
-                            Text(
-                              'admin@ttyt-sapa.vn',
+                            const Text(
+                              'Quản trị viên',
                               style: TextStyle(fontSize: 10, color: gray500),
                               overflow: TextOverflow.ellipsis,
                             ),

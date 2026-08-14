@@ -13,14 +13,11 @@ class DiseaseReportScreen extends StatefulWidget {
 }
 
 class _DiseaseReportScreenState extends State<DiseaseReportScreen> {
-  String _selectedCommune = 'Tả Phìn';
-
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final reports = store.diseaseReports.where((r) {
-      return r.commune == _selectedCommune;
-    }).toList();
+    final commune = store.currentHealthWorkerCommune ?? 'Chưa phân công';
+    final reports = store.currentUserDiseaseReports;
 
     return Scaffold(
       backgroundColor: gray100,
@@ -72,47 +69,28 @@ class _DiseaseReportScreenState extends State<DiseaseReportScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Dropdown location selector (matching "Xã Tả Phìn")
-                Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerTheme:
-                        const DividerThemeData(color: Colors.transparent),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: gray200),
                   ),
-                  child: PopupMenuButton<String>(
-                    initialValue: _selectedCommune,
-                    onSelected: (value) =>
-                        setState(() => _selectedCommune = value),
-                    itemBuilder: (context) => kVillagesByCommune.keys
-                        .map((c) =>
-                            PopupMenuItem(value: c, child: Text('Xã $c')))
-                        .toList(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: gray200),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          color: gray500, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        commune == 'Chưa phân công' ? commune : 'Xã $commune',
+                        style: const TextStyle(
+                            color: gray700,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.location_on_outlined,
-                              color: gray500, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Xã $_selectedCommune',
-                            style: const TextStyle(
-                                color: gray700,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.keyboard_arrow_down_rounded,
-                              color: gray500, size: 14),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
                 ),
                 const Spacer(),
@@ -418,7 +396,7 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
       context: context,
       builder: (context) {
         final store = AppScope.of(context);
-        final childrenList = store.children;
+        final childrenList = store.currentUserChildren;
         return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -529,7 +507,17 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
   Future<void> _submit() async {
     final store = AppScope.of(context);
     final isOnline = store.isOnline;
-    final commune = store.currentUser?.assignedCommune ?? 'Tả Phìn';
+    final commune = store.currentHealthWorkerCommune;
+    if (commune == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Tài khoản chưa được Admin phân công xã nên không thể báo dịch.',
+          ),
+        ),
+      );
+      return;
+    }
 
     String finalPatientName = '';
     String finalVillage = '';
@@ -554,7 +542,7 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
         return;
       }
       finalPatientName = _scannedChildName ?? 'Trẻ quét mã QR';
-      finalVillage = _scannedVillage ?? 'Bản Tả Phìn 1';
+      finalVillage = _scannedVillage ?? 'Không xác định';
       finalChildId = _scannedChildId;
       finalNotes = 'Quét mã định danh thành công.';
     } else {
@@ -628,9 +616,10 @@ class _AddDiseaseReportScreenState extends State<AddDiseaseReportScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final commune = store.currentUser?.assignedCommune ?? 'Tả Phìn';
-    final communeVillages = kVillagesByCommune[commune] ??
-        ['Bản Nậm Lùng', 'Bản Tả Phìn 1', 'Bản Tả Phìn 2'];
+    final commune = store.currentHealthWorkerCommune;
+    final communeVillages = commune == null
+        ? const <String>[]
+        : kVillagesByCommune[commune] ?? const <String>[];
 
     return Scaffold(
       backgroundColor: gray100,

@@ -30,7 +30,7 @@ class SqliteHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -54,7 +54,12 @@ class SqliteHelper {
         assignedCommune TEXT,
         password TEXT,
         passwordHash TEXT,
-        linkedChildIds TEXT
+        linkedChildIds TEXT,
+        dateOfBirth TEXT,
+        gender TEXT,
+        staffCode TEXT,
+        healthFacility TEXT,
+        professionalTitle TEXT
       )
     ''');
 
@@ -235,6 +240,34 @@ class SqliteHelper {
           ) ??
           0;
       if (childCount == 0) await _seedDemoChildren(db);
+    }
+    if (oldVersion < 4) {
+      for (final column in const [
+        'dateOfBirth TEXT',
+        'gender TEXT',
+        'staffCode TEXT',
+        'healthFacility TEXT',
+        'professionalTitle TEXT',
+      ]) {
+        try {
+          await db.execute('ALTER TABLE users ADD COLUMN $column;');
+        } catch (e) {
+          debugPrint('User column already exists or cannot be added: $e');
+        }
+      }
+    }
+    if (oldVersion < 5) {
+      // Tài khoản Admin là cấu hình hệ thống, nên cập nhật cả dữ liệu đã lưu
+      // từ các phiên bản cũ thay vì chỉ thay đổi dữ liệu mẫu.
+      await db.update(
+        'users',
+        {
+          'username': defaultAdminEmail,
+          'email': defaultAdminEmail,
+        },
+        where: 'id = ? OR role = ?',
+        whereArgs: [defaultAdminId, UserRole.admin.name],
+      );
     }
   }
 
@@ -542,12 +575,12 @@ class SqliteHelper {
     if (db == null) return;
     await db.update(
       'users',
-        {
-          'token': user.token,
-          'password': null,
-          'passwordHash': user.passwordHash,
-          'linkedChildIds': user.linkedChildIds.join(','),
-        },
+      {
+        'token': user.token,
+        'password': null,
+        'passwordHash': user.passwordHash,
+        'linkedChildIds': user.linkedChildIds.join(','),
+      },
       where: 'id = ?',
       whereArgs: [user.id],
     );

@@ -1,6 +1,9 @@
 import '../models/models.dart';
 import '../utils/password_hasher.dart';
 
+const defaultAdminId = 'USR-003';
+const defaultAdminEmail = 'admin123@gmail.com';
+
 final demoSchedules = <VaccineSchedule>[
   const VaccineSchedule(
     id: 'BCG-1',
@@ -196,10 +199,10 @@ final demoUsers = <UserModel>[
     linkedChildIds: const ['CH002'],
   ),
   UserModel(
-    id: 'USR-003',
-    username: 'admin.demo',
+    id: defaultAdminId,
+    username: defaultAdminEmail,
     fullName: 'Quản trị viên TTYT Sa Pa',
-    email: 'admin.ttyt@sapa.gov.vn',
+    email: defaultAdminEmail,
     phone: '0214 387 1115',
     role: UserRole.admin,
     status: UserAccountStatus.active,

@@ -33,7 +33,8 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
 
   void _openEditChild(ChildProfile child) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ChildFormScreen(childToEdit: child)),
+      MaterialPageRoute<void>(
+          builder: (_) => ChildFormScreen(childToEdit: child)),
     );
   }
 
@@ -46,12 +47,16 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
         icon: Container(
           width: 52,
           height: 52,
-          decoration: const BoxDecoration(color: redLight, shape: BoxShape.circle),
-          child: const Icon(Icons.warning_amber_rounded, color: accentRed, size: 28),
+          decoration:
+              const BoxDecoration(color: redLight, shape: BoxShape.circle),
+          child: const Icon(Icons.warning_amber_rounded,
+              color: accentRed, size: 28),
         ),
         title: const Text('Cảnh báo xóa hồ sơ trẻ',
-            style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: gray900)),
-        content: Text('Bạn có chắc chắn muốn xóa hồ sơ của trẻ "${child.fullName}"? Dữ liệu này không thể khôi phục.',
+            style: TextStyle(
+                fontSize: 16.5, fontWeight: FontWeight.w800, color: gray900)),
+        content: Text(
+            'Bạn có chắc chắn muốn xóa hồ sơ của trẻ "${child.fullName}"? Dữ liệu này không thể khôi phục.',
             style: const TextStyle(fontSize: 13, color: gray600, height: 1.4)),
         actions: [
           TextButton(
@@ -61,7 +66,8 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: accentRed),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận xóa', style: TextStyle(fontWeight: FontWeight.w800)),
+            child: const Text('Xác nhận xóa',
+                style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -80,11 +86,13 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
+    final scopedChildren = store.currentUserChildren;
 
     // Get unique villages
-    final villages = store.children.map((child) => child.village).toSet().toList()..sort();
+    final villages =
+        scopedChildren.map((child) => child.village).toSet().toList()..sort();
 
-    final filtered = store.children.where((child) {
+    final filtered = scopedChildren.where((child) {
       final q = _query.toLowerCase().trim();
       final matchesQuery = q.isEmpty ||
           child.fullName.toLowerCase().contains(q) ||
@@ -127,7 +135,8 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                             color: blueLight,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.add_rounded, color: primaryBlue, size: 20),
+                          child: const Icon(Icons.add_rounded,
+                              color: primaryBlue, size: 20),
                         ),
                       ),
                     ],
@@ -156,23 +165,26 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                       children: [
                         const Padding(
                           padding: EdgeInsets.only(left: 10),
-                          child: Icon(Icons.search_rounded, color: gray400, size: 16),
+                          child: Icon(Icons.search_rounded,
+                              color: gray400, size: 16),
                         ),
                         Expanded(
                           child: TextField(
                             controller: _searchController,
                             onChanged: (value) {
                               setState(() => _query = value);
-                              store.searchChildren(value);
                             },
-                            style: const TextStyle(fontSize: 13, color: gray900),
+                            style:
+                                const TextStyle(fontSize: 13, color: gray900),
                             decoration: const InputDecoration(
                               hintText: 'Nhập họ tên cha mẹ, con, CCCD...',
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,
                               focusedBorder: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                              hintStyle: TextStyle(color: gray400, fontSize: 12.5),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 0),
+                              hintStyle:
+                                  TextStyle(color: gray400, fontSize: 12.5),
                               fillColor: Colors.transparent,
                               filled: false,
                             ),
@@ -195,7 +207,6 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                     if (result != null && mounted) {
                       _searchController.text = result;
                       setState(() => _query = result);
-                      store.searchChildren(result);
                     }
                   },
                   child: Container(
@@ -206,7 +217,8 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: gray200, width: 1.2),
                     ),
-                    child: const Icon(Icons.qr_code_scanner_rounded, color: primaryBlue, size: 20),
+                    child: const Icon(Icons.qr_code_scanner_rounded,
+                        color: primaryBlue, size: 20),
                   ),
                 ),
               ],
@@ -248,7 +260,8 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
             child: filtered.isEmpty
                 ? const EmptyState(
                     title: 'Không tìm thấy trẻ',
-                    description: 'Hãy thử đổi từ khóa hoặc bấm nút + để thêm trẻ mới.',
+                    description:
+                        'Hãy thử đổi từ khóa hoặc bấm nút + để thêm trẻ mới.',
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -289,26 +302,38 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: gray200),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => ChildDetailScreen(childId: child.id)),
+          MaterialPageRoute<void>(
+              builder: (_) => ChildDetailScreen(childId: child.id)),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
-             children: [
+            children: [
               // Avatar
               Container(
                 width: 36,
                 height: 36,
-                decoration: const BoxDecoration(color: blueLight, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                    color: blueLight, shape: BoxShape.circle),
                 child: Center(
                   child: Text(
-                    child.motherName.isNotEmpty ? child.motherName.characters.first : 'P',
-                    style: const TextStyle(color: primaryBlue, fontWeight: FontWeight.w700, fontSize: 14),
+                    child.motherName.isNotEmpty
+                        ? child.motherName.characters.first
+                        : 'P',
+                    style: const TextStyle(
+                        color: primaryBlue,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14),
                   ),
                 ),
               ),
@@ -318,8 +343,13 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      child.motherName.isNotEmpty ? child.motherName : 'Chưa nhập tên phụ huynh',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, color: gray900),
+                      child.motherName.isNotEmpty
+                          ? child.motherName
+                          : 'Chưa nhập tên phụ huynh',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                          color: gray900),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -333,13 +363,20 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
               // Status pill
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(color: pillBg, borderRadius: BorderRadius.circular(6)),
-                child: Text(pillText, style: TextStyle(color: pillFg, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                decoration: BoxDecoration(
+                    color: pillBg, borderRadius: BorderRadius.circular(6)),
+                child: Text(pillText,
+                    style: TextStyle(
+                        color: pillFg,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700)),
               ),
               // Menu
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert_rounded, color: gray400, size: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                icon: const Icon(Icons.more_vert_rounded,
+                    color: gray400, size: 18),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 onSelected: (val) {
                   if (val == 'edit') _openEditChild(child);
                   if (val == 'delete') _confirmDeleteChild(child);

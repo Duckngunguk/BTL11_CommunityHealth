@@ -69,9 +69,9 @@ Hệ thống được phát triển theo mô hình **Offline-First** nhằm thí
 
 Hệ thống đã được nạp sẵn dữ liệu demo (SQLite trên Android, dữ liệu fallback trên Web):
 
-| Vai trò | Tên đăng nhập | Mật khẩu | Phân hệ tương ứng |
+| Vai trò | Email đăng nhập | Mật khẩu | Phân hệ tương ứng |
 | :--- | :--- | :--- | :--- |
-| **Quản trị viên (Admin)** | `admin.demo` | `123456` | Web Admin (`main.dart` hoặc `main_admin.dart`) |
-| **Cán bộ Y tế xã** | `healthworker.demo` | `123456` | Mobile App (`main.dart`) |
-| **Phụ huynh** | `parent.demo` | `123456` | Mobile App (`main.dart`) |
-| **Tài khoản chờ duyệt** | `healthworker.nam` | `123456` | Sử dụng để test tính năng phê duyệt của Admin |
+| **Quản trị viên (Admin)** | `admin123@gmail.com` | `123456` | Web Admin (`main.dart` hoặc `main_admin.dart`) |
+| **Cán bộ Y tế xã** | `lethu.yte@sapa.gov.vn` | `123456` | Mobile App (`main.dart`) |
+| **Phụ huynh** | `giangasang.sapa@gmail.com` | `123456` | Mobile App (`main.dart`) |
+| **Tài khoản chờ duyệt** | `vannam.yte@sapa.gov.vn` | `123456` | Sử dụng để test tính năng phê duyệt của Admin |

@@ -10,7 +10,8 @@ class RecordVaccinationScreen extends StatefulWidget {
   final String childId;
 
   @override
-  State<RecordVaccinationScreen> createState() => _RecordVaccinationScreenState();
+  State<RecordVaccinationScreen> createState() =>
+      _RecordVaccinationScreenState();
 }
 
 class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
@@ -36,16 +37,24 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
   }
 
   Future<bool> _confirmScheduleMismatch(String recommended) async {
-    if (_schedule == null || recommended.contains(_schedule!.displayName)) return true;
+    if (_schedule == null || recommended.contains(_schedule!.displayName)) {
+      return true;
+    }
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded, color: Color(0xFFB42318), size: 38),
+        icon: const Icon(Icons.warning_amber_rounded,
+            color: Color(0xFFB42318), size: 38),
         title: const Text('Tiêm không đúng lịch đề xuất'),
-        content: Text('Trẻ này nên tiêm $recommended trước. Bạn có chắc muốn ghi nhận ${_schedule!.displayName}?'),
+        content: Text(
+            'Trẻ này nên tiêm $recommended trước. Bạn có chắc muốn ghi nhận ${_schedule!.displayName}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Kiểm tra lại')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Vẫn tiếp tục')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Kiểm tra lại')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Vẫn tiếp tục')),
         ],
       ),
     );
@@ -55,7 +64,8 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate() || _schedule == null) return;
     final store = AppScope.of(context);
-    final child = store.children.firstWhere((item) => item.id == widget.childId);
+    final child = store.currentUserChildren
+        .firstWhere((item) => item.id == widget.childId);
     final confirmed = await _confirmScheduleMismatch(child.nextVaccine);
     if (!confirmed || !mounted) return;
 
@@ -67,14 +77,17 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
       doseNumber: _schedule!.doseNumber,
       lotNumber: _lotController.text.trim(),
       administeredBy: _staffController.text.trim(),
-      reactions: _reactionController.text.trim().isEmpty ? null : _reactionController.text.trim(),
+      reactions: _reactionController.text.trim().isEmpty
+          ? null
+          : _reactionController.text.trim(),
       administeredAt: _administeredAt,
       syncStatus: VaccinationSyncStatus.pending,
     );
 
     store.addVaccination(child.id, record);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã lưu ngoại tuyến. Bản ghi đang chờ đồng bộ.')),
+      const SnackBar(
+          content: Text('Đã lưu ngoại tuyến. Bản ghi đang chờ đồng bộ.')),
     );
     Navigator.of(context).pop();
   }
@@ -82,7 +95,8 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final child = store.children.firstWhere((item) => item.id == widget.childId);
+    final child = store.currentUserChildren
+        .firstWhere((item) => item.id == widget.childId);
     if (_staffController.text.isEmpty && store.currentUser != null) {
       _staffController.text = store.currentUser!.fullName;
     }
@@ -103,14 +117,20 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
       appBar: AppBar(
         leading: TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Hủy', style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
+          child: const Text('Hủy',
+              style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
         ),
-        title: const Text('Ghi nhận tiêm', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        title: const Text('Ghi nhận tiêm',
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
         centerTitle: true,
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('Lưu', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+            child: const Text('Lưu',
+                style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15)),
           ),
           const SizedBox(width: 8),
         ],
@@ -122,7 +142,8 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF16A34A),
             minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           icon: const Icon(Icons.save_rounded, color: Colors.white, size: 20),
           label: const Text(
@@ -148,11 +169,17 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
                   const Text('👉 ', style: TextStyle(fontSize: 16)),
                   const Text(
                     'Trẻ thụ hưởng: ',
-                    style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold),
                   ),
                   Text(
                     child.fullName,
-                    style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -162,21 +189,30 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
             DropdownButtonFormField<VaccineSchedule>(
               initialValue: _schedule,
               decoration: const InputDecoration(labelText: 'Loại vắc-xin *'),
-              items: store.vaccineSchedules.map((schedule) => DropdownMenuItem(value: schedule, child: Text(schedule.displayName))).toList(),
+              items: store.vaccineSchedules
+                  .map((schedule) => DropdownMenuItem(
+                      value: schedule, child: Text(schedule.displayName)))
+                  .toList(),
               onChanged: (value) => setState(() => _schedule = value),
-              validator: (value) => value == null ? 'Vui lòng chọn vaccine' : null,
+              validator: (value) =>
+                  value == null ? 'Vui lòng chọn vaccine' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _lotController,
-              decoration: const InputDecoration(labelText: 'Số lô sản xuất (Lot number) *'),
-              validator: (value) => (value ?? '').trim().isEmpty ? 'Vui lòng nhập số lô' : null,
+              decoration: const InputDecoration(
+                  labelText: 'Số lô sản xuất (Lot number) *'),
+              validator: (value) =>
+                  (value ?? '').trim().isEmpty ? 'Vui lòng nhập số lô' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _staffController,
-              decoration: const InputDecoration(labelText: 'Cán bộ thực hiện tiêm *'),
-              validator: (value) => (value ?? '').trim().isEmpty ? 'Vui lòng nhập tên cán bộ' : null,
+              decoration:
+                  const InputDecoration(labelText: 'Cán bộ thực hiện tiêm *'),
+              validator: (value) => (value ?? '').trim().isEmpty
+                  ? 'Vui lòng nhập tên cán bộ'
+                  : null,
             ),
             const SizedBox(height: 14),
             InkWell(
@@ -210,4 +246,3 @@ class _RecordVaccinationScreenState extends State<RecordVaccinationScreen> {
     );
   }
 }
-

@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final userName = store.currentUser?.fullName ?? 'Y sĩ Lê Thu';
-    final commune = store.currentUser?.assignedCommune ?? 'Tả Phìn';
+    final commune = store.currentHealthWorkerCommune ?? 'Chưa phân công';
 
     // Dynamic initials for doctor profile avatar
     final nameParts = userName.trim().split(RegExp(r'\s+'));
@@ -36,13 +36,13 @@ class _HomeScreenState extends State<HomeScreen> {
             : 'YT');
 
     // Count children per village for chip labels
-    final allChildren = store.children;
+    final allChildren = store.currentUserChildren;
     final totalCount = allChildren.length;
-    final namLungCount =
-        allChildren.where((c) => c.village == 'Bản Nậm Lùng').length;
-    final sapaCount = allChildren.where((c) => c.village == 'Bản Sapa').length;
-    final catCatCount =
-        allChildren.where((c) => c.village == 'Bản Cát Cát').length;
+    final villages = allChildren.map((child) => child.village).toSet().toList()
+      ..sort();
+    if (_selectedVillage.isNotEmpty && !villages.contains(_selectedVillage)) {
+      _selectedVillage = '';
+    }
 
     // Filter children by village
     final scheduleList = allChildren.where((child) {
@@ -335,7 +335,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         subtitle: 'Mở Excel',
                         color: const Color(0xFF059669),
                         onTap: () async {
-                          final children = AppScope.of(context).children;
+                          final children =
+                              AppScope.of(context).currentUserChildren;
                           final reporterName =
                               AppScope.of(context).currentUser?.fullName ??
                                   'Cán bộ Y tế';
@@ -370,11 +371,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           final store = AppScope.of(context);
                           final reporterName =
                               store.currentUser?.fullName ?? 'Cán bộ Y tế';
-                          final commune =
-                              store.currentUser?.assignedCommune ?? 'Tả Phìn';
+                          final commune = store.currentHealthWorkerCommune ??
+                              'Chưa phân công';
                           final result = await ReportExportService.instance
                               .exportLatePdfReport(
-                            children: store.children,
+                            children: store.currentUserChildren,
                             reporterName: reporterName,
                             commune: commune,
                           );
@@ -409,11 +410,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   children: [
                     _buildFilterChip('Tất cả bản ($totalCount)', ''),
-                    _buildFilterChip(
-                        'Bản Nậm Lùng ($namLungCount)', 'Bản Nậm Lùng'),
-                    _buildFilterChip('Bản Sapa ($sapaCount)', 'Bản Sapa'),
-                    _buildFilterChip(
-                        'Bản Cát Cát ($catCatCount)', 'Bản Cát Cát'),
+                    ...villages.map((village) {
+                      final count = allChildren
+                          .where((child) => child.village == village)
+                          .length;
+                      return _buildFilterChip('$village ($count)', village);
+                    }),
                   ],
                 ),
               ),

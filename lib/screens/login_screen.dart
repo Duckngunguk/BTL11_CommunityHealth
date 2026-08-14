@@ -22,23 +22,20 @@ class _LoginScreenState extends State<LoginScreen> {
   // Ứng dụng nội bộ luôn mở thẳng màn đăng nhập; không public dữ liệu vận hành.
   int _viewState = 1;
 
-  // Selected role for Register/Login: 'cb' (Cán bộ Y tế) | 'ph' (Phụ huynh)
-  String _selectedRole = 'cb';
-
   // Login Controllers
-  final _usernameController = TextEditingController(text: 'healthworker.demo');
+  final _emailController = TextEditingController(text: 'lethu.yte@sapa.gov.vn');
   final _passwordController = TextEditingController(text: '123456');
   bool _rememberMe = true;
   bool _obscureLoginPassword = true;
 
   // Register Controllers
   final _regFullNameController = TextEditingController();
+  final _regEmailController = TextEditingController();
   final _regPhoneController = TextEditingController();
   final _regUsernameController = TextEditingController();
   final _regPasswordController = TextEditingController();
   final _regConfirmPasswordController = TextEditingController();
   final bool _obscureRegPassword = true;
-  final String _commune = 'Tả Phìn';
 
   // OTP State (viewState = 3)
   final _otpController = TextEditingController();
@@ -48,12 +45,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Timer? _otpTimer;
 
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _regFullNameController.dispose();
+    _regEmailController.dispose();
     _regPhoneController.dispose();
     _regUsernameController.dispose();
     _regPasswordController.dispose();
@@ -76,12 +75,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
-    if (username.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng nhập đầy đủ tài khoản và mật khẩu!'),
+          content: Text('Vui lòng nhập đầy đủ Gmail và mật khẩu!'),
+          backgroundColor: accentRed,
+        ),
+      );
+      return;
+    }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Địa chỉ Gmail/Email không hợp lệ!'),
           backgroundColor: accentRed,
         ),
       );
@@ -91,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     final store = AppScope.of(context);
     final response = await store.authenticate(
-      username: username,
+      email: email,
       password: password,
     );
     if (!mounted) return;
@@ -111,7 +119,38 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    switch (response.data!.role) {
+    _openWorkspace(response.data!);
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isGoogleLoading = true);
+    final response = await AppScope.of(context).authenticateWithGoogle();
+    if (!mounted) return;
+    setState(() => _isGoogleLoading = false);
+
+    if (!response.success || response.data == null) {
+      if (response.statusCode == 403) {
+        _showPendingApprovalDialog();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.error ?? 'Không thể đăng nhập Google.'),
+            backgroundColor: accentRed,
+          ),
+        );
+      }
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(response.message ?? 'Đăng nhập Google thành công.')),
+    );
+    _openWorkspace(response.data!);
+  }
+
+  void _openWorkspace(UserModel user) {
+    switch (user.role) {
       case UserRole.admin:
         widget.onLogin(AppMode.admin);
       case UserRole.parent:
@@ -123,12 +162,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleRegister() async {
     final name = _regFullNameController.text.trim();
+    final email = _regEmailController.text.trim();
     final username = _regUsernameController.text.trim();
     final phone = _regPhoneController.text.trim();
     final password = _regPasswordController.text.trim();
     final confirm = _regConfirmPasswordController.text.trim();
 
-    if (name.isEmpty || username.isEmpty || password.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        username.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty ||
+        confirm.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Vui lòng nhập đầy đủ các thông tin bắt buộc!'),
@@ -137,7 +182,24 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (password != confirm && confirm.isNotEmpty) {
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Email không hợp lệ!'), backgroundColor: accentRed),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Mật khẩu phải có ít nhất 6 ký tự!'),
+            backgroundColor: accentRed),
+      );
+      return;
+    }
+
+    if (password != confirm) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Xác nhận mật khẩu không trùng khớp!'),
@@ -146,111 +208,33 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // For Phụ huynh: require OTP verification first
-    if (_selectedRole == 'ph') {
-      if (phone.isEmpty || phone.length < 9) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text('Vui lòng nhập Số điện thoại hợp lệ để nhận mã OTP!'),
-              backgroundColor: accentRed),
-        );
-        return;
-      }
-      setState(() => _isLoading = true);
-      final result = await OtpService.instance.sendOtp(phone);
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      if (!result.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message), backgroundColor: accentRed),
-        );
-        return;
-      }
-      // Go to OTP screen
-      setState(() {
-        _pendingPhone = phone;
-        _pendingOtpPreview = result.previewOtp;
-        _otpController.clear();
-        _viewState = 3; // OTP verification screen
-      });
-      _startOtpTimer();
+    if (phone.replaceAll(RegExp(r'\D'), '').length < 9) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Vui lòng nhập số điện thoại hợp lệ!'),
+            backgroundColor: accentRed),
+      );
       return;
     }
 
     setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 400));
+    final result = await OtpService.instance.sendOtp(phone);
     if (!mounted) return;
-    final store = AppScope.of(context);
-    final isHealthWorker = _selectedRole == 'cb';
-
-    final res = await store.registerUser(
-      username: username,
-      fullName: name,
-      email: '$username@communityhealth.local',
-      phone: phone.isNotEmpty ? phone : '0987654321',
-      role: isHealthWorker ? UserRole.healthWorker : UserRole.parent,
-      password: password,
-      assignedCommune: _commune,
-    );
-    if (!mounted) return;
-
-    // Auto fill login fields and return to Login View
-    _usernameController.text = username;
-    _passwordController.text = password;
-    setState(() {
-      _isLoading = false;
-      _viewState = 1; // Return to Login Screen
-    });
-
-    if (res.error != null) {
+    setState(() => _isLoading = false);
+    if (!result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res.error!), backgroundColor: accentRed),
+        SnackBar(content: Text(result.message), backgroundColor: accentRed),
       );
       return;
     }
 
-    if (isHealthWorker) {
-      // Show Admin Approval Info Dialog for Cán bộ Y tế
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.hourglass_top_rounded,
-                  color: Color(0xFFD97706), size: 24),
-              SizedBox(width: 8),
-              Text('Đăng ký thành công',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ],
-          ),
-          content: const Text(
-            'Tài khoản Cán bộ Y tế của bạn đã được khởi tạo thành công!\n\n⚠️ Theo quy định, tài khoản Cán bộ Y tế cần được Quản trị viên (Admin TTYT Sa Pa) PHÊ DUYỆT trước khi có thể đăng nhập vào hệ thống.',
-            style: TextStyle(fontSize: 13, height: 1.45, color: gray700),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Đã hiểu, về Đăng nhập',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800, color: primaryDark)),
-            ),
-          ],
-        ),
-      );
-    } else {
-      // Toast for Parent Registration
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              '🎉 Đăng ký tài khoản Phụ huynh thành công! Vui lòng đăng nhập với tài khoản "$username".'),
-          backgroundColor: primaryDark,
-          duration: const Duration(seconds: 4),
-        ),
-      );
-    }
+    setState(() {
+      _pendingPhone = phone;
+      _pendingOtpPreview = result.previewOtp;
+      _otpController.clear();
+      _viewState = 3;
+    });
+    _startOtpTimer();
   }
 
   void _showPendingApprovalDialog() {
@@ -303,19 +287,29 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         final store = AppScope.of(context);
         final name = _regFullNameController.text.trim();
+        final email = _regEmailController.text.trim();
         final username = _regUsernameController.text.trim();
         final phone = _regPhoneController.text.trim();
         final password = _regPasswordController.text.trim();
-        await store.registerUser(
+        final response = await store.registerParent(
           username: username,
           fullName: name,
-          email: '$username@communityhealth.local',
+          email: email,
           phone: phone,
-          role: UserRole.parent,
           password: password,
-          assignedCommune: _commune,
         );
-        _usernameController.text = username;
+        if (!response.success) {
+          setState(() => _isLoading = false);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.error ?? 'Không thể tạo tài khoản.'),
+              backgroundColor: accentRed,
+            ),
+          );
+          return;
+        }
+        _emailController.text = email;
         _passwordController.text = password;
         setState(() => _isLoading = false);
         if (!mounted) return;
@@ -786,7 +780,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 30),
           const Text(
-            'Tài khoản hoặc số điện thoại',
+            'Gmail đăng nhập',
             style: TextStyle(
               color: gray800,
               fontSize: 13,
@@ -795,12 +789,13 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 8),
           TextField(
-            controller: _usernameController,
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.username],
+            autofillHints: const [AutofillHints.email],
             decoration: const InputDecoration(
-              hintText: 'Nhập tài khoản của bạn',
-              prefixIcon: Icon(Icons.person_outline_rounded, size: 20),
+              hintText: 'Nhập Gmail hoặc địa chỉ email của bạn',
+              prefixIcon: Icon(Icons.email_outlined, size: 20),
             ),
           ),
           const SizedBox(height: 18),
@@ -884,7 +879,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 18),
           FilledButton(
-            onPressed: _isLoading ? null : _handleLogin,
+            onPressed: _isLoading || _isGoogleLoading ? null : _handleLogin,
             child: _isLoading
                 ? const SizedBox(
                     width: 20,
@@ -895,6 +890,45 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   )
                 : const Text('Đăng nhập'),
+          ),
+          const SizedBox(height: 18),
+          const Row(
+            children: [
+              Expanded(child: Divider()),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'HOẶC',
+                  style: TextStyle(
+                    color: gray400,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: .8,
+                  ),
+                ),
+              ),
+              Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: 18),
+          OutlinedButton.icon(
+            onPressed:
+                _isLoading || _isGoogleLoading ? null : _handleGoogleLogin,
+            icon: _isGoogleLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text(
+                    'G',
+                    style: TextStyle(
+                      color: Color(0xFF4285F4),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+            label: const Text('Tiếp tục với Google'),
           ),
           const SizedBox(height: 22),
           Wrap(
@@ -969,7 +1003,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const Expanded(
                   child: Text(
-                    'Đăng ký tài khoản',
+                    'Đăng ký tài khoản Phụ huynh',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontWeight: FontWeight.w800,
@@ -1003,125 +1037,31 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // CHỌN VAI TRỜ TÀI KHOẢN ĐĂNG KÝ
-                            const Text(
-                              'CHỌN VAI TRỜ TÀI KHOẢN ĐĂNG KÝ',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: gray700,
-                                  letterSpacing: 0.02),
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Radio Pill Row
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _selectedRole = 'cb'),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 10, horizontal: 12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: _selectedRole == 'cb'
-                                              ? primaryDark
-                                              : gray200,
-                                          width:
-                                              _selectedRole == 'cb' ? 1.5 : 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            width: 16,
-                                            height: 16,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                  color: primaryDark, width: 2),
-                                              color: _selectedRole == 'cb'
-                                                  ? primaryDark
-                                                  : Colors.white,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Cán bộ Y tế',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w800,
-                                              color: _selectedRole == 'cb'
-                                                  ? gray900
-                                                  : gray600,
-                                            ),
-                                          ),
-                                        ],
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: primaryLight,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: gray200),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.family_restroom_rounded,
+                                      color: primaryDark, size: 20),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Đăng ký công khai chỉ dành cho Phụ huynh. Tài khoản cán bộ y tế do Admin tạo.',
+                                      style: TextStyle(
+                                        color: primaryDark,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.35,
                                       ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _selectedRole = 'ph'),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 10, horizontal: 12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: _selectedRole == 'ph'
-                                              ? primaryDark
-                                              : gray200,
-                                          width:
-                                              _selectedRole == 'ph' ? 1.5 : 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            width: 16,
-                                            height: 16,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                  color: _selectedRole == 'ph'
-                                                      ? primaryDark
-                                                      : gray400,
-                                                  width: 2),
-                                              color: _selectedRole == 'ph'
-                                                  ? primaryDark
-                                                  : Colors.white,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Phụ huynh',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w800,
-                                              color: _selectedRole == 'ph'
-                                                  ? gray900
-                                                  : gray600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 14),
 
@@ -1137,6 +1077,22 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 6),
                             _buildInputField(_regFullNameController,
                                 'Ví dụ: Nguyễn Mạnh Đức'),
+                            const SizedBox(height: 14),
+
+                            const Text(
+                              'EMAIL',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: gray700,
+                                  letterSpacing: 0.02),
+                            ),
+                            const SizedBox(height: 6),
+                            _buildInputField(
+                              _regEmailController,
+                              'Ví dụ: phuhuynh@gmail.com',
+                              keyboardType: TextInputType.emailAddress,
+                            ),
                             const SizedBox(height: 14),
 
                             // Field 2: SỐ ĐIỆN THOẠI LIÊN HỆ

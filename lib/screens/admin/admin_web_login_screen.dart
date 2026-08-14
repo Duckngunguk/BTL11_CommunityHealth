@@ -19,27 +19,32 @@ class AdminWebLoginScreen extends StatefulWidget {
 }
 
 class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
-  final _usernameController = TextEditingController(text: 'admin.demo');
+  final _emailController = TextEditingController(text: 'admin123@gmail.com');
   final _passwordController = TextEditingController(text: '123456');
   bool _obscure = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleAdminLogin() async {
-    final username = _usernameController.text.trim().toLowerCase();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
 
-    if (username.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                'Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu Quản trị!')),
+            content: Text('Vui lòng nhập đầy đủ Gmail và Mật khẩu Quản trị!')),
+      );
+      return;
+    }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Địa chỉ Gmail/Email không hợp lệ!')),
       );
       return;
     }
@@ -47,7 +52,7 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
     setState(() => _isLoading = true);
     final store = AppScope.of(context);
     final response = await store.authenticate(
-      username: username,
+      email: email,
       password: password,
     );
     if (!mounted) return;
@@ -259,7 +264,7 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
           const SizedBox(height: 28),
 
           // Form fields
-          const Text('TÀI KHOẢN QUẢN TRỊ',
+          const Text('GMAIL QUẢN TRỊ',
               style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -267,12 +272,14 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
                   letterSpacing: 0.04)),
           const SizedBox(height: 6),
           TextField(
-            controller: _usernameController,
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
             style: const TextStyle(fontSize: 13.5, color: gray900),
             decoration: const InputDecoration(
-              hintText: 'Nhập tên đăng nhập admin',
-              prefixIcon:
-                  Icon(Icons.person_outline_rounded, size: 18, color: gray400),
+              hintText: 'Nhập Gmail của Admin',
+              prefixIcon: Icon(Icons.email_outlined, size: 18, color: gray400),
             ),
           ),
           const SizedBox(height: 16),
@@ -353,7 +360,7 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Tài khoản mặc định: admin.demo / 123456',
+                    'Tài khoản mặc định: admin123@gmail.com / 123456',
                     style: TextStyle(
                         fontSize: 11.5,
                         color: gray600,

@@ -20,9 +20,9 @@ class SettingsScreen extends StatelessWidget {
       roleLabel = 'Phụ huynh';
     }
 
-    final stationText = user?.assignedCommune != null
-        ? 'Trạm Y tế xã ${user!.assignedCommune}'
-        : 'Trạm Y tế xã Tả Phìn';
+    final stationText = store.currentHealthWorkerCommune != null
+        ? 'Trạm Y tế xã ${store.currentHealthWorkerCommune}'
+        : 'Chưa được phân công xã';
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 32),

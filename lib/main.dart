@@ -143,8 +143,6 @@ class _AppRouter extends StatefulWidget {
 }
 
 class _AppRouterState extends State<_AppRouter> {
-  AppMode? _mode;
-
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
@@ -155,19 +153,20 @@ class _AppRouterState extends State<_AppRouter> {
       );
     }
 
-    AppMode? activeMode = _mode;
-    if (activeMode == null && store.currentUser != null) {
-      activeMode = switch (store.currentUser!.role) {
-        UserRole.admin => AppMode.admin,
-        UserRole.parent => AppMode.parent,
-        UserRole.healthWorker => AppMode.mobile,
-      };
-    }
+    // Route guard: the destination is derived only from the authenticated
+    // account stored by AppStore. A role/mode sent by the UI is never trusted.
+    final activeMode = store.currentUser == null
+        ? null
+        : switch (store.currentUser!.role) {
+            UserRole.admin => AppMode.admin,
+            UserRole.parent => AppMode.parent,
+            UserRole.healthWorker => AppMode.mobile,
+          };
 
     void logout() async {
       await store.logout();
       if (!mounted) return;
-      setState(() => _mode = null);
+      setState(() {});
     }
 
     if (activeMode == AppMode.admin) {
@@ -186,7 +185,7 @@ class _AppRouterState extends State<_AppRouter> {
     }
 
     return LoginScreen(
-      onLogin: (mode) => setState(() => _mode = mode),
+      onLogin: (_) => setState(() {}),
     );
   }
 }

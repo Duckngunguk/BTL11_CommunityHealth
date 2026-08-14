@@ -25,6 +25,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
   late String _gender;
   late String _selectedCommune;
   late String _selectedVillage;
+  bool _communeScopeApplied = false;
 
   bool get _isEditing => widget.childToEdit != null;
 
@@ -33,23 +34,40 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     super.initState();
     final child = widget.childToEdit;
     _fullNameController = TextEditingController(text: child?.fullName ?? '');
-    _motherNameController = TextEditingController(text: child?.motherName ?? '');
-    _motherPhoneController = TextEditingController(text: child?.motherPhone ?? '');
-    _districtController = TextEditingController(text: child?.district ?? 'Sa Pa');
+    _motherNameController =
+        TextEditingController(text: child?.motherName ?? '');
+    _motherPhoneController =
+        TextEditingController(text: child?.motherPhone ?? '');
+    _districtController =
+        TextEditingController(text: child?.district ?? 'Sa Pa');
     _qrCodeController = TextEditingController(text: child?.qrCode ?? '');
 
-    _dob = child?.dateOfBirth ?? DateTime.now().subtract(const Duration(days: 90));
+    _dob =
+        child?.dateOfBirth ?? DateTime.now().subtract(const Duration(days: 90));
     _gender = child?.gender ?? 'Nam';
 
-    // Cascade dropdown values initialization
-    _selectedCommune = child?.commune ?? 'Tả Phìn';
-    _selectedVillage = child?.village ?? 'Bản Nậm Lùng';
-    if (!kVillagesByCommune.containsKey(_selectedCommune)) {
-      _selectedCommune = 'Tả Phìn';
+    _selectedCommune = child?.commune ?? '';
+    _selectedVillage = child?.village ?? '';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_communeScopeApplied) return;
+
+    final assignedCommune = AppScope.of(context).currentHealthWorkerCommune;
+    if (assignedCommune != null &&
+        kVillagesByCommune.containsKey(assignedCommune)) {
+      _selectedCommune = assignedCommune;
+      final allowedVillages = kVillagesByCommune[assignedCommune]!;
+      final canKeepExistingVillage = _isEditing &&
+          widget.childToEdit!.commune == assignedCommune &&
+          widget.childToEdit!.village.isNotEmpty;
+      _selectedVillage = canKeepExistingVillage
+          ? widget.childToEdit!.village
+          : allowedVillages.first;
     }
-    if (!kVillagesByCommune[_selectedCommune]!.contains(_selectedVillage)) {
-      _selectedVillage = kVillagesByCommune[_selectedCommune]!.first;
-    }
+    _communeScopeApplied = true;
   }
 
   @override
@@ -70,7 +88,17 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     final motherName = _motherNameController.text.trim();
     final motherPhone = _motherPhoneController.text.trim();
     final village = _selectedVillage;
-    final commune = _selectedCommune;
+    final commune = store.currentHealthWorkerCommune;
+    if (commune == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Tài khoản chưa được Admin phân công xã nên không thể lưu hồ sơ.',
+          ),
+        ),
+      );
+      return;
+    }
     final district = _districtController.text.trim();
     String qrCode = _qrCodeController.text.trim();
 
@@ -157,18 +185,29 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final villageOptions = <String>{
+      ...?kVillagesByCommune[_selectedCommune],
+      if (_selectedVillage.isNotEmpty) _selectedVillage,
+    }.toList();
+
     return Scaffold(
       appBar: AppBar(
         leading: TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Hủy', style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
+          child: const Text('Hủy',
+              style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
         ),
-        title: Text(_isEditing ? 'Sửa thông tin trẻ' : 'Tạo hồ sơ trẻ', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        title: Text(_isEditing ? 'Sửa thông tin trẻ' : 'Tạo hồ sơ trẻ',
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
         centerTitle: true,
         actions: [
           TextButton(
             onPressed: _save,
-            child: Text(_isEditing ? 'Lưu' : 'Xong', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+            child: Text(_isEditing ? 'Lưu' : 'Xong',
+                style: const TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15)),
           ),
           const SizedBox(width: 8),
         ],
@@ -180,10 +219,13 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF16A34A),
             minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           icon: const Icon(Icons.save_rounded, color: Colors.white, size: 20),
-          label: Text(_isEditing ? 'Lưu thay đổi' : 'Tạo hồ sơ lưu trữ', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          label: Text(_isEditing ? 'Lưu thay đổi' : 'Tạo hồ sơ lưu trữ',
+              style:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         ),
       ),
       body: Form(
@@ -197,7 +239,8 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 labelText: 'Họ và tên trẻ em *',
                 hintText: 'Nhập họ tên đầy đủ',
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập họ tên trẻ' : null,
+              validator: (v) =>
+                  (v ?? '').trim().isEmpty ? 'Vui lòng nhập họ tên trẻ' : null,
             ),
             const SizedBox(height: 14),
             Row(
@@ -221,7 +264,8 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(formatDate(_dob)),
-                          const Icon(Icons.calendar_today_rounded, size: 16, color: Colors.black45),
+                          const Icon(Icons.calendar_today_rounded,
+                              size: 16, color: Colors.black45),
                         ],
                       ),
                     ),
@@ -249,38 +293,32 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<String>(
+                  child: TextFormField(
                     key: ValueKey('commune-$_selectedCommune'),
                     initialValue: _selectedCommune,
+                    readOnly: true,
                     decoration: const InputDecoration(
-                      labelText: 'Xã cư trú *',
+                      labelText: 'Xã phụ trách *',
+                      prefixIcon: Icon(Icons.location_on_outlined),
                     ),
-                    items: kVillagesByCommune.keys.map((commune) => DropdownMenuItem(
-                      value: commune,
-                      child: Text(commune),
-                    )).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedCommune = val;
-                          _selectedVillage = kVillagesByCommune[val]!.first;
-                        });
-                      }
-                    },
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    key: ValueKey('village-$_selectedCommune-$_selectedVillage'),
-                    initialValue: _selectedVillage,
+                    key:
+                        ValueKey('village-$_selectedCommune-$_selectedVillage'),
+                    initialValue:
+                        _selectedVillage.isEmpty ? null : _selectedVillage,
                     decoration: const InputDecoration(
                       labelText: 'Địa bàn cư trú (Thôn bản) *',
                     ),
-                    items: kVillagesByCommune[_selectedCommune]!.map((village) => DropdownMenuItem(
-                      value: village,
-                      child: Text(village),
-                    )).toList(),
+                    items: villageOptions
+                        .map((village) => DropdownMenuItem(
+                              value: village,
+                              child: Text(village),
+                            ))
+                        .toList(),
                     onChanged: (val) {
                       if (val != null) {
                         setState(() {
@@ -299,7 +337,9 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 labelText: 'Họ tên cha / mẹ / Người giám hộ *',
                 hintText: 'Nhập tên phụ huynh',
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập tên mẹ / giám hộ' : null,
+              validator: (v) => (v ?? '').trim().isEmpty
+                  ? 'Vui lòng nhập tên mẹ / giám hộ'
+                  : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -316,7 +356,8 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
               decoration: const InputDecoration(
                 labelText: 'Huyện / Thị xã *',
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập huyện' : null,
+              validator: (v) =>
+                  (v ?? '').trim().isEmpty ? 'Vui lòng nhập huyện' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -332,4 +373,3 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     );
   }
 }
-

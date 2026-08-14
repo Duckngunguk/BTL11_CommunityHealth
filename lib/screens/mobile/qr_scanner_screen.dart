@@ -49,12 +49,14 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     _controller?.stop();
 
     final store = AppScope.of(context);
-    final child = store.children.where((c) => c.qrCode == code).firstOrNull;
+    final child =
+        store.currentUserChildren.where((c) => c.qrCode == code).firstOrNull;
 
     if (child != null) {
       Navigator.of(context).pop();
       Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => ChildDetailScreen(childId: child.id)),
+        MaterialPageRoute<void>(
+            builder: (_) => ChildDetailScreen(childId: child.id)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -129,7 +131,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text('Quét mã QR thẻ y tế', style: TextStyle(color: Colors.white)),
+        title: const Text('Quét mã QR thẻ y tế',
+            style: TextStyle(color: Colors.white)),
         actions: [
           if (!_isDesktop) ...[
             IconButton(
@@ -144,7 +147,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.flip_camera_ios_rounded, color: Colors.white),
+              icon: const Icon(Icons.flip_camera_ios_rounded,
+                  color: Colors.white),
               tooltip: 'Đổi camera',
               onPressed: () => _controller?.switchCamera(),
             ),
@@ -166,11 +170,15 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF18794E), size: 72),
+                    const Icon(Icons.qr_code_scanner_rounded,
+                        color: Color(0xFF18794E), size: 72),
                     const SizedBox(height: 16),
                     const Text(
                       'Mô phỏng máy quét QR (Desktop Windows)',
-                      style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
@@ -184,14 +192,17 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                       onPressed: () => _processCode('CH-QR-0001'),
                       icon: const Icon(Icons.qr_code_2_rounded),
                       label: const Text('Quét thử mã CH-QR-0001'),
-                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF18794E)),
+                      style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF18794E)),
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: _showManualInputDialog,
                       icon: const Icon(Icons.edit_rounded, color: Colors.white),
-                      label: const Text('Nhập mã thủ công', style: TextStyle(color: Colors.white)),
-                      style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white30)),
+                      label: const Text('Nhập mã thủ công',
+                          style: TextStyle(color: Colors.white)),
+                      style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.white30)),
                     ),
                   ],
                 ),
@@ -204,7 +215,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             ),
             _ScannerOverlay(),
           ],
-
           Positioned(
             bottom: 0,
             left: 0,
@@ -222,11 +232,15 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!_isDesktop) ...[
-                    const Icon(Icons.qr_code_2_rounded, color: Colors.white70, size: 36),
+                    const Icon(Icons.qr_code_2_rounded,
+                        color: Colors.white70, size: 36),
                     const SizedBox(height: 10),
                     const Text(
                       'Đưa mã QR thẻ y tế của trẻ vào khung',
-                      style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 6),
@@ -238,9 +252,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                     const SizedBox(height: 16),
                     OutlinedButton.icon(
                       onPressed: _showManualInputDialog,
-                      icon: const Icon(Icons.keyboard_outlined, color: Colors.white70),
-                      label: const Text('Nhập mã thủ công', style: TextStyle(color: Colors.white70)),
-                      style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white30)),
+                      icon: const Icon(Icons.keyboard_outlined,
+                          color: Colors.white70),
+                      label: const Text('Nhập mã thủ công',
+                          style: TextStyle(color: Colors.white70)),
+                      style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.white30)),
                     ),
                   ],
                 ],
@@ -266,10 +283,16 @@ class _ScannerOverlay extends StatelessWidget {
             height: scanSize,
             child: const Stack(
               children: [
-                Positioned(top: 0, left: 0, child: _Corner(top: true, left: true)),
-                Positioned(top: 0, right: 0, child: _Corner(top: true, left: false)),
-                Positioned(bottom: 0, left: 0, child: _Corner(top: false, left: true)),
-                Positioned(bottom: 0, right: 0, child: _Corner(top: false, left: false)),
+                Positioned(
+                    top: 0, left: 0, child: _Corner(top: true, left: true)),
+                Positioned(
+                    top: 0, right: 0, child: _Corner(top: true, left: false)),
+                Positioned(
+                    bottom: 0, left: 0, child: _Corner(top: false, left: true)),
+                Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: _Corner(top: false, left: false)),
               ],
             ),
           ),
@@ -289,10 +312,19 @@ class _OverlayPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final halfScan = scanSize / 2;
 
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, center.dy - halfScan), paint);
-    canvas.drawRect(Rect.fromLTWH(0, center.dy + halfScan, size.width, size.height - center.dy - halfScan), paint);
-    canvas.drawRect(Rect.fromLTWH(0, center.dy - halfScan, center.dx - halfScan, scanSize), paint);
-    canvas.drawRect(Rect.fromLTWH(center.dx + halfScan, center.dy - halfScan, size.width - center.dx - halfScan, scanSize), paint);
+    canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, center.dy - halfScan), paint);
+    canvas.drawRect(
+        Rect.fromLTWH(0, center.dy + halfScan, size.width,
+            size.height - center.dy - halfScan),
+        paint);
+    canvas.drawRect(
+        Rect.fromLTWH(0, center.dy - halfScan, center.dx - halfScan, scanSize),
+        paint);
+    canvas.drawRect(
+        Rect.fromLTWH(center.dx + halfScan, center.dy - halfScan,
+            size.width - center.dx - halfScan, scanSize),
+        paint);
   }
 
   @override

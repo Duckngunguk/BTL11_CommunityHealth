@@ -18,7 +18,8 @@ class _SyncScreenState extends State<SyncScreen> {
     if (!store.isOnline) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Không có kết nối mạng. Dữ liệu vẫn được giữ ở trạng thái chờ.'),
+          content: Text(
+              'Không có kết nối mạng. Dữ liệu vẫn được giữ ở trạng thái chờ.'),
           backgroundColor: Color(0xFFB06000),
         ),
       );
@@ -51,7 +52,8 @@ class _SyncScreenState extends State<SyncScreen> {
     setState(() => _conflictSimulated = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('🧪 Mô phỏng xung đột dữ liệu: Bản ghi địa phương có thời gian mới hơn Firebase!'),
+        content: Text(
+            '🧪 Mô phỏng xung đột dữ liệu: Bản ghi địa phương có thời gian mới hơn Firebase!'),
         backgroundColor: accentYellow,
       ),
     );
@@ -61,10 +63,10 @@ class _SyncScreenState extends State<SyncScreen> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
 
-    // Collect all pending records across all children
+    // Chỉ hiển thị bản ghi thuộc xã cán bộ đang phụ trách.
     final pendingItems = <_SyncItem>[];
 
-    for (final child in store.children) {
+    for (final child in store.currentUserChildren) {
       for (final v in child.vaccinations) {
         if (v.syncStatus == VaccinationSyncStatus.pending) {
           pendingItems.add(_SyncItem(
@@ -135,7 +137,10 @@ class _SyncScreenState extends State<SyncScreen> {
                       const Expanded(
                         child: Text(
                           'Đồng bộ dữ liệu',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: gray900),
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: gray900),
                         ),
                       ),
                       // Refresh / sync trigger icon button
@@ -148,7 +153,8 @@ class _SyncScreenState extends State<SyncScreen> {
                             color: blueLight,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.refresh_rounded, color: primaryBlue, size: 20),
+                          child: const Icon(Icons.refresh_rounded,
+                              color: primaryBlue, size: 20),
                         ),
                       ),
                     ],
@@ -174,11 +180,18 @@ class _SyncScreenState extends State<SyncScreen> {
                   ),
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(color: Color(0xFF92400E), fontSize: 13, height: 1.4),
+                      style: const TextStyle(
+                          color: Color(0xFF92400E), fontSize: 13, height: 1.4),
                       children: [
-                        const TextSpan(text: 'Phát hiện ', style: TextStyle(fontWeight: FontWeight.w800)),
-                        TextSpan(text: '$count bản ghi ', style: const TextStyle(fontWeight: FontWeight.w800)),
-                        const TextSpan(text: 'chưa được đồng bộ lên Firebase Cloud.'),
+                        const TextSpan(
+                            text: 'Phát hiện ',
+                            style: TextStyle(fontWeight: FontWeight.w800)),
+                        TextSpan(
+                            text: '$count bản ghi ',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w800)),
+                        const TextSpan(
+                            text: 'chưa được đồng bộ lên Firebase Cloud.'),
                       ],
                     ),
                   ),
@@ -227,18 +240,26 @@ class _SyncScreenState extends State<SyncScreen> {
                                       Expanded(
                                         child: Text(
                                           item.description,
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: gray900),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 14,
+                                              color: gray900),
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFFEF3C7),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                         child: const Text(
                                           'Chờ đẩy',
-                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFD97706)),
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFFD97706)),
                                         ),
                                       ),
                                     ],
@@ -246,7 +267,8 @@ class _SyncScreenState extends State<SyncScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     'Trẻ: ${item.childName} • Người thực hiện: ${item.administeredBy}',
-                                    style: const TextStyle(color: gray500, fontSize: 12),
+                                    style: const TextStyle(
+                                        color: gray500, fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -261,19 +283,28 @@ class _SyncScreenState extends State<SyncScreen> {
                 SizedBox(
                   height: 48,
                   child: FilledButton.icon(
-                    onPressed: store.isSyncing
-                        ? null
-                        : () => _runSync(store),
+                    onPressed: store.isSyncing ? null : () => _runSync(store),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF059669), // Solid green
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     icon: store.isSyncing
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.sync_rounded, size: 20, color: Colors.white),
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.sync_rounded,
+                            size: 20, color: Colors.white),
                     label: Text(
-                      store.isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ dữ liệu thường',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
+                      store.isSyncing
+                          ? 'Đang đồng bộ...'
+                          : 'Đồng bộ dữ liệu thường',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: Colors.white),
                     ),
                   ),
                 ),
@@ -286,12 +317,17 @@ class _SyncScreenState extends State<SyncScreen> {
                     onPressed: _triggerSimulatedConflict,
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB), // Solid blue
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    icon: const Icon(Icons.science_outlined, size: 20, color: Colors.white),
+                    icon: const Icon(Icons.science_outlined,
+                        size: 20, color: Colors.white),
                     label: const Text(
                       'Mô phỏng Xung đột (Demo)',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: Colors.white),
                     ),
                   ),
                 ),
@@ -300,7 +336,8 @@ class _SyncScreenState extends State<SyncScreen> {
                 // ── Section 2: NHẬT KÝ DUYỆT XUNG ĐỘT (AUDIT LOG) ─
                 const SectionLabel('NHẬT KÝ DUYỆT XUNG ĐỘT (AUDIT LOG)'),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -312,9 +349,13 @@ class _SyncScreenState extends State<SyncScreen> {
                           ? '⚠️ [Xung đột đã ghi nhận]: Bản ghi local #REC-001 được chọn giữ nguyên.'
                           : 'Chưa phát hiện và duyệt xung đột nào.',
                       style: TextStyle(
-                        color: _conflictSimulated ? const Color(0xFFD97706) : gray400,
+                        color: _conflictSimulated
+                            ? const Color(0xFFD97706)
+                            : gray400,
                         fontSize: 12.5,
-                        fontWeight: _conflictSimulated ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: _conflictSimulated
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -326,9 +367,11 @@ class _SyncScreenState extends State<SyncScreen> {
                 const SectionLabel('LỊCH SỬ ĐỒNG BỘ THÀNH CÔNG'),
 
                 // Hardcoded demo history cards matching prototype + dynamic batches
-                _buildHistoryCard('Lô Batch-BG-002 (3 trẻ)', 'Thời gian: 08/08/2026 05:00'),
+                _buildHistoryCard(
+                    'Lô Batch-BG-002 (3 trẻ)', 'Thời gian: 08/08/2026 05:00'),
                 const SizedBox(height: 10),
-                _buildHistoryCard('Lô Batch-BG-001 (5 trẻ)', 'Thời gian: 07/08/2026 14:00'),
+                _buildHistoryCard(
+                    'Lô Batch-BG-001 (5 trẻ)', 'Thời gian: 07/08/2026 14:00'),
 
                 const SizedBox(height: 24),
               ],
@@ -364,19 +407,26 @@ class _SyncScreenState extends State<SyncScreen> {
                           children: [
                             Text(
                               title,
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: gray900),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: gray900),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               subtitle,
-                              style: const TextStyle(color: gray500, fontSize: 12),
+                              style:
+                                  const TextStyle(color: gray500, fontSize: 12),
                             ),
                           ],
                         ),
                       ),
                       const Text(
                         'Thành công',
-                        style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.w800, fontSize: 13),
+                        style: TextStyle(
+                            color: Color(0xFF059669),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13),
                       ),
                     ],
                   ),
@@ -391,7 +441,10 @@ class _SyncScreenState extends State<SyncScreen> {
 }
 
 class _SyncItem {
-  const _SyncItem({required this.childName, required this.description, required this.administeredBy});
+  const _SyncItem(
+      {required this.childName,
+      required this.description,
+      required this.administeredBy});
   final String childName;
   final String description;
   final String administeredBy;

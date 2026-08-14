@@ -21,14 +21,16 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
 
   void _editChild(ChildProfile child) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ChildFormScreen(childToEdit: child)),
+      MaterialPageRoute<void>(
+          builder: (_) => ChildFormScreen(childToEdit: child)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final childExists = store.children.any((item) => item.id == widget.childId);
+    final scopedChildren = store.currentUserChildren;
+    final childExists = scopedChildren.any((item) => item.id == widget.childId);
 
     if (!childExists) {
       return Scaffold(
@@ -37,7 +39,8 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
       );
     }
 
-    final child = store.children.firstWhere((item) => item.id == widget.childId);
+    final child =
+        scopedChildren.firstWhere((item) => item.id == widget.childId);
     final isLate = child.lateDays > 0;
 
     return Scaffold(
@@ -57,8 +60,13 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.chevron_left_rounded, color: primaryBlue, size: 22),
-                        Text('Phụ huynh', style: TextStyle(color: primaryBlue, fontSize: 13, fontWeight: FontWeight.w600)),
+                        Icon(Icons.chevron_left_rounded,
+                            color: primaryBlue, size: 22),
+                        Text('Phụ huynh',
+                            style: TextStyle(
+                                color: primaryBlue,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -67,13 +75,20 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                   child: Text(
                     'Chi tiết hồ sơ',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: gray900),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: gray900),
                   ),
                 ),
                 // Sửa
                 TextButton(
                   onPressed: () => _editChild(child),
-                  child: const Text('Sửa', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.w600, fontSize: 13)),
+                  child: const Text('Sửa',
+                      style: TextStyle(
+                          color: primaryBlue,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13)),
                 ),
               ],
             ),
@@ -92,7 +107,10 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: gray200),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8)],
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02), blurRadius: 8)
+              ],
             ),
             child: Column(
               children: [
@@ -100,18 +118,25 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                 Container(
                   width: 48,
                   height: 48,
-                  decoration: const BoxDecoration(color: blueLight, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                      color: blueLight, shape: BoxShape.circle),
                   child: Center(
                     child: Text(
                       child.fullName.characters.first,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: primaryBlue),
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: primaryBlue),
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   child.fullName,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: gray900),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: gray900),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -126,7 +151,8 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                 Container(height: 1, color: gray200),
                 const SizedBox(height: 10),
                 // Info rows
-                _infoRow('Ngày sinh', '${formatDate(child.dateOfBirth)} (${child.gender})'),
+                _infoRow('Ngày sinh',
+                    '${formatDate(child.dateOfBirth)} (${child.gender})'),
                 const SizedBox(height: 6),
                 _infoRow('Thôn bản', '${child.village}, xã ${child.commune}'),
                 const SizedBox(height: 6),
@@ -147,12 +173,14 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: accentRed, size: 18),
+                  const Icon(Icons.warning_amber_rounded,
+                      color: accentRed, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '⚠️ Trễ ${child.lateDays} ngày • Mũi tiếp theo: ${child.nextVaccine} • Dự kiến: ${formatDate(child.nextDue)}',
-                      style: const TextStyle(color: accentRed, fontSize: 12, height: 1.4),
+                      style: const TextStyle(
+                          color: accentRed, fontSize: 12, height: 1.4),
                     ),
                   ),
                 ],
@@ -190,7 +218,8 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                     child: TimelineItem(
                       title: '${v.vaccineName} – Mũi ${v.doseNumber}',
-                      subtitle: 'Ngày tiêm: ${formatDate(v.administeredAt)} · Lô: ${v.lotNumber} · ${v.administeredBy}',
+                      subtitle:
+                          'Ngày tiêm: ${formatDate(v.administeredAt)} · Lô: ${v.lotNumber} · ${v.administeredBy}',
                       isSynced: v.syncStatus == VaccinationSyncStatus.synced,
                     ),
                   )),
@@ -208,7 +237,8 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                     child: TimelineItem(
                       title: m.medicationName,
-                      subtitle: 'Ngày uống: ${formatDate(m.administeredAt)} · Liều: ${m.dosage} · ${m.administeredBy}',
+                      subtitle:
+                          'Ngày uống: ${formatDate(m.administeredAt)} · Liều: ${m.dosage} · ${m.administeredBy}',
                       isSynced: m.syncStatus == VaccinationSyncStatus.synced,
                     ),
                   )),
@@ -231,11 +261,15 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.person_outline_rounded, size: 16, color: gray600),
+                    Icon(Icons.person_outline_rounded,
+                        size: 16, color: gray600),
                     SizedBox(width: 6),
                     Text(
                       'Cập nhật trạng thái y tế (Chuyển vùng, tạm vắng...)',
-                      style: TextStyle(fontSize: 12.5, color: gray700, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          color: gray700,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -259,13 +293,18 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                 height: 44,
                 child: FilledButton(
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => RecordVaccinationScreen(childId: child.id)),
+                    MaterialPageRoute<void>(
+                        builder: (_) =>
+                            RecordVaccinationScreen(childId: child.id)),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: primaryBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Ghi tiêm', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+                  child: const Text('Ghi tiêm',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, color: Colors.white)),
                 ),
               ),
             ),
@@ -275,14 +314,19 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                 height: 44,
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => RecordMedicationScreen(childId: child.id)),
+                    MaterialPageRoute<void>(
+                        builder: (_) =>
+                            RecordMedicationScreen(childId: child.id)),
                   ),
                   style: OutlinedButton.styleFrom(
                     backgroundColor: gray100,
                     side: const BorderSide(color: gray200),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Ghi thuốc', style: TextStyle(color: gray800, fontWeight: FontWeight.w700)),
+                  child: const Text('Ghi thuốc',
+                      style: TextStyle(
+                          color: gray800, fontWeight: FontWeight.w700)),
                 ),
               ),
             ),
@@ -303,7 +347,12 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
             color: isActive ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             boxShadow: isActive
-                ? [const BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(0, 1))]
+                ? [
+                    const BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 3,
+                        offset: Offset(0, 1))
+                  ]
                 : null,
           ),
           child: Text(
@@ -325,7 +374,8 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
       children: [
         SizedBox(
           width: 80,
-          child: Text(label, style: const TextStyle(color: gray500, fontSize: 12)),
+          child:
+              Text(label, style: const TextStyle(color: gray500, fontSize: 12)),
         ),
         Expanded(
           child: Text(

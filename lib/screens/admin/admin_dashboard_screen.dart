@@ -121,7 +121,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Xin chào, ${store.currentUser?.fullName ?? 'admin.demo'}',
+                  'Xin chào, ${store.currentUser?.fullName ?? 'Quản trị viên'}',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w900,

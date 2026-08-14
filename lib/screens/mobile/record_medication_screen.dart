@@ -45,10 +45,13 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
   }
 
   void _save() {
-    if (!_formKey.currentState!.validate() || _medicationSchedule == null) return;
+    if (!_formKey.currentState!.validate() || _medicationSchedule == null) {
+      return;
+    }
 
     final store = AppScope.of(context);
-    final child = store.children.firstWhere((item) => item.id == widget.childId);
+    final child = store.currentUserChildren
+        .firstWhere((item) => item.id == widget.childId);
 
     final record = MedicationRecord(
       id: 'LOCAL-MED-${DateTime.now().microsecondsSinceEpoch}',
@@ -59,12 +62,16 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
       administeredBy: _staffController.text.trim(),
       administeredAt: _administeredAt,
       syncStatus: VaccinationSyncStatus.pending,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
     );
 
     store.addMedication(child.id, record);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã ghi nhận cho uống thuốc ngoại tuyến. Đang chờ đồng bộ.')),
+      const SnackBar(
+          content: Text(
+              'Đã ghi nhận cho uống thuốc ngoại tuyến. Đang chờ đồng bộ.')),
     );
     Navigator.of(context).pop();
   }
@@ -72,7 +79,8 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final child = store.children.firstWhere((item) => item.id == widget.childId);
+    final child = store.currentUserChildren
+        .firstWhere((item) => item.id == widget.childId);
     if (_staffController.text.isEmpty && store.currentUser != null) {
       _staffController.text = store.currentUser!.fullName;
     }
@@ -86,14 +94,20 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
       appBar: AppBar(
         leading: TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Hủy', style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
+          child: const Text('Hủy',
+              style: TextStyle(color: Colors.blueAccent, fontSize: 15)),
         ),
-        title: const Text('Ghi nhận thuốc', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        title: const Text('Ghi nhận thuốc',
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
         centerTitle: true,
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('Lưu', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+            child: const Text('Lưu',
+                style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15)),
           ),
           const SizedBox(width: 8),
         ],
@@ -105,7 +119,8 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF16A34A),
             minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           icon: const Icon(Icons.save_rounded, color: Colors.white, size: 20),
           label: const Text(
@@ -131,11 +146,17 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
                   const Text('👉 ', style: TextStyle(fontSize: 16)),
                   const Text(
                     'Trẻ uống: ',
-                    style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold),
                   ),
                   Text(
                     child.fullName,
-                    style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -144,11 +165,13 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
 
             DropdownButtonFormField<MedicationSchedule>(
               initialValue: _medicationSchedule,
-              decoration: const InputDecoration(labelText: 'Loại Vitamin / Dược chất bổ sung *'),
+              decoration: const InputDecoration(
+                  labelText: 'Loại Vitamin / Dược chất bổ sung *'),
               items: store.medicationSchedules
                   .map((item) => DropdownMenuItem(
                         value: item,
-                        child: Text('${item.medicationName} (${item.recommendedAge})'),
+                        child: Text(
+                            '${item.medicationName} (${item.recommendedAge})'),
                       ))
                   .toList(),
               onChanged: _onScheduleChanged,
@@ -157,14 +180,18 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
             const SizedBox(height: 14),
             TextFormField(
               controller: _dosageController,
-              decoration: const InputDecoration(labelText: 'Liều lượng được chỉ định *'),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập liều dùng' : null,
+              decoration: const InputDecoration(
+                  labelText: 'Liều lượng được chỉ định *'),
+              validator: (v) =>
+                  (v ?? '').trim().isEmpty ? 'Vui lòng nhập liều dùng' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _staffController,
-              decoration: const InputDecoration(labelText: 'Cán bộ phụ trách cho uống *'),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Vui lòng nhập tên cán bộ' : null,
+              decoration: const InputDecoration(
+                  labelText: 'Cán bộ phụ trách cho uống *'),
+              validator: (v) =>
+                  (v ?? '').trim().isEmpty ? 'Vui lòng nhập tên cán bộ' : null,
             ),
             const SizedBox(height: 14),
             InkWell(
@@ -198,4 +225,3 @@ class _RecordMedicationScreenState extends State<RecordMedicationScreen> {
     );
   }
 }
-
